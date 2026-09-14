@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+/*
+ * Section 5b. One committed look: a mid-slate ground so cover art from four
+ * decades sits on it without the 8-bit palettes glowing or the modern art
+ * disappearing. There is no light mode — the ground is part of the design,
+ * not a user preference.
+ */
+@theme inline {
+  --color-ground: #2e3439;
+  --color-panel: #373e44;
+  --color-line: #464e55;
+  --color-ink: #e8e6e1;
+  --color-ink-dim: #98a1a8;
+
+  /* The only chromatic value in the app, and it means exactly one thing:
+     this release is unofficial. Never for buttons, links, focus or emphasis.
+     If it starts showing up on things that are not community releases, it has
+     stopped carrying meaning. */
+  --color-label: #c08a3e;
+
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-narrow: var(--font-archivo-narrow), var(--font-archivo), ui-sans-serif,
+    system-ui, sans-serif;
+  /* Literal codes only: version labels, region codes, patch checksums. */
+  --font-mono: var(--font-plex-mono), ui-monospace, SFMono-Regular, monospace;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-ground);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
