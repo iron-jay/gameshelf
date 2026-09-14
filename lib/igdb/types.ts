@@ -9,6 +9,14 @@ export type IgdbPlatform = {
   abbreviation?: string;
 };
 
+export type IgdbReleaseDate = {
+  id: number;
+  /** Unix seconds. */
+  date?: number;
+  /** Platform id, matching an entry in the game's platforms array. */
+  platform?: number;
+};
+
 export type IgdbGame = {
   id: number;
   name: string;
@@ -18,6 +26,7 @@ export type IgdbGame = {
   first_release_date?: number;
   cover?: IgdbCover;
   platforms?: IgdbPlatform[];
+  release_dates?: IgdbReleaseDate[];
   /** IGDB's game category. Maps onto work_kind. */
   category?: number;
   parent_game?: number;

@@ -6,6 +6,8 @@ import { works } from "@/lib/db/schema";
 import { searchGames } from "@/lib/igdb/search";
 import { igdbImageUrl, IgdbError, IgdbNotConfiguredError, type IgdbGame } from "@/lib/igdb/types";
 
+import { AddButton } from "./add-button";
+
 export const dynamic = "force-dynamic";
 
 type SearchResult =
@@ -125,7 +127,11 @@ export default async function SearchPage({
                   width={48}
                   height={64}
                   className="h-16 w-12 object-cover"
-                  unoptimized={r.kind === "igdb"}
+                  // Local covers are behind the session-checked /covers route,
+                  // which Next's optimiser cannot fetch because it carries no
+                  // cookie. Remote IGDB thumbnails are mostly never added, so
+                  // optimising them would cache art for every search result.
+                  unoptimized
                 />
               ) : null}
             </div>
@@ -139,6 +145,8 @@ export default async function SearchPage({
                 {r.kind === "local" ? "On your server" : (r.platforms || "IGDB")}
               </p>
             </div>
+
+            {r.kind === "igdb" ? <AddButton igdbId={r.id} /> : null}
           </li>
         ))}
       </ul>

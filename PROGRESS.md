@@ -225,3 +225,60 @@ searching the parent work's title would have returned Ocarina of Time's boxart.
 
 Step 4: add-to-shelf creating work, version and entry in one transaction,
 with the cover downloaded to `/data/covers` and served locally.
+
+---
+
+## 2026-09-14 — Step 4: add to shelf
+
+**What changed**
+
+- `app/(app)/search/actions.ts` — one transaction creating platform, work,
+  version and entry. The IGDB game is refetched by id inside the action rather
+  than passed through the form: that payload is what lands in `igdb_payload`,
+  and a client-supplied copy is not something to trust.
+- Every step is idempotent. Adding the same game twice reuses the work and
+  version and answers "Already on your shelf" — the entry insert is
+  `onConflictDoNothing` against the `(user_id, version_id)` unique.
+- `lib/igdb/mapping.ts` — IGDB category to `work_kind`, slug, sort title
+  ("Legend of Zelda: Ocarina of Time, The"), and the platform choice below.
+- `lib/covers.ts` + `app/covers/[file]/route.ts` — cover downloaded once on add
+  to `COVERS_DIR`, named by work uuid, served through a session-checked route.
+  404 rather than 403 throughout, so an unauthenticated caller learns nothing
+  about what is on the shelf.
+- The download happens **outside** the transaction: it is network I/O that
+  should not hold one open, and a failed download must not roll back an
+  otherwise correct shelf row. A work with no art is a fine state.
+
+**The bug this step actually turned up**
+
+The first working version of the add flow used `game.platforms[0]` as the
+version's platform. That produced an `original` version of Ocarina of Time on
+**Wii**, because IGDB's platforms array is in no meaningful order — it returned
+`Wii · N64 · 64DD · WiiU`.
+
+That matters more than it looks. An `original` version is what `base_version_id`
+points at when a romhack or decomp port is attached, so getting it wrong would
+have quietly mis-parented every derived version later. Now `primaryPlatformFor`
+takes the earliest entry from `release_dates` and falls back to array order only
+when there are no dated releases. Ocarina of Time now lands as N64 / Nintendo 64
+/ 1998-11-21.
+
+Worth remembering as a general rule: IGDB array order carries no meaning.
+
+**Verification**
+
+Added The Legend of Zelda: Ocarina of Time through the real UI. Work, version,
+entry and platform all correct, `igdb_payload` stored with 4 platforms, cover
+downloaded (9,212 bytes) and served from `/covers/<uuid>.jpg`, rendering in the
+browser at 264×352. `entry_cards` resolves with `is_community_version = false`.
+Adding it again left the counts at 1/1/1. The cover route returns 404
+unauthenticated, on path traversal attempts and on malformed filenames.
+
+Typecheck and lint clean.
+
+**Next**
+
+Step 5: the shelf page. Grid of entry_cards, filter by status, platform and
+shelf, sorted by added/rated/finished. This is where section 5b's dense grid and
+the label band start to matter — though nothing on the shelf is a community
+release yet, so the band arrives properly at step 6.
