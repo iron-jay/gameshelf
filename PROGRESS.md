@@ -471,3 +471,57 @@ Also fixed while here: since TypeScript 5.7 a Node `Buffer` is a
 `readCover` returns a `Blob`, which avoids an assertion.
 
 Build is clean, with zero tracing warnings and all seven routes present.
+
+---
+
+## 2026-09-14 — Manual art override (section 4a)
+
+Automatic lookup runs once on add and never re-runs on its own, which is the
+intended behaviour — art you have approved is never silently replaced. But that
+made the manual path the only way to correct a flagged cover, and it did not
+exist, so "Master of Time" was sitting on the shelf flagged with nothing to do
+about it.
+
+**What changed**
+
+- `/work/[slug]/art`, optionally `?version=<id>`. One page for both targets; the
+  version is re-validated against the work rather than trusted from the query
+  string.
+- The search box is **seeded with the same title the automatic lookup would
+  use** — the version's own name for a community release, the work's title
+  otherwise. Opening the picker for Master of Time seeds "Master of Time", not
+  "The Legend of Zelda: Ocarina of Time".
+- Paste a SteamGridDB URL or bare game id, kept visible rather than behind a
+  disclosure, because it is the reliable path for obscure hacks.
+- Direct file upload, `cover_source = 'upload'`, capped at 8 MB and limited to
+  JPEG, PNG and WebP.
+- nsfw and humor art stays filtered out of automatic selection and is available
+  here behind a checkbox.
+- Choosing art by any of the three routes clears `cover_needs_review`: making
+  the choice *is* the review.
+- The work page labels the link "Review art" instead of "Change art" when the
+  cover is flagged.
+- `lookupArt` was doing double duty; grid fetching is now `gridsForGame` so the
+  picker and the pasted-id path can share it.
+
+An upload deliberately leaves `sgdb_game_id` alone. Uploading your own art does
+not invalidate a match someone made earlier, and a later refresh should still
+reuse it.
+
+**Verification**
+
+All three routes exercised against the live API on real rows. Picking from the
+grid set `cover_source = steamgriddb` and cleared the flag; pasting
+`https://www.steamgriddb.com/game/21202` answered "Cover taken from The Legend
+of Zelda: Ocarina of Time" and persisted id 21202; uploading a file set
+`cover_source = upload`, cleared the flag, and kept 21202. The shelf's "covers
+needing review" filter now returns nothing.
+
+**Known gap: orphaned cover files**
+
+Replacing a cover removes the superseded file, but deleting a work or a version
+does not remove its art. Two orphans are sitting in the covers directory right
+now from test rows that were deleted directly in SQL. There is no delete UI yet,
+so nothing reaches this in normal use — but whoever builds deletion needs to
+clear the file too, and a sweep for unreferenced covers would be worth having
+before then.

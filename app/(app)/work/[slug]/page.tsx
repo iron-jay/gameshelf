@@ -64,6 +64,12 @@ export default async function WorkPage({ params }: { params: Promise<{ slug: str
             {work.source === "local" ? " · local" : ""}
           </p>
           {work.summary ? <p className="mt-4">{work.summary}</p> : null}
+
+          <p className="mt-4 font-narrow">
+            <Link href={`/work/${work.slug}/art`} className="text-ink-dim underline hover:text-ink">
+              Change art
+            </Link>
+          </p>
         </div>
       </div>
 
@@ -113,9 +119,16 @@ export default async function WorkPage({ params }: { params: Promise<{ slug: str
                 </p>
               </div>
 
+              <Link
+                href={`/work/${work.slug}/art?version=${version.id}`}
+                className="ml-auto shrink-0 font-narrow text-ink-dim underline hover:text-ink"
+              >
+                {version.coverNeedsReview ? "Review art" : "Change art"}
+              </Link>
+
               {/* The only chromatic value in the app, and only ever this. */}
               {isCommunity(version.kind) ? (
-                <span className="ml-auto shrink-0 bg-label px-2 py-0.5 font-narrow text-ground">
+                <span className="shrink-0 bg-label px-2 py-0.5 font-narrow text-ground">
                   community
                 </span>
               ) : null}

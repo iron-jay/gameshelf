@@ -55,3 +55,7 @@ export type BaseGameOption = {
   title: string;
   year: number | null;
 };
+
+export type ArtActionState = { ok: boolean; message: string } | null;
+
+export type ArtTarget = { kind: "work" | "version"; id: string };

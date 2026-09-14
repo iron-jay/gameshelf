@@ -78,46 +78,82 @@ export async function lookupArt(title: string, includeAdult = false): Promise<Ar
     const top = games[0];
     if (!top) return EMPTY;
 
-    const flag = includeAdult ? "any" : "false";
-    const fetchGrids = (dimensions?: string[]) =>
-      serialise(() =>
-        sgdb().getGridsById(top.id, undefined, dimensions, undefined, undefined, flag, flag),
-      );
-
-    // Some releases only have banners. Art in the wrong shape still beats no
-    // art, so fall back rather than returning nothing.
-    let grids = await fetchGrids(PORTRAIT_DIMENSIONS);
-    if (grids.length === 0) {
-      grids = await fetchGrids();
-    }
-
-    const candidates = grids
-      .map(
-        (grid): ArtCandidate => ({
-          sgdbGameId: top.id,
-          gameName: top.name,
-          imageUrl: String(grid.url),
-          thumbUrl: String(grid.thumb),
-          score: grid.score,
-          votes: grid.upvotes - grid.downvotes,
-          width: grid.width,
-          height: grid.height,
-        }),
-      )
-      // The API returns score 0 for everything in practice, so votes are what
-      // actually order "highest-scoring" here.
-      .sort((a, b) => b.score - a.score || b.votes - a.votes);
-
     return {
       confidence: confidenceFor(term, top.name),
       matchedName: top.name,
       sgdbGameId: top.id,
-      candidates,
+      candidates: await gridsForGame(top.id, top.name, includeAdult),
     };
   } catch (err) {
     if (err instanceof SgdbNotConfiguredError) throw err;
     throw new SgdbError("SteamGridDB lookup failed", err);
   }
+}
+
+/**
+ * Grids for one game, highest first.
+ *
+ * `includeAdult` is the manual picker's escape hatch: nsfw and humor are kept
+ * out of automatic selection but stay available to someone choosing by hand.
+ */
+export async function gridsForGame(
+  sgdbGameId: number,
+  gameName: string,
+  includeAdult = false,
+): Promise<ArtCandidate[]> {
+  const flag = includeAdult ? "any" : "false";
+  const fetchGrids = (dimensions?: string[]) =>
+    serialise(() =>
+      sgdb().getGridsById(sgdbGameId, undefined, dimensions, undefined, undefined, flag, flag),
+    );
+
+  // Some releases only have banners. Art in the wrong shape still beats no art,
+  // so fall back rather than returning nothing.
+  let grids = await fetchGrids(PORTRAIT_DIMENSIONS);
+  if (grids.length === 0) {
+    grids = await fetchGrids();
+  }
+
+  return grids
+    .map(
+      (grid): ArtCandidate => ({
+        sgdbGameId,
+        gameName,
+        imageUrl: String(grid.url),
+        thumbUrl: String(grid.thumb),
+        score: grid.score,
+        votes: grid.upvotes - grid.downvotes,
+        width: grid.width,
+        height: grid.height,
+      }),
+    )
+    // The API returns score 0 for everything in practice, so votes are what
+    // actually order "highest-scoring" here.
+    .sort((a, b) => b.score - a.score || b.votes - a.votes);
+}
+
+export async function gameNameFor(sgdbGameId: number): Promise<string | null> {
+  try {
+    const game = await serialise(() => sgdb().getGameById(sgdbGameId));
+    return game?.name ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Accepts what someone actually has to hand: a SteamGridDB game URL, or the
+ * bare id. Section 4a keeps this visible rather than behind a disclosure
+ * because it is the reliable path for obscure hacks.
+ */
+export function parseSgdbReference(input: string): number | null {
+  const text = input.trim();
+  if (!text) return null;
+
+  if (/^\d+$/.test(text)) return Number(text);
+
+  const match = /steamgriddb\.com\/game\/(\d+)/i.exec(text);
+  return match ? Number(match[1]) : null;
 }
 
 export { confidenceFor, normaliseTitle } from "./match";

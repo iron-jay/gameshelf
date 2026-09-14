@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 /**
@@ -58,6 +58,34 @@ export async function readCover(filename: string): Promise<Blob> {
   return new Blob([await readFile(coverPath(filename))]);
 }
 
+/** Generous for box art, small enough that a stray video cannot land here. */
+export const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+
+export function extensionFor(contentType: string): string | undefined {
+  return EXTENSIONS[contentType.split(";")[0]?.trim() ?? ""];
+}
+
+/**
+ * Write bytes the user supplied directly. Separate from downloadCover because
+ * an upload has already been read into memory and its type has to be checked
+ * against what the browser claimed rather than against a response header.
+ */
+export async function saveCoverBytes(
+  bytes: ArrayBuffer,
+  contentType: string,
+  basename: string,
+): Promise<string | null> {
+  const ext = extensionFor(contentType);
+  if (!ext) return null;
+  if (bytes.byteLength === 0 || bytes.byteLength > MAX_UPLOAD_BYTES) return null;
+
+  const filename = `${basename}.${ext}`;
+  await mkdir(coversDir(), { recursive: true });
+  await writeFile(coverPath(filename), new Uint8Array(bytes));
+
+  return filename;
+}
+
 /**
  * Returns the stored filename, or null if the download failed. A missing cover
  * is not worth failing an add over — the entry is still correct without art,
@@ -80,5 +108,14 @@ export async function downloadCover(url: string, basename: string): Promise<stri
     return filename;
   } catch {
     return null;
+  }
+}
+
+/** Removes a superseded cover file. A missing file is not an error. */
+export async function removeCover(filename: string): Promise<void> {
+  try {
+    await rm(coverPath(filename));
+  } catch {
+    // Already gone, or never written. Either way there is nothing to clean up.
   }
 }
