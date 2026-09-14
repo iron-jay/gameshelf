@@ -24,6 +24,26 @@ npm run dev              # http://localhost:3000
 To reach the dev server from a browser on the Windows side, bind it to all
 interfaces: `npx next dev -H 0.0.0.0`.
 
+### Runtime data lives outside the repository
+
+Postgres and the downloaded cover art are bind-mounted from `../gameshelf-data/`
+rather than from a directory inside the project:
+
+```
+code/
+├── gameshelf/          the repository
+└── gameshelf-data/
+    ├── pgdata/         Postgres
+    └── covers/         downloaded cover art
+```
+
+This is not cosmetic. The bundler traces filesystem access in server code, and
+an `fs` path it cannot resolve statically makes it walk the whole project
+directory into the server bundle — which fails outright on the root-owned
+Postgres files. For the same reason **`COVERS_DIR` must be an absolute path**:
+resolving a relative one means naming `process.cwd()`, which is exactly the
+anchor the bundler catches on.
+
 | Script | Does |
 |---|---|
 | `npm run db:generate` | Generate a migration from `lib/db/schema.ts` |
@@ -31,12 +51,13 @@ interfaces: `npx next dev -H 0.0.0.0`.
 | `npm run db:push` | Push schema straight to the dev database |
 | `npm run db:seed` | Create the single user from `.env` |
 | `npm run db:studio` | Drizzle Studio |
+| `npm run probe:sgdb` | Check SteamGridDB matching against the live API |
 
-Migrations are the artifact that builds a database. `schema.sql` is the
-readable reference for the design, kept in step with the Drizzle schema by
-hand. After generating a migration that creates schema objects, run
-`python3 scripts/augment-migration.py drizzle/<file>.sql` to add the
-extensions, trigger and view that drizzle-kit cannot express.
+Migrations are the artifact that builds a database. `schema.sql` is the readable
+reference for the design, kept in step with the Drizzle schema by hand. After
+generating a migration that creates schema objects, run
+`python3 scripts/augment-migration.py drizzle/<file>.sql` to add the extensions,
+trigger and view that drizzle-kit cannot express.
 
 ## Deployment
 
