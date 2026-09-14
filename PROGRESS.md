@@ -681,3 +681,78 @@ not have anticipated how it would read once the stats page existed.
 
 Step 10, export. JSON and CSV of everything, which is the last item in the build
 order.
+
+---
+
+## 2026-09-14 — Step 10: export, and the build order is done
+
+JSON and CSV of everything, plus the settings page section 5 puts them on.
+
+**Two shapes, on purpose**
+
+JSON is nested and keeps every play, every shelf membership, and the base
+version and parent work by name. CSV is one row per shelf entry with plays
+summarised into a count, total hours and first/last dates — the way a Goodreads
+export is one row per book. A spreadsheet with a variable number of play columns
+would be no use to anyone, and the JSON is there for anything the CSV flattens.
+
+Cached IGDB payloads are excluded, and the export says so in a `note` field.
+Portability means your data; `igdb_payload` is upstream catalogue data that can
+be fetched again. Including it would have multiplied the file size for something
+you do not own.
+
+**Settings**
+
+Credential status is reported as "set" or "not set" and never any part of a
+value. The cached token's expiry is shown as a date. "Test connections" makes a
+real request to each service rather than checking environment variables,
+because "configured" and "working" are different questions and only the second
+one is worth answering.
+
+**Verification**
+
+JSON: 200 with the right content type and a dated attachment filename, 6
+entries, and Master of Time carrying rating 4.5, both shelves, both plays with
+their hours, and its SteamGridDB id. No `igdb_payload` anywhere in the document.
+
+CSV: parsed back with a real RFC 4180 reader rather than a regex. 21 columns, 6
+rows, every row the same width. A review containing a comma, embedded double
+quotes and a newline round-tripped at exactly its original 143 characters.
+
+Connections: both services answered live — IGDB returned a search result,
+SteamGridDB matched "Ship of Harkinian" with 38 grids.
+
+**Three things fixed on the way**
+
+- `aliasedTable` from `drizzle-orm` collapses a select row type to `never` when
+  self-joining. The pg-specific `alias` from `drizzle-orm/pg-core` builds a
+  properly typed table. Worth remembering: the generic helper is not the one to
+  reach for in Postgres code.
+- Selecting whole table objects alongside aliases made the same inference worse.
+  Explicit columns are more verbose and more predictable.
+- `Date.now()` during render trips `react-hooks/purity`. The token expiry is an
+  absolute date now, which reads better than a countdown anyway.
+
+---
+
+## Build order complete
+
+All ten steps in section 9 are done and each one runs end to end against the
+real APIs. Ship point was step 6; the four steps after it are the refinement the
+brief said they would be.
+
+What is deliberately not built, all recorded above in more detail:
+
+- **Deleting a work or version.** No UI for it, and whoever adds one has to
+  clear the cover file too — nothing does that today.
+- **`shelves.is_pinned`.** In the schema, unused. Pinning needs somewhere to pin
+  to, and the filter row is already full.
+- **A platform on community versions.** Section 5's form field list does not
+  include one, so "No platform" is the largest bucket in the stats. Correct per
+  the brief, but it may not have anticipated how that reads.
+- **Refreshing art on demand.** Auto-lookup runs once on add and never re-runs,
+  which is intended. The manual override covers correcting a cover; there is no
+  "re-check SteamGridDB for this" action.
+
+Out of scope for v1 and noted in `IDEAS.md`: social features, following, public
+profiles, Steam import, achievements, recommendations, mobile app.

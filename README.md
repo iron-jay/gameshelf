@@ -59,6 +59,19 @@ generating a migration that creates schema objects, run
 `python3 scripts/augment-migration.py drizzle/<file>.sql` to add the extensions,
 trigger and view that drizzle-kit cannot express.
 
+### Export
+
+Both formats are plain authenticated GETs, so they work from a browser or a
+shell:
+
+```bash
+curl -b "gameshelf_session=$TOKEN" -OJ http://localhost:3000/export/json
+```
+
+JSON keeps every play; CSV is one row per shelf entry with plays summarised.
+Cached IGDB payloads are excluded on purpose — they are upstream data that can
+be fetched again, not yours.
+
 ## Deployment
 
 ```bash
