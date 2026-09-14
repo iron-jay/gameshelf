@@ -631,3 +631,53 @@ seventh control nobody asked for.
 **Next**
 
 Step 9 stats, step 10 export.
+
+---
+
+## 2026-09-14 — Step 9: stats
+
+One page: a few headline figures, finished per year, platform breakdown. Section
+5 says no dashboard sprawl, so there are no cards, no panels and no chart
+library — proportion is a one-pixel hairline under each row, enough to read a
+shape from without pretending to be a chart.
+
+**What counts as finished**
+
+A play with a finish date and `unfinished` is where you stopped, not where you
+got to the end, so only `credits`, `completed` and `mastered` count. The test
+data proves the distinction is live: total hours read 53.5 across both plays,
+while 2026 shows 1 game and 41.5h, because the 12h replay was dropped.
+
+Years count distinct games rather than plays, so finishing the same game twice in
+one year is one game — but the row also says "N finishes including replays" when
+the two numbers differ, rather than silently picking one reading.
+
+**Two judgment calls**
+
+*A fourth statistic.* Section 5 names three — finished per year, hours, platform
+breakdown — and I added the official-versus-community split. Adding to an
+explicit list is exactly the sprawl the brief warns about, so it is worth
+justifying: it is one line, and it is the one number this app exists to be able
+to show. Easy to remove if it reads as clutter.
+
+*Tabular figures, not mono.* Section 5b restricts mono to literal codes, and
+statistics are not codes. `tabular-nums` gives the column alignment that made
+mono tempting without breaking the rule. Years are mono, because a year is a
+literal code.
+
+**Observation: community versions have no platform**
+
+"No platform" is the largest bucket in the breakdown, holding both community
+releases. That is correct data rather than a bug — section 5's community version
+form lists Name, Kind, Base game, Base version, Author, Version label, Release
+date, URL and Notes, and platform is deliberately not among them.
+
+It does mean a decomp port like Ship of Harkinian, which plainly runs on PC,
+cannot be platform-filtered and shows as unplatformed in stats. Not changing the
+form, because the field list is explicit — but flagging it, because the brief may
+not have anticipated how it would read once the stats page existed.
+
+**Next**
+
+Step 10, export. JSON and CSV of everything, which is the last item in the build
+order.
