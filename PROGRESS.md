@@ -777,3 +777,53 @@ release with no platform recorded.
 
 The screen-reader label and the no-art placeholder follow the same title, so all
 three agree on what a tile is called.
+
+---
+
+## 2026-09-14 — Shelf filters: apply on change, grouping, review count
+
+**Filters apply as you change them**
+
+The Apply button existed because the filter row was a plain GET form. It is now
+a small client component that submits on any change event, so the selects behave
+the same way as the checkbox rather than the checkbox being a special case.
+Apply is still rendered server-side and disappears once the component hydrates,
+so the page keeps working with JavaScript off.
+
+Submitting through `router.push` rather than the form also keeps the URL to the
+parts that mean something. A GET submit puts every control in the query string,
+including the empty ones and the defaults — `?sort=added&groupBy=none&platform=&shelf=&dlc=separate`
+rather than `?dlc=separate`. These links get bookmarked, so the noise was worth
+removing.
+
+Hydration detection is `useSyncExternalStore`, because the `useEffect` plus
+`setState` version of the same trick is a lint error.
+
+**Covers needing review shows a count, and only when there is one**
+
+`0 covers need review` was a link to an empty page. It now appears only when the
+count is above zero, and says `1 cover needs review` or `2 covers need review`.
+It stays visible while the filter is active — otherwise fixing the last one
+would strand you on an empty shelf with no way back except editing the URL — and
+reads "Showing covers needing review — show everything" in that state.
+
+**Grouping**
+
+New `groupBy` selector: platform, year released, status or kind. Sections get a
+heading and a count, and the load stagger runs across the whole grid rather than
+restarting per section, so it still reads as one shelf resolving.
+
+Unknowns sort last everywhere. "No platform" at the bottom rather than the top,
+because an entry missing a field should not lead the page.
+
+`release_year` is a new view column (migration 0004), taken from the version's
+own release date and falling back to the work's. A romhack therefore groups
+under the year the hack came out, not the year the original did — which only
+works if the release date is filled in, so the two test community versions got
+their real dates.
+
+**A parameter rename**
+
+`group=off` used to mean "do not nest DLC". With a real grouping selector
+arriving, that name was ambiguous, so the DLC toggle is now `dlc=separate` and
+`groupBy` is the sectioning axis. Different questions, different parameters.

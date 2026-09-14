@@ -348,4 +348,6 @@ export const entryCards = pgView("entry_cards", {
   lastFinishedOn: date("last_finished_on"),
   /** Follows whichever cover is actually shown. Drives the review filter. */
   coverNeedsReview: boolean("cover_needs_review"),
+  /** The version's own release year where it has one, else the work's. */
+  releaseYear: integer("release_year"),
 }).existing();

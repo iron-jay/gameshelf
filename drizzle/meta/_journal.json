@@ -29,6 +29,13 @@
       "when": 1789357482640,
       "tag": "0003_entry_cards_review",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789366790571,
+      "tag": "0004_entry_cards_release_year",
+      "breakpoints": true
     }
   ]
 }

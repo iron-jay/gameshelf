@@ -323,7 +323,10 @@ SELECT
     WHEN v.cover_url IS NOT NULL THEN v.cover_needs_review
     WHEN v.kind NOT IN ('original','port','remaster','remake','compilation') THEN false
     ELSE w.cover_needs_review
-  END                 AS cover_needs_review
+  END                 AS cover_needs_review,
+  -- The version's own date when it has one, so a romhack groups under the year
+  -- the hack came out rather than the year the original did.
+  extract(year FROM COALESCE(v.release_date, w.first_release_date))::int AS release_year
 FROM entries e
 JOIN versions v  ON v.id = e.version_id
 JOIN works w     ON w.id = v.work_id
