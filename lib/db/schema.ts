@@ -122,6 +122,25 @@ export const platforms = pgTable("platforms", {
   source: sourceKind("source").notNull().default("igdb"),
 });
 
+// ----------------------------------------------------------- igdb tokens
+
+/**
+ * Twitch client-credentials tokens last around 60 days. Holding one row here
+ * rather than in memory means a container restart does not burn a fresh token,
+ * and a 401 can force a refresh without coordinating across processes.
+ */
+export const igdbTokens = pgTable(
+  "igdb_tokens",
+  {
+    id: boolean("id").primaryKey().default(true),
+    accessToken: text("access_token").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    obtainedAt: timestamp("obtained_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  // Pins the table to a single row: the only allowed primary key is true.
+  (t) => [check("igdb_tokens_single_row", sql`${t.id}`)],
+);
+
 // ---------------------------------------------------------------- works
 
 export const works = pgTable(

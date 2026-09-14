@@ -263,6 +263,24 @@ CREATE TABLE shelf_entries (
 );
 
 -- ------------------------------------------------------------
+-- IGDB OAuth token cache
+--
+-- Twitch client-credentials tokens last ~60 days. Holding one row here rather
+-- than in memory means a container restart does not burn a fresh token, and a
+-- 401 can force a refresh without coordinating across processes.
+-- ------------------------------------------------------------
+
+CREATE TABLE igdb_tokens (
+  id           boolean PRIMARY KEY DEFAULT true,
+  access_token text NOT NULL,
+  expires_at   timestamptz NOT NULL,
+  obtained_at  timestamptz NOT NULL DEFAULT now(),
+
+  -- Pins the table to a single row: the only allowed primary key is true.
+  CONSTRAINT igdb_tokens_single_row CHECK (id)
+);
+
+-- ------------------------------------------------------------
 -- Convenience view: a shelf row with everything needed to render a card
 -- ------------------------------------------------------------
 

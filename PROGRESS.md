@@ -162,3 +162,62 @@ This is the point where the placeholder credentials in `.env` stop being good
 enough — `IGDB_CLIENT_ID` and `IGDB_CLIENT_SECRET` are needed from
 https://dev.twitch.tv/console/apps before step 3 can be tested end to end.
 `SGDB_API_KEY` follows at step 6.
+
+---
+
+## 2026-09-14 — Step 3: IGDB client and search (live verification pending)
+
+**Schema**
+
+Added `igdb_tokens`, a deliberately single-row table — `id boolean PRIMARY KEY
+DEFAULT true` with `CHECK (id)` — for the cached Twitch token. Section 4 asks
+for the token to live in the database, and section 2 says to push back before
+adding a table, so this was raised rather than assumed. A dedicated table beat a
+generic `app_settings` key/value store, which tends to become a junk drawer.
+Migration `0001_igdb_tokens.sql`, applied.
+
+**What changed**
+
+- `lib/igdb/token.ts` — client-credentials flow. Credentials go in the POST body
+  rather than the query string, because query strings end up in proxy logs. A
+  token is treated as spent an hour before Twitch says so, so no request can
+  straddle the expiry.
+- `lib/igdb/client.ts` — one request at a time, spaced 250ms. A 401 retries once
+  with a forced token refresh; a 429 backs off exponentially. The retry happens
+  inside the queue, so everything behind it waits too, which is the point. A
+  rejected request resolves the queue rather than poisoning it.
+- `lib/igdb/search.ts` — apicalypse has no parameter binding, so the search term
+  is escaped by hand for quotes and backslashes.
+- `app/(app)/search/page.tsx` — one box, local works and IGDB results in one
+  list, each row marked. Local works are queried regardless of whether IGDB is
+  reachable, so an offline or unconfigured server still finds what it knows.
+- IGDB thumbnails render `unoptimized`: most search results are never added, and
+  optimising them would have the server fetch and cache art for every result.
+  Anything actually added gets its cover downloaded at step 4.
+
+**Verification**
+
+`/search` is behind the session check (307 without a cookie). Searching with a
+local work present returns it marked "On your server". With the placeholder
+credentials still in `.env`, the Twitch token request returns 400 and the page
+renders "IGDB search failed (400). Local results are still shown." rather than
+erroring — the degraded path works.
+
+Typecheck, lint and production build clean.
+
+**Not yet verified**
+
+Real IGDB results. `IGDB_CLIENT_ID` and `IGDB_CLIENT_SECRET` are still
+placeholders, so nothing has exercised a successful token fetch, the token
+cache write, or the shape of an actual `games` response. `igdb_tokens` has zero
+rows. Step 4 should not start until a search returns real results.
+
+Registering the Twitch app: the OAuth redirect URL is unused by the
+client-credentials grant but the form will not save empty — `http://localhost`
+is fine. Client Type must be **Confidential**.
+
+**Next**
+
+Once credentials are in, confirm a live search, then step 4: add-to-shelf
+creating work, version and entry in one transaction, with the cover downloaded
+to `/data/covers`.
