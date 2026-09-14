@@ -73,6 +73,20 @@ export async function addToShelf(_prev: AddState, formData: FormData): Promise<A
       const base = game.slug ? slugify(game.slug) : slugify(game.name);
       const [clash] = await tx.select({ id: works.id }).from(works).where(eq(works.slug, base));
 
+      // DLC and expansions hang off the base game, but only if that game is
+      // already here — we do not fetch parents uninvited. A main_game never has
+      // a parent, which the works_parent_required check also enforces.
+      const kind = workKindFor(game);
+      let parentWorkId: string | null = null;
+
+      if (kind !== "main_game" && game.parent_game) {
+        const [parent] = await tx
+          .select({ id: works.id })
+          .from(works)
+          .where(eq(works.igdbId, game.parent_game));
+        parentWorkId = parent?.id ?? null;
+      }
+
       [work] = await tx
         .insert(works)
         .values({
@@ -84,7 +98,8 @@ export async function addToShelf(_prev: AddState, formData: FormData): Promise<A
           sortTitle: sortTitleFor(game.name),
           summary: game.summary ?? null,
           firstReleaseDate: releaseDateFor(game),
-          workKind: workKindFor(game),
+          workKind: kind,
+          parentWorkId,
           igdbPayload: game,
           igdbSyncedAt: new Date(),
           source: "igdb",

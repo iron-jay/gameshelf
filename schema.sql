@@ -312,7 +312,11 @@ SELECT
   w.parent_work_id,
   pw.title            AS parent_work_title,
   p.name              AS platform_name,
-  (v.kind NOT IN ('original','port','remaster','remake','compilation')) AS is_community_version
+  (v.kind NOT IN ('original','port','remaster','remake','compilation')) AS is_community_version,
+  e.added_at,
+  -- The shelf sorts by "finished", which lives on plays rather than on the
+  -- entry: a replay is a new play, so the latest finish is the meaningful one.
+  (SELECT max(pl.finished_on) FROM plays pl WHERE pl.entry_id = e.id) AS last_finished_on
 FROM entries e
 JOIN versions v  ON v.id = e.version_id
 JOIN works w     ON w.id = v.work_id

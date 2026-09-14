@@ -27,6 +27,12 @@ export type IgdbGame = {
   cover?: IgdbCover;
   platforms?: IgdbPlatform[];
   release_dates?: IgdbReleaseDate[];
+  /**
+   * Replaced `category`, which IGDB has deprecated and now returns for nothing.
+   * Comes back as a bare id or as an expanded object depending on how the
+   * field is requested; the ids match the old category values.
+   */
+  game_type?: number | { id: number; type?: string };
   /** IGDB's game category. Maps onto work_kind. */
   category?: number;
   parent_game?: number;

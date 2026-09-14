@@ -282,3 +282,74 @@ Step 5: the shelf page. Grid of entry_cards, filter by status, platform and
 shelf, sorted by added/rated/finished. This is where section 5b's dense grid and
 the label band start to matter — though nothing on the shelf is a community
 release yet, so the band arrives properly at step 6.
+
+---
+
+## 2026-09-14 — Step 5: the shelf
+
+**Schema**
+
+`entry_cards` could not answer section 5's "sort by added/rated/finished" —
+rating was on the view, the other two were not derivable from it at all.
+Migration `0002_entry_cards_sorting.sql` appends `added_at` and
+`last_finished_on`, the latter being `max(finished_on)` over the entry's plays,
+because a replay is a new play and the latest finish is the meaningful one.
+`CREATE OR REPLACE VIEW` only ever appends, so existing columns keep their
+positions. The view is lifted from `schema.sql` by the migration script rather
+than retyped, same as before.
+
+Title sorting was left out deliberately: it would need `works.sort_title` on the
+view and section 5 does not ask for it.
+
+**What changed**
+
+- `app/(app)/page.tsx` replaces the holding page. Status filter, platform
+  filter, sort, and the DLC grouping toggle, all as plain links and a GET form —
+  no client component, and the whole thing works without JavaScript.
+- `app/(app)/shelf-tile.tsx` — dense grid, 1px gaps, no radius, no shadow, no
+  hover lift. Metadata is revealed on hover or keyboard focus rather than
+  printed under every cover, so the grid stays a wall of art.
+- The label band, finally with something to carry: a solid `--label` strip
+  across the lower part of a community version's cover, version name and author
+  in Archivo Narrow. Official releases get nothing, which is the signal.
+- One stagger animation on grid load, the single sanctioned motion in section
+  5b, disabled under `prefers-reduced-motion`.
+
+**Two bugs found by checking rather than looking**
+
+*IGDB has deprecated `category`.* It is not merely renamed — the field is absent
+from the response entirely, so `workKindFor` silently mapped everything to
+`main_game` and Destiny 2: Lightfall came back as a main game with no parent.
+The replacement is `game_type`, whose ids match the old category values.
+`category` is still read as a fallback for payloads cached before the change.
+The lesson is the same as the platform one: a field that is quietly absent
+produces a plausible wrong answer, not an error.
+
+*The add flow never set `parent_work_id`.* It mapped the work kind and stopped,
+so DLC never hung off its base game and the grouping toggle had nothing to
+group. It now resolves `parent_game` against works already present — parents are
+never fetched uninvited, and a main_game is never given a parent, which the
+`works_parent_required` check also enforces.
+
+**Verification**
+
+With Destiny 2, Lightfall and Shadowkeep added from IGDB: Lightfall and
+Shadowkeep are `expansion` with Destiny 2 as parent. The shelf reads "3 entries
+· 2 grouped under parents" by default and 5 with grouping off. Status, platform
+and sort filters each narrow correctly, and the romhack — which has no platform
+— is correctly absent from a platform-filtered view.
+
+The romhack fixture confirms the rule that motivated the section 4a change: it
+renders a placeholder and its own label band, never Ocarina of Time's boxart.
+
+Typecheck and lint clean.
+
+**Next**
+
+Step 6 and the point of the whole project: the unified add form plus
+SteamGridDB. A romhack through Door A, then the same hack through Door B on an
+existing work page. If the two paths need different code, stop and fix the form.
+
+The dev database has a hand-inserted "Master of Time" romhack version standing
+in for that flow. It should be deleted and recreated through the real form as
+the first real test of step 6.

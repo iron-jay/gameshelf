@@ -10,7 +10,7 @@ const FIELDS = [
   "cover.image_id",
   "platforms.name",
   "platforms.abbreviation",
-  "category",
+  "game_type.id",
   "parent_game",
 ].join(",");
 

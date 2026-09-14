@@ -15,6 +15,13 @@
       "when": 1789355089306,
       "tag": "0001_igdb_tokens",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789356471694,
+      "tag": "0002_entry_cards_sorting",
+      "breakpoints": true
     }
   ]
 }

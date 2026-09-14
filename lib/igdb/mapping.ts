@@ -14,7 +14,7 @@ type WorkKind = (typeof workKind.enumValues)[number];
  * a main_game work of its own. Attaching it as a version to something else is
  * the "add version" flow, not this one.
  */
-const CATEGORY_TO_WORK_KIND: Readonly<Record<number, WorkKind>> = {
+const GAME_TYPE_TO_WORK_KIND: Readonly<Record<number, WorkKind>> = {
   0: "main_game",
   1: "dlc",
   2: "expansion",
@@ -24,8 +24,21 @@ const CATEGORY_TO_WORK_KIND: Readonly<Record<number, WorkKind>> = {
   7: "season",
 };
 
+/**
+ * IGDB deprecated `category` in favour of `game_type` and now returns nothing
+ * for the old field, so asking for it silently made every work a main_game.
+ * `category` is still read as a fallback because payloads cached before the
+ * change still carry it.
+ */
+function gameTypeId(game: IgdbGame): number {
+  const type = game.game_type;
+  if (typeof type === "number") return type;
+  if (type && typeof type === "object") return type.id;
+  return game.category ?? 0;
+}
+
 export function workKindFor(game: IgdbGame): WorkKind {
-  return CATEGORY_TO_WORK_KIND[game.category ?? 0] ?? "main_game";
+  return GAME_TYPE_TO_WORK_KIND[gameTypeId(game)] ?? "main_game";
 }
 
 type DatedRelease = IgdbReleaseDate & { date: number; platform: number };

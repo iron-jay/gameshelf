@@ -343,4 +343,7 @@ export const entryCards = pgView("entry_cards", {
   parentWorkTitle: text("parent_work_title"),
   platformName: text("platform_name"),
   isCommunityVersion: boolean("is_community_version"),
+  addedAt: timestamp("added_at", { withTimezone: true }),
+  /** Latest finish across all plays — a replay is a new play, not an edit. */
+  lastFinishedOn: date("last_finished_on"),
 }).existing();

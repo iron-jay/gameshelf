@@ -35,3 +35,29 @@ body {
   color: var(--color-ink);
   font-family: var(--font-sans);
 }
+
+/*
+ * The one orchestrated moment in the app: the shelf grid resolving as covers
+ * load. Everything else moves only in answer to an action.
+ */
+@keyframes shelf-tile-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.shelf-tile {
+  animation: shelf-tile-in 320ms ease-out backwards;
+  animation-delay: calc(var(--tile-index) * 18ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shelf-tile {
+    animation: none;
+  }
+}
