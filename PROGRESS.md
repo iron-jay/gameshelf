@@ -165,7 +165,7 @@ https://dev.twitch.tv/console/apps before step 3 can be tested end to end.
 
 ---
 
-## 2026-09-14 — Step 3: IGDB client and search (live verification pending)
+## 2026-09-14 — Step 3: IGDB client and search
 
 **Schema**
 
@@ -205,19 +205,23 @@ erroring — the degraded path works.
 
 Typecheck, lint and production build clean.
 
-**Not yet verified**
+**Live verification**
 
-Real IGDB results. `IGDB_CLIENT_ID` and `IGDB_CLIENT_SECRET` are still
-placeholders, so nothing has exercised a successful token fetch, the token
-cache write, or the shape of an actual `games` response. `igdb_tokens` has zero
-rows. Step 4 should not start until a search returns real results.
+Credentials added and confirmed against the real API. A search for "ocarina of
+time" returns 20 results with years and platforms, no error notice. The token
+cache now holds one row: 30-character token, 60 days valid.
 
-Registering the Twitch app: the OAuth redirect URL is unused by the
-client-credentials grant but the form will not save empty — `http://localhost`
-is fine. Client Type must be **Confidential**.
+The result set is a good sign for the model — alongside the 1998 original it
+returned Ship of Harkinian, Zelda 64: Recompiled and a spread of romhacks, which
+are exactly the things that will need versions hanging off a work rather than
+works of their own.
+
+The SteamGridDB key was checked at the same time: searching "ship of harkinian"
+returns that game as the top hit, id 5335518. That is section 4a's rule working
+in practice — searching the community version's own name finds its art, where
+searching the parent work's title would have returned Ocarina of Time's boxart.
 
 **Next**
 
-Once credentials are in, confirm a live search, then step 4: add-to-shelf
-creating work, version and entry in one transaction, with the cover downloaded
-to `/data/covers`.
+Step 4: add-to-shelf creating work, version and entry in one transaction,
+with the cover downloaded to `/data/covers` and served locally.
