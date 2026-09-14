@@ -525,3 +525,57 @@ now from test rows that were deleted directly in SQL. There is no delete UI yet,
 so nothing reaches this in normal use — but whoever builds deletion needs to
 clear the file too, and a sweep for unreferenced covers would be worth having
 before then.
+
+---
+
+## 2026-09-14 — Step 7: entry detail
+
+`/version/[id]` — your entry for one version: status, rating, review, flags and
+play history. Shelf tiles now point here rather than at the work page, because
+from your own shelf the useful destination is your entry. The work page's
+version rows link here too.
+
+**Marking done**
+
+Section 9 is explicit that this must never be a required dropdown, so it is
+three buttons: `credits`, `completed`, `mastered`. Each is one click and each
+also sets the status to `played`, so finishing a game is a single action rather
+than a status change followed by a completion answer. The helper text says
+reaching the end is the usual answer, which is the nudge rather than a default
+that has to be dismissed.
+
+**What else**
+
+- Rating is ten buttons, 0.5 to 5, mapping onto the 1..10 half-star column, with
+  a clear button that only appears once something is rated.
+- Every action creates the entry on demand. Opening a version you have not
+  shelved and rating it does the obvious thing instead of erroring, and the
+  insert is `onConflictDoNothing` with a re-read behind it so two quick clicks
+  cannot race into a duplicate.
+- Plays are listed newest finish first, and adding one never edits an existing
+  one. A replay is a new row, which is the model doing what section 2 says.
+- `deletePlay` is scoped to the entry as well as the play id, so an id from
+  someone else's shelf does nothing.
+
+Only one client component on the page: the play form. Everything else is a plain
+form posting to a server action, so status, rating, review and flags all work
+with JavaScript off. The play form is the exception because a play can be
+rejected — a finish date before a start date — and saying so without losing what
+was typed needs `useActionState`.
+
+**Verification**
+
+Driven against the real app: marking credits set status `played` and completion
+`credits` together; rating 4.5 stored as 9; review saved with the spoilers flag.
+A play with the finish before the start was refused with "The finish date is
+before the start date." and kept the typed values. Two valid plays were added —
+a 41.5h run to credits and a 12h replay that was dropped — and a throwaway third
+was deleted, 3 rows back down to 2.
+
+`last_finished_on` on `entry_cards` now has something to do: it picks 2026-08-09,
+the later of the two finishes, and the shelf's "Recently finished" sort puts
+Master of Time first with everything unfinished after it.
+
+**Next**
+
+Step 8 shelves (free-form tags), step 9 stats, step 10 export.

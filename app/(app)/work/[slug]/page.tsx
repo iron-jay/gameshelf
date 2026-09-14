@@ -102,7 +102,9 @@ export default async function WorkPage({ params }: { params: Promise<{ slug: str
 
               <div className="min-w-0">
                 <p className="truncate">
-                  {version.name}
+                  <Link href={`/version/${version.id}`} className="hover:underline">
+                    {version.name}
+                  </Link>
                   {version.versionLabel ? (
                     <span className="ml-2 font-mono text-ink-dim">{version.versionLabel}</span>
                   ) : null}

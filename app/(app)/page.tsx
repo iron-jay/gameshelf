@@ -94,6 +94,7 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
 
   const cards: ShelfCard[] = visible.map((row) => ({
     entryId: row.entryId ?? "",
+    versionId: row.versionId ?? "",
     workSlug: row.workSlug ?? "",
     workTitle: row.workTitle ?? "Untitled",
     versionName: row.versionName ?? "",

@@ -3,6 +3,7 @@ import Link from "next/link";
 
 export type ShelfCard = {
   entryId: string;
+  versionId: string;
   workSlug: string;
   workTitle: string;
   versionName: string;
@@ -26,7 +27,7 @@ export function ShelfTile({ card, index }: { card: ShelfCard; index: number }) {
       className="shelf-tile group relative aspect-[3/4] bg-panel"
       style={{ "--tile-index": index } as React.CSSProperties}
     >
-      <Link href={`/work/${card.workSlug}`} className="absolute inset-0 z-10">
+      <Link href={`/version/${card.versionId}`} className="absolute inset-0 z-10">
         <span className="sr-only">{card.workTitle}</span>
       </Link>
       {card.coverUrl ? (
