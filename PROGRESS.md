@@ -827,3 +827,42 @@ their real dates.
 `group=off` used to mean "do not nest DLC". With a real grouping selector
 arriving, that name was ambiguous, so the DLC toggle is now `dlc=separate` and
 `groupBy` is the sectioning axis. Different questions, different parameters.
+
+---
+
+## 2026-09-14 — Optional platform on the community version form
+
+The gap flagged at step 9: section 5's field list for the community form does not
+include a platform, so every romhack and port landed unplatformed and "No
+platform" was the largest bucket in the stats.
+
+**What changed**
+
+An optional Platform field on the version form, so both doors get it — the form
+is one component, which is the whole point of how step 6 was built.
+
+The field is a text input backed by a datalist of platform names already in the
+table, the same pattern as shelf tags. Matching is case-insensitive on the name,
+because the alternative is two rows differing by a capital letter. A name the
+table has never seen becomes a new row with `igdb_id` null and `source =
+'local'` — which is exactly what the schema's comment on that column anticipated,
+so no migration was needed.
+
+**Verification**
+
+Both branches, through the real form. Typing `nintendo 64` in lower case reused
+the cached IGDB row rather than creating a second one — the platforms table
+stayed at five. Typing `Linux`, which nothing had used, created a local row with
+a null `igdb_id`. Stats now reads Nintendo 64 2, PC 2, PlayStation 4 1,
+PlayStation 5 1, with no unplatformed bucket at all.
+
+**Two existing versions were fixed by hand**
+
+Master of Time and Ship of Harkinian were added before the field existed, and
+**there is no edit form for a version** — you can change its art and everything
+on the entry, but not the version's own details. Both platforms are known facts
+rather than guesses, so they were set directly.
+
+That missing edit form is now the sharpest gap in the app. Anything typed wrong
+on the add form — a name, an author, a version label, and now a platform — is
+stuck until the version is deleted and recreated, and deletion has no UI either.

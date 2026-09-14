@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { versions, works } from "@/lib/db/schema";
+import { platforms, versions, works } from "@/lib/db/schema";
 
 import { VersionForm } from "../../../version-form";
 
@@ -31,6 +31,10 @@ export default async function AddVersionPage({ params }: { params: Promise<{ slu
     .where(eq(versions.workId, work.id))
     .orderBy(asc(versions.createdAt));
 
+  const platformNames = (
+    await db.select({ name: platforms.name }).from(platforms).orderBy(asc(platforms.name))
+  ).map((row) => row.name);
+
   return (
     <main className="flex-1 p-6">
       <p className="mb-1 font-narrow text-ink-dim">
@@ -40,7 +44,11 @@ export default async function AddVersionPage({ params }: { params: Promise<{ slu
       </p>
       <h1 className="mb-6 text-xl font-medium">Add a version</h1>
 
-      <VersionForm kind="romhack" work={{ ...work, versions: versionRows }} />
+      <VersionForm
+        kind="romhack"
+        work={{ ...work, versions: versionRows }}
+        platforms={platformNames}
+      />
     </main>
   );
 }

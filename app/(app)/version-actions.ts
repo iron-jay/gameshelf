@@ -1,12 +1,12 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { requireUser } from "@/lib/auth";
 import { downloadCover } from "@/lib/covers";
 import { db } from "@/lib/db";
-import { entries, versions, works } from "@/lib/db/schema";
+import { entries, platforms, versions, works } from "@/lib/db/schema";
 import { getGameById } from "@/lib/igdb/games";
 import { slugify } from "@/lib/igdb/mapping";
 import { searchGames } from "@/lib/igdb/search";
@@ -109,7 +109,29 @@ export async function createVersion(
   const artSgdbGameId = Number(formData.get("artSgdbGameId") ?? 0) || null;
   const artConfidence = optional(formData, "artConfidence");
 
+  const platformName = optional(formData, "platformName");
+
   const outcome = await db.transaction(async (tx) => {
+    // Matched case-insensitively by name, because the alternative is two
+    // rows differing only by a capital letter. A platform IGDB has never
+    // heard of is a local row, which the schema allows for exactly this.
+    let platformId: number | null = null;
+    if (platformName) {
+      const [existing] = await tx
+        .select({ id: platforms.id })
+        .from(platforms)
+        .where(sql`lower(${platforms.name}) = lower(${platformName})`);
+
+      platformId =
+        existing?.id ??
+        (
+          await tx
+            .insert(platforms)
+            .values({ name: platformName, source: "local" })
+            .returning({ id: platforms.id })
+        )[0].id;
+    }
+
     let workId: string;
     let workSlug: string;
 
@@ -151,6 +173,7 @@ export async function createVersion(
         workId,
         name: homebrew ? "Original release" : name,
         kind: homebrew ? "original" : isCommunityKind(kind) ? kind : "other",
+        platformId,
         baseVersionId: optional(formData, "baseVersionId"),
         author: optional(formData, "author"),
         versionLabel: optional(formData, "versionLabel"),

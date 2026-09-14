@@ -1,6 +1,10 @@
 import Link from "next/link";
 
+import { asc } from "drizzle-orm";
+
 import { requireUser } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { platforms } from "@/lib/db/schema";
 import { isFormKind, KIND_LABELS, type FormKind } from "@/lib/versions/types";
 
 import { VersionForm } from "../version-form";
@@ -31,6 +35,10 @@ export default async function AddPage({
   const { kind } = await searchParams;
 
   if (isFormKind(kind)) {
+    const platformNames = (
+      await db.select({ name: platforms.name }).from(platforms).orderBy(asc(platforms.name))
+    ).map((row) => row.name);
+
     return (
       <main className="flex-1 p-6">
         <p className="mb-1 font-narrow text-ink-dim">
@@ -39,7 +47,7 @@ export default async function AddPage({
           </Link>
         </p>
         <h1 className="mb-6 text-xl font-medium">Add a {KIND_LABELS[kind].toLowerCase()}</h1>
-        <VersionForm kind={kind} />
+        <VersionForm kind={kind} platforms={platformNames} />
       </main>
     );
   }

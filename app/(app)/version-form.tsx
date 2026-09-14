@@ -37,7 +37,16 @@ const CONFIDENCE_NOTE: Readonly<Record<string, string>> = {
  * the search is replaced by a fixed line. There is deliberately no second
  * component — the doors differ only in which props are filled in.
  */
-export function VersionForm({ kind, work }: { kind: FormKind; work?: KnownWork }) {
+export function VersionForm({
+  kind,
+  work,
+  platforms,
+}: {
+  kind: FormKind;
+  work?: KnownWork;
+  /** Names already in the platforms table, so the field can suggest them. */
+  platforms: string[];
+}) {
   const [state, action, pending] = useActionState<CreateVersionState, FormData>(
     createVersion,
     null,
@@ -241,6 +250,22 @@ export function VersionForm({ kind, work }: { kind: FormKind; work?: KnownWork }
         <label className="flex flex-col gap-1.5">
           <span className="font-narrow text-ink-dim">Version label</span>
           <input name="versionLabel" type="text" placeholder="v1.2.1" className={`${FIELD} font-mono`} />
+        </label>
+
+        <label className="flex flex-col gap-1.5">
+          <span className="font-narrow text-ink-dim">Platform</span>
+          <input
+            name="platformName"
+            type="text"
+            list="platform-names"
+            placeholder="PC, Nintendo 64…"
+            className={FIELD}
+          />
+          <datalist id="platform-names">
+            {platforms.map((platform) => (
+              <option key={platform} value={platform} />
+            ))}
+          </datalist>
         </label>
 
         <label className="flex flex-col gap-1.5">
