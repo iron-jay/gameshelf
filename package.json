@@ -10,9 +10,11 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "tsx --env-file=.env scripts/seed.ts"
   },
   "dependencies": {
+    "@node-rs/argon2": "^2.2.1",
     "drizzle-orm": "^0.45.2",
     "next": "16.3.5",
     "postgres": "^3.4.9",
@@ -28,6 +30,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.5",
     "tailwindcss": "^4",
+    "tsx": "^4.23.13",
     "typescript": "^5"
   }
 }

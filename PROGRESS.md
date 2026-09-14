@@ -92,3 +92,73 @@ Two things to settle first:
 `--color-label` is defined but absent from the compiled CSS — Tailwind v4 emits
 only theme variables something actually uses, and no community-release UI
 exists yet. Expected; it will appear with the label band.
+
+---
+
+## 2026-09-14 — Step 2: auth
+
+**What changed**
+
+- `@node-rs/argon2` over `argon2`. Both dev and prod are Linux now, so the
+  original node-gyp argument is weaker, but the prebuilt binding still keeps a
+  build toolchain out of the Docker builder stage. OWASP's Argon2id baseline:
+  19 MiB, 2 iterations, 1 lane.
+- `lib/auth/session.ts` — the cookie carries a 32-byte random token; the
+  database stores only its SHA-256 digest. A dump of the `sessions` table is
+  then a list of hashes rather than a set of usable logins. 30 day TTL with
+  sliding renewal, written only once past the halfway mark so a page view is
+  not also a write.
+- `lib/auth/index.ts` — `getCurrentUser` wrapped in React `cache`, so a layout
+  and the page inside it cost one round trip between them, not two.
+- Route group `app/(app)/` with a layout that calls `requireUser()`. Guarding
+  there rather than in middleware keeps session validation on the Node runtime
+  where the database client already lives, and avoids the edge-runtime trap
+  entirely. `/` is unchanged as a URL — route groups do not affect paths.
+- `scripts/seed.ts` + `npm run db:seed`. Idempotent, and deliberately does not
+  reset the password of an account that already exists.
+- Login page, form and sign-out action, styled to section 5b. The error state
+  is marked by position and a hairline rather than colour, because `--label` is
+  the only chromatic value in the app and it means community provenance.
+
+**Two small decisions worth recording**
+
+Login answers the same message and spends roughly the same time whether the
+username is unknown or the password is wrong — `burnVerificationTime` verifies
+against a decoy hash — so login cannot double as a username oracle.
+
+The login page counts users and shows a setup notice when there are none. A
+self-hosted app where you forgot to seed would otherwise answer every correct
+password with "incorrect" and give no hint why.
+
+**Verification**
+
+Driven through a real browser, not just curl: unauthenticated `/` redirects to
+`/login`; a wrong password re-renders with the alert and no session; correct
+credentials land on the home page with the username in the header. Confirmed
+the stored session id is a 64-character SHA-256 hex digest expiring in 30 days,
+and that the cookie is invisible to `document.cookie`. Sign-out deletes the row
+and both a missing and a forged cookie get 307. The unseeded path was tested by
+deleting the user and checking the notice renders.
+
+Typecheck, lint and production build all clean.
+
+**What broke**
+
+- Moving `app/page.tsx` into the route group left stale generated validators in
+  `.next/types` referencing the old path, which failed `tsc --noEmit` until
+  `.next` was cleared. Worth knowing when routes move.
+- A backgrounded dev server started inside a `wsl.exe bash script.sh` call dies
+  when that call returns. It needs a persistent handle, and `-H 0.0.0.0` to be
+  reachable from a browser on the Windows side. Noted in the README.
+
+**Next**
+
+Step 3: the IGDB client and search page. Results render, nothing persists yet.
+All IGDB access behind `lib/igdb/`, Twitch OAuth client-credentials token
+cached in the database and refreshed on 401, requests serialised with backoff
+rather than fanned out.
+
+This is the point where the placeholder credentials in `.env` stop being good
+enough — `IGDB_CLIENT_ID` and `IGDB_CLIENT_SECRET` are needed from
+https://dev.twitch.tv/console/apps before step 3 can be tested end to end.
+`SGDB_API_KEY` follows at step 6.
