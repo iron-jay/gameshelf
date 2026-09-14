@@ -10,6 +10,8 @@ import {
   OFFICIAL_VERSION_KINDS,
   platforms,
   plays,
+  shelfEntries,
+  shelves,
   versions,
   works,
 } from "@/lib/db/schema";
@@ -21,7 +23,9 @@ import {
   setRating,
   setStatus,
   shelveVersion,
+  tagWithShelf,
   toggleFlag,
+  untagShelf,
 } from "./actions";
 import { PlayForm } from "./play-form";
 
@@ -87,6 +91,23 @@ export default async function VersionPage({ params }: { params: Promise<{ id: st
         .where(eq(plays.entryId, entry.id))
         .orderBy(desc(plays.finishedOn), asc(plays.createdAt))
     : [];
+
+  const entryShelves = entry
+    ? await db
+        .select({ id: shelves.id, name: shelves.name })
+        .from(shelfEntries)
+        .innerJoin(shelves, eq(shelves.id, shelfEntries.shelfId))
+        .where(eq(shelfEntries.entryId, entry.id))
+        .orderBy(asc(shelves.name))
+    : [];
+
+  // Every shelf this user has, so the input can suggest existing names
+  // rather than quietly creating near-duplicates.
+  const allShelves = await db
+    .select({ name: shelves.name })
+    .from(shelves)
+    .where(eq(shelves.userId, user.id))
+    .orderBy(asc(shelves.name));
 
   // Section 4a again: a community release never borrows the work's boxart.
   const coverUrl = isCommunity(version.kind) ? version.coverUrl : (version.coverUrl ?? row.workCoverUrl);
@@ -259,6 +280,40 @@ export default async function VersionPage({ params }: { params: Promise<{ id: st
               {entry?.isPrivate ? "Private" : "Mark private"}
             </button>
           </form>
+        </div>
+
+        <div>
+          <h2 className="mb-2 font-medium">Shelves</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            {entryShelves.map((shelf) => (
+              <form key={shelf.id} action={untagShelf}>
+                {hidden}
+                <input type="hidden" name="shelfId" value={shelf.id} />
+                <button type="submit" title={`Remove from ${shelf.name}`} className={CHIP_ON}>
+                  {shelf.name} ×
+                </button>
+              </form>
+            ))}
+
+            <form action={tagWithShelf} className="flex gap-2">
+              {hidden}
+              <input
+                name="shelfName"
+                list="shelf-names"
+                placeholder="Add to a shelf"
+                maxLength={60}
+                className="border border-line bg-ground px-3 py-1.5 font-narrow text-ink outline-none focus:border-ink-dim"
+              />
+              <datalist id="shelf-names">
+                {allShelves.map((shelf) => (
+                  <option key={shelf.name} value={shelf.name} />
+                ))}
+              </datalist>
+              <button type="submit" className={CHIP}>
+                Add
+              </button>
+            </form>
+          </div>
         </div>
 
         <div>

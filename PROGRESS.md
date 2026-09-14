@@ -579,3 +579,55 @@ Master of Time first with everything unfinished after it.
 **Next**
 
 Step 8 shelves (free-form tags), step 9 stats, step 10 export.
+
+---
+
+## 2026-09-14 — Step 8: shelves
+
+Free-form tags, kept deliberately separate from status. Status is a state
+machine holding exactly one value; a game sits on as many shelves as you like.
+Section 2 is emphatic about the distinction and the UI now shows it — the two
+filters compose, so "Zelda hacks" plus `played` and "Zelda hacks" plus `backlog`
+return different single entries from the same shelf.
+
+**What changed**
+
+- `tagWithShelf` / `untagShelf` on the version page. Typing a name that does not
+  exist creates it, Goodreads-style: there is no "manage shelves" step to get
+  through before you can use one.
+- The input is backed by a datalist of the user's existing shelf names, so
+  tagging a second game reuses "Zelda hacks" rather than quietly creating a
+  near-duplicate that differs by a capital letter.
+- Shelf filter on the shelf page, as a subquery against `shelf_entries` rather
+  than a join, so it stacks with the status, platform, review and grouping
+  filters without changing the row shape.
+- `slugify` moved from `lib/igdb/mapping` to `lib/slug`. A user-typed shelf name
+  has nothing to do with IGDB; it only lived there because IGDB was the first
+  caller.
+
+**Emptying a shelf deletes it**
+
+Removing the last entry from a shelf drops the shelf row. This came out of
+testing: a mistyped tag was sitting in the filter dropdown with nothing on it
+and no way to get rid of it, and the alternative was a whole shelf-management
+screen for a feature whose entire point is that it needs no ceremony. A
+free-form tag with nothing on it is nothing.
+
+**Verification**
+
+Two shelves created from the version page, one shared across two entries. The
+filter returns 2 for "Zelda hacks" and 1 for "Finished in 2026", and combining
+it with a status filter narrows correctly in both directions. Adding "Zelda
+hacks" to a second game reused the existing row — two shelves in the table, not
+three. A throwaway tag was added and removed, and the shelf row went with it.
+
+**Unused: `shelves.is_pinned`**
+
+The column is in the schema and nothing sets it. Pinning needs somewhere to
+pin things to, and the shelf page's filter row is already carrying status,
+platform, sort, shelf, grouping and review. Left alone rather than adding a
+seventh control nobody asked for.
+
+**Next**
+
+Step 9 stats, step 10 export.

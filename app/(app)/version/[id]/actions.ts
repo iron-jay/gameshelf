@@ -1,11 +1,20 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { completionLevel, entries, logStatus, plays, versions } from "@/lib/db/schema";
+import {
+  completionLevel,
+  entries,
+  logStatus,
+  plays,
+  shelfEntries,
+  shelves,
+  versions,
+} from "@/lib/db/schema";
+import { slugify } from "@/lib/slug";
 
 type Status = (typeof logStatus.enumValues)[number];
 type Completion = (typeof completionLevel.enumValues)[number];
@@ -197,5 +206,77 @@ export async function deletePlay(formData: FormData): Promise<void> {
 
   // Scoped to the entry, so a play id from someone else's shelf does nothing.
   await db.delete(plays).where(and(eq(plays.id, playId), eq(plays.entryId, entryId)));
+  refresh(versionId);
+}
+
+/**
+ * Shelves are free-form tags, deliberately separate from status: status is a
+ * state machine holding one value, while a game can sit on any number of
+ * shelves. Typing a name that does not exist yet creates it, the way Goodreads
+ * does — there is no "manage shelves" step to get through first.
+ */
+export async function tagWithShelf(formData: FormData): Promise<void> {
+  const user = await requireUser();
+  const versionId = String(formData.get("versionId") ?? "");
+  const name = String(formData.get("shelfName") ?? "").trim().slice(0, 60);
+  if (!name) return;
+
+  const entryId = await entryIdFor(versionId, user.id);
+  if (!entryId) return;
+
+  const slug = slugify(name);
+
+  const findShelf = async () =>
+    (
+      await db
+        .select({ id: shelves.id })
+        .from(shelves)
+        .where(and(eq(shelves.userId, user.id), eq(shelves.slug, slug)))
+    )[0]?.id;
+
+  let shelfId = await findShelf();
+
+  if (!shelfId) {
+    const [created] = await db
+      .insert(shelves)
+      .values({ userId: user.id, name, slug })
+      .onConflictDoNothing()
+      .returning({ id: shelves.id });
+    // onConflictDoNothing returns nothing when another request won the race.
+    shelfId = created?.id ?? (await findShelf());
+  }
+
+  if (!shelfId) return;
+
+  await db.insert(shelfEntries).values({ shelfId, entryId }).onConflictDoNothing();
+  refresh(versionId);
+}
+
+export async function untagShelf(formData: FormData): Promise<void> {
+  const user = await requireUser();
+  const versionId = String(formData.get("versionId") ?? "");
+  const shelfId = String(formData.get("shelfId") ?? "");
+
+  // entryId comes from this user's own entry, so the pair can only ever name a
+  // link that belongs to them.
+  const entryId = await entryIdFor(versionId, user.id);
+  if (!entryId) return;
+
+  await db
+    .delete(shelfEntries)
+    .where(and(eq(shelfEntries.shelfId, shelfId), eq(shelfEntries.entryId, entryId)));
+
+  // A free-form tag with nothing on it is nothing. Dropping the empty shelf
+  // keeps the filter list honest and means a mistyped name does not need a
+  // whole management screen to get rid of.
+  const [remaining] = await db
+    .select({ total: count() })
+    .from(shelfEntries)
+    .where(eq(shelfEntries.shelfId, shelfId));
+
+  if (remaining.total === 0) {
+    await db.delete(shelves).where(and(eq(shelves.id, shelfId), eq(shelves.userId, user.id)));
+  }
+
   refresh(versionId);
 }

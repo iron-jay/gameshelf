@@ -1,9 +1,9 @@
-import { and, eq, sql, type SQL } from "drizzle-orm";
+import { and, asc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import Link from "next/link";
 
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { entryCards, logStatus } from "@/lib/db/schema";
+import { entryCards, logStatus, shelfEntries, shelves } from "@/lib/db/schema";
 
 import { ShelfTile, type ShelfCard } from "./shelf-tile";
 
@@ -32,6 +32,7 @@ type Params = {
   sort?: string;
   group?: string;
   review?: string;
+  shelf?: string;
 };
 
 function isStatus(value: string | undefined): value is Status {
@@ -66,6 +67,20 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
   // Section 4a: art applied from a fuzzy match is findable again.
   if (params.review === "needed") filters.push(eq(entryCards.coverNeedsReview, true));
 
+  const shelfSlug = params.shelf?.trim() || undefined;
+  if (shelfSlug) {
+    filters.push(
+      inArray(
+        entryCards.entryId,
+        db
+          .select({ id: shelfEntries.entryId })
+          .from(shelfEntries)
+          .innerJoin(shelves, eq(shelves.id, shelfEntries.shelfId))
+          .where(and(eq(shelves.userId, user.id), eq(shelves.slug, shelfSlug))),
+      ),
+    );
+  }
+
   const rows = await db
     .select()
     .from(entryCards)
@@ -78,6 +93,12 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
     .selectDistinct({ name: entryCards.platformName })
     .from(entryCards)
     .where(eq(entryCards.userId, user.id));
+  const shelfOptions = await db
+    .select({ slug: shelves.slug, name: shelves.name })
+    .from(shelves)
+    .where(eq(shelves.userId, user.id))
+    .orderBy(asc(shelves.name));
+
   const platforms = platformRows
     .map((row) => row.name)
     .filter((name): name is string => Boolean(name))
@@ -154,6 +175,21 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
             </option>
           ))}
         </select>
+
+        {shelfOptions.length > 0 ? (
+          <select
+            name="shelf"
+            defaultValue={shelfSlug ?? ""}
+            className="border border-line bg-panel px-2 py-1.5 text-ink"
+          >
+            <option value="">All shelves</option>
+            {shelfOptions.map((shelf) => (
+              <option key={shelf.slug} value={shelf.slug}>
+                {shelf.name}
+              </option>
+            ))}
+          </select>
+        ) : null}
 
         <label className="flex items-center gap-2 text-ink-dim">
           <input type="checkbox" name="group" value="off" defaultChecked={!grouped} />

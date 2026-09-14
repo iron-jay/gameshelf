@@ -1,5 +1,7 @@
 import type { workKind } from "@/lib/db/schema";
 
+import { slugify } from "@/lib/slug";
+
 import type { IgdbGame, IgdbPlatform, IgdbReleaseDate } from "./types";
 
 type WorkKind = (typeof workKind.enumValues)[number];
@@ -68,20 +70,6 @@ export function releaseDateFor(game: IgdbGame): string | null {
   return new Date(game.first_release_date * 1000).toISOString().slice(0, 10);
 }
 
-export function slugify(value: string): string {
-  return (
-    value
-      .toLowerCase()
-      .normalize("NFKD")
-      .replace(/[̀-ͯ]/g, "")
-      .replace(/[^a-z0-9\s-]/g, "")
-      .trim()
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
-      .slice(0, 80) || "untitled"
-  );
-}
-
 /**
  * "Legend of Zelda, The" — so an alphabetical shelf does not file half the
  * library under T.
@@ -93,3 +81,5 @@ export function sortTitleFor(title: string): string | null {
   if (!match) return null;
   return `${title.slice(match[0].length)}, ${match[1]}`;
 }
+
+export { slugify };
