@@ -7,12 +7,13 @@ import Link from "next/link";
 import type { ArtCandidate } from "@/lib/sgdb";
 import {
   COMMUNITY_KINDS,
-  KIND_LABELS,
   type ArtLookupState,
   type BaseGameOption,
   type CreateVersionState,
   type FormKind,
 } from "@/lib/versions/types";
+
+import { FIELD, VersionFields } from "./version-fields";
 
 import { createVersion, lookupArtForName, searchBaseGames } from "./version-actions";
 
@@ -21,9 +22,6 @@ export type KnownWork = {
   title: string;
   versions: { id: string; name: string; kind: string }[];
 };
-
-const FIELD =
-  "w-full border border-line bg-ground px-3 py-2 text-ink outline-none focus:border-ink-dim";
 
 const CONFIDENCE_NOTE: Readonly<Record<string, string>> = {
   exact: "Matched exactly. This will be applied as-is.",
@@ -114,37 +112,15 @@ export function VersionForm({
         </>
       ) : null}
 
-      <label className="flex flex-col gap-1.5">
-        <span className="font-narrow text-ink-dim">
-          {homebrew ? "Game name" : "Name of the hack or port"}
-        </span>
-        <input
-          name="name"
-          type="text"
-          required
-          autoFocus
-          className={FIELD}
-          onBlur={(event) => void onNameBlur(event.target.value)}
-        />
-        <span className="font-narrow text-ink-dim">
-          This is what the art search uses, so use the release&rsquo;s own name.
-        </span>
-      </label>
-
-      <label className="flex flex-col gap-1.5">
-        <span className="font-narrow text-ink-dim">Kind</span>
-        <select name="kind" defaultValue={kind} className={FIELD}>
-          {homebrew ? (
-            <option value="homebrew">{KIND_LABELS.homebrew}</option>
-          ) : (
-            COMMUNITY_KINDS.map((value) => (
-              <option key={value} value={value}>
-                {KIND_LABELS[value]}
-              </option>
-            ))
-          )}
-        </select>
-      </label>
+      <VersionFields
+        kinds={homebrew ? (["homebrew"] as const) : COMMUNITY_KINDS}
+        platforms={platforms}
+        values={{ kind }}
+        nameLabel={homebrew ? "Game name" : "Name of the hack or port"}
+        nameHint="This is what the art search uses, so use the release&rsquo;s own name."
+        onNameBlur={(value) => void onNameBlur(value)}
+        autoFocus
+      />
 
       {homebrew ? (
         <p className="border-l-2 border-ink-dim pl-3 font-narrow text-ink-dim">
@@ -240,49 +216,6 @@ export function VersionForm({
           ) : null}
         </fieldset>
       )}
-
-      <div className="grid gap-5 sm:grid-cols-2">
-        <label className="flex flex-col gap-1.5">
-          <span className="font-narrow text-ink-dim">Author</span>
-          <input name="author" type="text" className={FIELD} />
-        </label>
-
-        <label className="flex flex-col gap-1.5">
-          <span className="font-narrow text-ink-dim">Version label</span>
-          <input name="versionLabel" type="text" placeholder="v1.2.1" className={`${FIELD} font-mono`} />
-        </label>
-
-        <label className="flex flex-col gap-1.5">
-          <span className="font-narrow text-ink-dim">Platform</span>
-          <input
-            name="platformName"
-            type="text"
-            list="platform-names"
-            placeholder="PC, Nintendo 64…"
-            className={FIELD}
-          />
-          <datalist id="platform-names">
-            {platforms.map((platform) => (
-              <option key={platform} value={platform} />
-            ))}
-          </datalist>
-        </label>
-
-        <label className="flex flex-col gap-1.5">
-          <span className="font-narrow text-ink-dim">Release date</span>
-          <input name="releaseDate" type="date" className={FIELD} />
-        </label>
-
-        <label className="flex flex-col gap-1.5">
-          <span className="font-narrow text-ink-dim">URL</span>
-          <input name="url" type="url" className={FIELD} />
-        </label>
-      </div>
-
-      <label className="flex flex-col gap-1.5">
-        <span className="font-narrow text-ink-dim">Notes</span>
-        <textarea name="notes" rows={3} className={FIELD} />
-      </label>
 
       <section className="border border-line p-4">
         <h2 className="font-narrow text-ink-dim">Cover art</h2>

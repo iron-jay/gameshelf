@@ -866,3 +866,57 @@ rather than guesses, so they were set directly.
 That missing edit form is now the sharpest gap in the app. Anything typed wrong
 on the add form — a name, an author, a version label, and now a platform — is
 stuck until the version is deleted and recreated, and deletion has no UI either.
+
+---
+
+## 2026-09-14 — Editing a version
+
+The gap flagged last time: anything typed wrong on the add form was stuck, because
+nothing could change a version's own details afterwards.
+
+**Shared fields, not a shared form**
+
+`VersionFields` now holds the fields a version has, and both the add form and the
+new edit form render it. The two operations are genuinely different — adding
+picks a base game and looks art up, editing does neither — so they stay separate
+components, but the fields themselves are in one place and cannot drift.
+
+This is a narrower claim than the one section 9 makes about the two doors. Door A
+and Door B are the same operation and share the whole form. Create and edit are
+different operations that share a field set.
+
+**What edit does and does not do**
+
+It changes name, kind, platform, author, version label, release date, URL, notes
+and which release it patches. Every version kind is offered, not just the
+community ones, so an official release added from IGDB is fixable too.
+
+It does not move a version to a different work — that is not an edit, it is a
+different version of a different game. Base version options are siblings on the
+same work with the version itself excluded, because the schema forbids a version
+being its own base and the rest would be meaningless.
+
+Art stays on its own picker and the rating, review and plays stay on the entry.
+Three separate things, three separate places.
+
+**Verification**
+
+The add form was the regression risk, so it was checked first: the fields all
+render and the SteamGridDB lookup still fires on blur, returning the fuzzy match
+for "Master of Time" with 12 candidates.
+
+The edit form prefilled every field from the database, offered all twelve kinds,
+and listed only siblings as base versions with Master of Time itself absent.
+Changing the version label, URL, notes and base version saved all four and left
+name, kind, author and platform alone.
+
+Worth noting for future browser testing: `.focus()` does not take effect while
+the browser pane is backgrounded, so a real blur never fires and an `onBlur`
+handler looks broken when it is not. Dispatching `focusout` directly is the
+reliable check.
+
+**Still missing**
+
+Deleting a version or a work. Much less pressing now that mistakes are fixable
+in place, but a version added to the wrong game still cannot be removed — and
+whoever builds it needs to clear the cover file too.

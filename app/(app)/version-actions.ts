@@ -1,12 +1,12 @@
 "use server";
 
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { requireUser } from "@/lib/auth";
 import { downloadCover } from "@/lib/covers";
 import { db } from "@/lib/db";
-import { entries, platforms, versions, works } from "@/lib/db/schema";
+import { entries, platforms, versionKind, versions, works } from "@/lib/db/schema";
 import { getGameById } from "@/lib/igdb/games";
 import { slugify } from "@/lib/igdb/mapping";
 import { searchGames } from "@/lib/igdb/search";
@@ -17,6 +17,10 @@ import type {
   CreateVersionState,
 } from "@/lib/versions/types";
 import { isCommunityKind, isFormKind } from "@/lib/versions/types";
+
+function isVersionKind(value: string): value is (typeof versionKind.enumValues)[number] {
+  return (versionKind.enumValues as readonly string[]).includes(value);
+}
 import { ensureWorkFromIgdb } from "@/lib/works/ensure";
 
 /**
@@ -112,25 +116,7 @@ export async function createVersion(
   const platformName = optional(formData, "platformName");
 
   const outcome = await db.transaction(async (tx) => {
-    // Matched case-insensitively by name, because the alternative is two
-    // rows differing only by a capital letter. A platform IGDB has never
-    // heard of is a local row, which the schema allows for exactly this.
-    let platformId: number | null = null;
-    if (platformName) {
-      const [existing] = await tx
-        .select({ id: platforms.id })
-        .from(platforms)
-        .where(sql`lower(${platforms.name}) = lower(${platformName})`);
-
-      platformId =
-        existing?.id ??
-        (
-          await tx
-            .insert(platforms)
-            .values({ name: platformName, source: "local" })
-            .returning({ id: platforms.id })
-        )[0].id;
-    }
+    const platformId = await resolvePlatform(tx, platformName);
 
     let workId: string;
     let workSlug: string;
@@ -224,4 +210,107 @@ export async function createVersion(
   revalidatePath(`/work/${outcome.workSlug}`);
 
   return { ok: true, message: "Added to your shelf", workSlug: outcome.workSlug };
+}
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * Matched case-insensitively by name, because the alternative is two rows
+ * differing only by a capital letter. A platform IGDB has never heard of
+ * becomes a local row, which the schema allows for exactly this.
+ */
+async function resolvePlatform(tx: Tx, name: string | null): Promise<number | null> {
+  if (!name) return null;
+
+  const [existing] = await tx
+    .select({ id: platforms.id })
+    .from(platforms)
+    .where(sql`lower(${platforms.name}) = lower(${name})`);
+
+  if (existing) return existing.id;
+
+  const [created] = await tx
+    .insert(platforms)
+    .values({ name, source: "local" })
+    .returning({ id: platforms.id });
+
+  return created.id;
+}
+
+/**
+ * Edit a version's own details. Deliberately does not move it to a different
+ * work: that is not an edit, it is a different version of a different game.
+ *
+ * Any signed-in user can edit, the same as any of them can add one. It is your
+ * server — section 5 is explicit that there is no approval step.
+ */
+export async function updateVersion(
+  _prev: CreateVersionState,
+  formData: FormData,
+): Promise<CreateVersionState> {
+  await requireUser();
+
+  const versionId = optional(formData, "versionId");
+  const name = optional(formData, "name");
+  const kind = formData.get("kind");
+
+  if (!versionId) return { ok: false, message: "Bad request." };
+  if (!name) return { ok: false, message: "Name is required." };
+  if (typeof kind !== "string" || !isVersionKind(kind)) {
+    return { ok: false, message: "Pick what kind of release this is." };
+  }
+
+  const [existing] = await db
+    .select({ id: versions.id, workId: versions.workId })
+    .from(versions)
+    .where(eq(versions.id, versionId));
+
+  if (!existing) return { ok: false, message: "That version no longer exists." };
+
+  const requestedBase = optional(formData, "baseVersionId");
+  let baseVersionId: string | null = null;
+
+  if (requestedBase && requestedBase !== versionId) {
+    // Only a sibling on the same work, and never itself — the schema forbids
+    // the second and the first would be nonsense.
+    const [sibling] = await db
+      .select({ id: versions.id })
+      .from(versions)
+      .where(and(eq(versions.id, requestedBase), eq(versions.workId, existing.workId)));
+    baseVersionId = sibling?.id ?? null;
+  }
+
+  const platformName = optional(formData, "platformName");
+
+  const workSlug = await db.transaction(async (tx) => {
+    const platformId = await resolvePlatform(tx, platformName);
+
+    await tx
+      .update(versions)
+      .set({
+        name,
+        kind,
+        platformId,
+        baseVersionId,
+        author: optional(formData, "author"),
+        versionLabel: optional(formData, "versionLabel"),
+        releaseDate: optional(formData, "releaseDate"),
+        url: optional(formData, "url"),
+        notes: optional(formData, "notes"),
+      })
+      .where(eq(versions.id, versionId));
+
+    const [work] = await tx
+      .select({ slug: works.slug })
+      .from(works)
+      .where(eq(works.id, existing.workId));
+
+    return work.slug;
+  });
+
+  revalidatePath("/");
+  revalidatePath(`/version/${versionId}`);
+  revalidatePath(`/work/${workSlug}`);
+
+  return { ok: true, message: "Saved", workSlug };
 }

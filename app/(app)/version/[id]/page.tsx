@@ -177,6 +177,13 @@ export default async function VersionPage({ params }: { params: Promise<{ id: st
             >
               {version.coverNeedsReview ? "Review art" : "Change art"}
             </Link>
+            {" · "}
+            <Link
+              href={`/version/${version.id}/edit`}
+              className="text-ink-dim underline hover:text-ink"
+            >
+              Edit details
+            </Link>
           </p>
         </div>
       </div>
