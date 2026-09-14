@@ -756,3 +756,24 @@ What is deliberately not built, all recorded above in more detail:
 
 Out of scope for v1 and noted in `IDEAS.md`: social features, following, public
 profiles, Steam import, achievements, recommendations, mobile app.
+
+---
+
+## 2026-09-14 — Shelf tile titles
+
+A romhack or port is the thing you played, so on the tile overlay it now leads
+and the game it is built on is the qualifier beneath it. An official release is
+the other way round, which it already was. Same two lines, opposite order,
+decided by `is_community_version`.
+
+The author moved into the overlay for community releases too. The label band
+carries it, and the overlay covers the band, so it was disappearing exactly when
+you went looking for it.
+
+Fixed while in there: an official version is named after its platform ("N64")
+and the line below repeated it in full ("Nintendo 64"). The overlay now shows
+the full platform name once, falling back to the version name for an official
+release with no platform recorded.
+
+The screen-reader label and the no-art placeholder follow the same title, so all
+three agree on what a tile is called.
