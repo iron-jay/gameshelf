@@ -11,7 +11,8 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "tsx --env-file=.env scripts/seed.ts"
+    "db:seed": "tsx --env-file=.env scripts/seed.ts",
+    "probe:sgdb": "tsx --env-file=.env scripts/probe-sgdb.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.2.1",
@@ -19,7 +20,8 @@
     "next": "16.3.5",
     "postgres": "^3.4.9",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "steamgriddb": "^2.2.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

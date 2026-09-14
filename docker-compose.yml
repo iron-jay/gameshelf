@@ -13,7 +13,10 @@ services:
       POSTGRES_DB: gameshelf
     volumes:
       # Bind mount, not a named volume, so Proxmox backups pick it up.
-      - ./data/postgres:/var/lib/postgresql/data
+      # Kept out of ./data: the app reads ./data/covers, and the bundler walks
+      # that tree while tracing it. Postgres owns its files as root, so the walk
+      # fails the build.
+      - ../gameshelf-data/pgdata:/var/lib/postgresql/data
     ports:
       # Exposed for dev. Remove this block on the server.
       - "5432:5432"
@@ -35,11 +38,12 @@ services:
       IGDB_CLIENT_SECRET: ${IGDB_CLIENT_SECRET:?}
       SGDB_API_KEY: ${SGDB_API_KEY:?}
       SESSION_SECRET: ${SESSION_SECRET:?}
+      COVERS_DIR: /data/covers
       ORIGIN: ${ORIGIN:-http://localhost:3000}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-jay}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?}
     volumes:
       # Downloaded cover art — keep it out of the image and in backups.
-      - ./data/covers:/data/covers
+      - ../gameshelf-data/covers:/data/covers
     ports:
       - "3000:3000"

@@ -1,7 +1,9 @@
 import Image from "next/image";
+import Link from "next/link";
 
 export type ShelfCard = {
   entryId: string;
+  workSlug: string;
   workTitle: string;
   versionName: string;
   versionAuthor: string | null;
@@ -10,6 +12,7 @@ export type ShelfCard = {
   rating: number | null;
   coverUrl: string | null;
   isCommunityVersion: boolean;
+  coverNeedsReview: boolean;
 };
 
 /** 1..10 half-stars in the database, 0.5..5 on screen. */
@@ -22,8 +25,10 @@ export function ShelfTile({ card, index }: { card: ShelfCard; index: number }) {
     <li
       className="shelf-tile group relative aspect-[3/4] bg-panel"
       style={{ "--tile-index": index } as React.CSSProperties}
-      tabIndex={0}
     >
+      <Link href={`/work/${card.workSlug}`} className="absolute inset-0 z-10">
+        <span className="sr-only">{card.workTitle}</span>
+      </Link>
       {card.coverUrl ? (
         <Image
           src={card.coverUrl}
@@ -62,6 +67,9 @@ export function ShelfTile({ card, index }: { card: ShelfCard; index: number }) {
         <p className="mt-1 font-narrow text-ink-dim">
           {card.status} · {ratingLabel(card.rating)}
         </p>
+        {card.coverNeedsReview ? (
+          <p className="font-narrow text-ink-dim">Cover needs review</p>
+        ) : null}
       </div>
     </li>
   );

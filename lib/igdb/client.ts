@@ -1,3 +1,5 @@
+import { createSerialiser, sleep } from "@/lib/rate-limit";
+
 import { getAccessToken, igdbCredentials } from "./token";
 import { IgdbError } from "./types";
 
@@ -7,37 +9,7 @@ const API_URL = "https://api.igdb.com/v4";
 const MIN_INTERVAL_MS = 250;
 const MAX_ATTEMPTS = 3;
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-let queue: Promise<unknown> = Promise.resolve();
-let lastStartedAt = 0;
-
-/**
- * One request at a time, spaced by at least MIN_INTERVAL_MS. The brief asks for
- * serialising and backing off rather than fanning out — a single user will
- * never approach the limit, but a page that renders several lookups at once
- * would, and the failure is a ban rather than a slow page.
- */
-function serialise<T>(task: () => Promise<T>): Promise<T> {
-  const run = queue.then(async () => {
-    const wait = MIN_INTERVAL_MS - (Date.now() - lastStartedAt);
-    if (wait > 0) {
-      await sleep(wait);
-    }
-    lastStartedAt = Date.now();
-    return task();
-  });
-
-  // A rejected request must not poison the queue for everything behind it.
-  queue = run.then(
-    () => undefined,
-    () => undefined,
-  );
-
-  return run;
-}
+const serialise = createSerialiser(MIN_INTERVAL_MS);
 
 export function igdbRequest<T>(endpoint: string, query: string): Promise<T> {
   return serialise(() => send<T>(endpoint, query, 0));

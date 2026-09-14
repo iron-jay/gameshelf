@@ -346,4 +346,6 @@ export const entryCards = pgView("entry_cards", {
   addedAt: timestamp("added_at", { withTimezone: true }),
   /** Latest finish across all plays — a replay is a new play, not an edit. */
   lastFinishedOn: date("last_finished_on"),
+  /** Follows whichever cover is actually shown. Drives the review filter. */
+  coverNeedsReview: boolean("cover_needs_review"),
 }).existing();

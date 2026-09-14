@@ -1,8 +1,5 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
-
 import { getCurrentUser } from "@/lib/auth";
-import { contentTypeFor, coversDir, COVER_FILENAME } from "@/lib/covers";
+import { contentTypeFor, COVER_FILENAME, readCover } from "@/lib/covers";
 
 /**
  * Covers live outside the public directory because /data is a bind mount, so
@@ -18,8 +15,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ fil
   if (!COVER_FILENAME.test(file)) return notFound;
 
   try {
-    const bytes = await readFile(path.join(coversDir(), file));
-    return new Response(new Uint8Array(bytes), {
+    return new Response(await readCover(file), {
       headers: {
         "Content-Type": contentTypeFor(file),
         // The filename carries a uuid and its content never changes.

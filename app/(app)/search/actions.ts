@@ -6,16 +6,11 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { downloadCover } from "@/lib/covers";
 import { db } from "@/lib/db";
-import { entries, platforms, versions, works } from "@/lib/db/schema";
+import { entries, versions, works } from "@/lib/db/schema";
 import { getGameById } from "@/lib/igdb/games";
-import {
-  primaryPlatformFor,
-  releaseDateFor,
-  slugify,
-  sortTitleFor,
-  workKindFor,
-} from "@/lib/igdb/mapping";
+import { releaseDateFor } from "@/lib/igdb/mapping";
 import { igdbImageUrl, IgdbError } from "@/lib/igdb/types";
+import { ensureWorkFromIgdb, primaryPlatformFor, upsertPlatform } from "@/lib/works/ensure";
 
 export type AddState = { ok: boolean; message: string } | null;
 
@@ -35,7 +30,10 @@ export async function addToShelf(_prev: AddState, formData: FormData): Promise<A
   } catch (err) {
     return {
       ok: false,
-      message: err instanceof IgdbError ? `IGDB request failed (${err.status ?? "no response"}).` : "IGDB request failed.",
+      message:
+        err instanceof IgdbError
+          ? `IGDB request failed (${err.status ?? "no response"}).`
+          : "IGDB request failed.",
     };
   }
 
@@ -45,71 +43,11 @@ export async function addToShelf(_prev: AddState, formData: FormData): Promise<A
 
   const outcome = await db.transaction(async (tx) => {
     const igdbPlatform = primaryPlatformFor(game);
-    let platformId: number | null = null;
-
-    if (igdbPlatform) {
-      const [row] = await tx
-        .insert(platforms)
-        .values({
-          igdbId: igdbPlatform.id,
-          name: igdbPlatform.name,
-          abbreviation: igdbPlatform.abbreviation ?? null,
-          source: "igdb",
-        })
-        .onConflictDoUpdate({
-          target: platforms.igdbId,
-          set: { name: igdbPlatform.name, abbreviation: igdbPlatform.abbreviation ?? null },
-        })
-        .returning({ id: platforms.id });
-      platformId = row.id;
-    }
-
-    let [work] = await tx
-      .select({ id: works.id, coverUrl: works.coverUrl })
-      .from(works)
-      .where(eq(works.igdbId, game.id));
-
-    if (!work) {
-      const base = game.slug ? slugify(game.slug) : slugify(game.name);
-      const [clash] = await tx.select({ id: works.id }).from(works).where(eq(works.slug, base));
-
-      // DLC and expansions hang off the base game, but only if that game is
-      // already here — we do not fetch parents uninvited. A main_game never has
-      // a parent, which the works_parent_required check also enforces.
-      const kind = workKindFor(game);
-      let parentWorkId: string | null = null;
-
-      if (kind !== "main_game" && game.parent_game) {
-        const [parent] = await tx
-          .select({ id: works.id })
-          .from(works)
-          .where(eq(works.igdbId, game.parent_game));
-        parentWorkId = parent?.id ?? null;
-      }
-
-      [work] = await tx
-        .insert(works)
-        .values({
-          igdbId: game.id,
-          // IGDB slugs are unique upstream, but a local work may already hold
-          // this one. The IGDB id is the tiebreak that cannot collide.
-          slug: clash ? `${base}-${game.id}` : base,
-          title: game.name,
-          sortTitle: sortTitleFor(game.name),
-          summary: game.summary ?? null,
-          firstReleaseDate: releaseDateFor(game),
-          workKind: kind,
-          parentWorkId,
-          igdbPayload: game,
-          igdbSyncedAt: new Date(),
-          source: "igdb",
-          createdBy: user.id,
-        })
-        .returning({ id: works.id, coverUrl: works.coverUrl });
-    }
+    const platformId = await upsertPlatform(tx, igdbPlatform);
+    const work = await ensureWorkFromIgdb(tx, game, user.id);
 
     // One 'original' version per work from this flow. Ports, romhacks and the
-    // rest arrive through "add version", which is a different door.
+    // rest arrive through the version form, which is a different door.
     let [version] = await tx
       .select({ id: versions.id })
       .from(versions)
@@ -148,7 +86,10 @@ export async function addToShelf(_prev: AddState, formData: FormData): Promise<A
   // hold a database transaction open, and a failed download must not roll back
   // an otherwise correct shelf row.
   if (outcome.needsCover && game.cover) {
-    const filename = await downloadCover(igdbImageUrl(game.cover.image_id, "cover_big"), outcome.workId);
+    const filename = await downloadCover(
+      igdbImageUrl(game.cover.image_id, "cover_big"),
+      outcome.workId,
+    );
     if (filename) {
       await db
         .update(works)

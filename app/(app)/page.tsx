@@ -26,7 +26,13 @@ const ORDER_BY: Readonly<Record<Sort, SQL>> = {
   finished: sql`last_finished_on desc nulls last, added_at desc`,
 };
 
-type Params = { status?: string; platform?: string; sort?: string; group?: string };
+type Params = {
+  status?: string;
+  platform?: string;
+  sort?: string;
+  group?: string;
+  review?: string;
+};
 
 function isStatus(value: string | undefined): value is Status {
   return Boolean(value) && (logStatus.enumValues as readonly string[]).includes(value!);
@@ -57,6 +63,8 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
   const filters = [eq(entryCards.userId, user.id)];
   if (status) filters.push(eq(entryCards.status, status));
   if (platform) filters.push(eq(entryCards.platformName, platform));
+  // Section 4a: art applied from a fuzzy match is findable again.
+  if (params.review === "needed") filters.push(eq(entryCards.coverNeedsReview, true));
 
   const rows = await db
     .select()
@@ -86,6 +94,7 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
 
   const cards: ShelfCard[] = visible.map((row) => ({
     entryId: row.entryId ?? "",
+    workSlug: row.workSlug ?? "",
     workTitle: row.workTitle ?? "Untitled",
     versionName: row.versionName ?? "",
     versionAuthor: row.versionAuthor,
@@ -94,6 +103,7 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
     rating: row.rating,
     coverUrl: row.coverUrl,
     isCommunityVersion: row.isCommunityVersion ?? false,
+    coverNeedsReview: row.coverNeedsReview ?? false,
   }));
 
   return (
@@ -155,6 +165,13 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
         >
           Apply
         </button>
+
+        <Link
+          href={hrefWith(params, { review: params.review === "needed" ? undefined : "needed" })}
+          className={params.review === "needed" ? "font-medium" : "text-ink-dim hover:text-ink"}
+        >
+          Covers needing review
+        </Link>
 
         <span className="text-ink-dim">
           {visible.length} {visible.length === 1 ? "entry" : "entries"}

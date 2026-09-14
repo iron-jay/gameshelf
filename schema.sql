@@ -316,7 +316,14 @@ SELECT
   e.added_at,
   -- The shelf sorts by "finished", which lives on plays rather than on the
   -- entry: a replay is a new play, so the latest finish is the meaningful one.
-  (SELECT max(pl.finished_on) FROM plays pl WHERE pl.entry_id = e.id) AS last_finished_on
+  (SELECT max(pl.finished_on) FROM plays pl WHERE pl.entry_id = e.id) AS last_finished_on,
+  -- The flag belongs to whichever cover is on screen. A community version with
+  -- no art of its own shows a placeholder, and a placeholder needs no review.
+  CASE
+    WHEN v.cover_url IS NOT NULL THEN v.cover_needs_review
+    WHEN v.kind NOT IN ('original','port','remaster','remake','compilation') THEN false
+    ELSE w.cover_needs_review
+  END                 AS cover_needs_review
 FROM entries e
 JOIN versions v  ON v.id = e.version_id
 JOIN works w     ON w.id = v.work_id

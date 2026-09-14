@@ -22,6 +22,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <Link href="/search" className="font-narrow text-ink-dim hover:text-ink">
             Search
           </Link>
+          <Link href="/add" className="font-narrow text-ink-dim hover:text-ink">
+            Add
+          </Link>
         </nav>
 
         <form action={logout} className="flex items-center gap-4">

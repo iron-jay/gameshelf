@@ -353,3 +353,121 @@ existing work page. If the two paths need different code, stop and fix the form.
 The dev database has a hand-inserted "Master of Time" romhack version standing
 in for that flow. It should be deleted and recreated through the real form as
 the first real test of step 6.
+
+---
+
+## 2026-09-14 — Step 6: the unified add form and SteamGridDB
+
+This is the step the project exists for, and it works: a romhack added through
+Door A and a decomp port added through Door B on the same work, both through the
+same component and the same server action.
+
+**SteamGridDB**
+
+- `lib/sgdb/` using the official wrapper, behind the shared request queue that
+  `lib/igdb/` now also uses (`lib/rate-limit.ts` — the queue was duplicated
+  otherwise).
+- `match.ts` normalises case, punctuation, leading articles and stacked edition
+  suffixes, then tiers the top result: equal is exact, substring either way is
+  fuzzy, anything else is none.
+- `scripts/probe-sgdb.ts` exercises it against the live API.
+
+The probe earned its keep immediately. Searching "a title that certainly does
+not exist anywhere" returns **A Tithe in Blood** — SteamGridDB always answers
+with its best effort, so without tiering we would cheerfully have applied that
+art. The tier correctly reads `none` and nothing is written.
+
+Two quality problems it also exposed:
+
+- Every grid comes back with `score: 0`, so sorting by score was a no-op.
+  Ordering now falls through to upvotes minus downvotes.
+- Grids include Steam's 460x215 banners alongside portrait box art, and "Master
+  of Time" was picking a banner. Portrait dimensions are now requested first,
+  falling back to anything only when a release has nothing else.
+
+**The form**
+
+One `VersionForm`, two routes. Door A passes no work and gets an inline IGDB
+base-game search; Door B passes the work it already knows, which replaces the
+search with a fixed line and adds the base-version selector. Nothing about the
+doors is duplicated — that was the explicit test in section 9 and it passed
+without needing a fix.
+
+Art resolves on blur of the name field through a server action while the rest of
+the form is still being filled in. Nothing is persisted until submit: no draft
+rows, no orphan cleanup, and abandoning the form leaves no trace.
+
+Section 5's escape hatch is there too — the community form carries a "not based
+on anything? add it as homebrew instead" link rather than making anyone invent a
+parent. Homebrew creates a local work with its own `original` version, and its
+art goes on the work rather than on a version.
+
+**Schema**
+
+`0003_entry_cards_review.sql` appends `cover_needs_review` to the view, following
+whichever cover is actually on screen — a community version with no art of its
+own shows a placeholder, and a placeholder needs no review.
+
+**Verification**
+
+Door A, "Master of Time": romhack, MelonSpeedruns, v1.2.1, art from SteamGridDB
+with `cover_needs_review = true` because the match was fuzzy ("The Legend of
+Zelda: Master of Time"), `sgdb_game_id` 5264549 kept for later.
+
+Door B, "Ship of Harkinian": decomp_port, Harbour Masters, `base_version_id`
+pointing at the N64 original, exact match so no review flag, id 5335518.
+
+The parent work was untouched by both: still `cover_source = igdb`,
+`cover_needs_review = false`. That is the rule from section 4a holding all the
+way through — each community version shows its own art and never the original's
+boxart. On screen the two of them carry the ochre band and the four official
+releases carry nothing at all.
+
+The "covers needing review" filter returns exactly one entry, the fuzzy one.
+
+**Next**
+
+Section 9 says ship after this. Remaining: step 7 entry detail (rating, review,
+plays, with "done" defaulting to credits), step 8 shelves, step 9 stats, step 10
+export.
+
+Two things deliberately left for later, both from section 4a: the manual art
+override (picker seeded with the same title, paste a SteamGridDB URL or id,
+direct file upload) and a refresh action. Automatic lookup runs once on add and
+never re-runs on its own, which is the intended behaviour — art you have
+approved is never silently replaced — but that makes the manual path the only
+way to correct a flagged cover, and it is not built yet.
+
+### Runtime data moved out of the project tree
+
+The production build failed, and the cause was worth the detour.
+
+Turbopack does static analysis on filesystem access in server code. Any `fs`
+call whose path it cannot fully resolve is treated as a directory asset
+reference, and it responds by tracing **the entire project directory** into the
+server bundle. With the Postgres volume sitting at `./data/postgres`, that walk
+hit a root-owned directory and the build died with `Permission denied`.
+
+Three code-shaped fixes did not work, and it is worth recording why: moving the
+volume to `./pgdata` just moved the failure, removing the `"./data/covers"`
+string literal did nothing, and an ignored dynamic import of `node:fs/promises`
+did not stop the analysis either. Next's own warning names the real remedies —
+scope the path statically, or opt out with `path.join(/*turbopackIgnore: true*/
+…)` — and the anchor it was actually catching on was `process.cwd()` inside
+`coversDir()`.
+
+The fix is therefore two things, and the second matters more than the first:
+
+- `COVERS_DIR` must now be absolute. Resolving a relative path means naming
+  `process.cwd()`, which is precisely what tells the bundler the access is
+  project-scoped.
+- Runtime data lives at `../gameshelf-data/` — `pgdata` and `covers` — rather
+  than inside the repository. A database volume and a user's cover library were
+  never build input. This is the same root cause as the eslint crash back at
+  step 1, which was patched over with an ignore rather than fixed.
+
+Also fixed while here: since TypeScript 5.7 a Node `Buffer` is a
+`Uint8Array<ArrayBufferLike>`, which is not assignable to `BodyInit`.
+`readCover` returns a `Blob`, which avoids an assertion.
+
+Build is clean, with zero tracing warnings and all seven routes present.

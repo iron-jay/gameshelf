@@ -12,8 +12,6 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
-    // Postgres owns data/postgres as root, so eslint cannot even stat it.
-    "data/**",
     "drizzle/**",
   ]),
 ]);
