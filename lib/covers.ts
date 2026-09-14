@@ -1,4 +1,4 @@
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 /**
@@ -117,5 +117,14 @@ export async function removeCover(filename: string): Promise<void> {
     await rm(coverPath(filename));
   } catch {
     // Already gone, or never written. Either way there is nothing to clean up.
+  }
+}
+
+/** Every file in the covers directory. Empty when the directory does not exist. */
+export async function listCoverFiles(): Promise<string[]> {
+  try {
+    return (await readdir(coversDir())).filter((name) => COVER_FILENAME.test(name));
+  } catch {
+    return [];
   }
 }

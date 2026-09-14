@@ -1,10 +1,14 @@
 import { count } from "drizzle-orm";
 
 import { requireUser } from "@/lib/auth";
+import { listCoverFiles } from "@/lib/covers";
 import { db } from "@/lib/db";
 import { entries, igdbTokens } from "@/lib/db/schema";
 
+import { orphanedCoverFiles } from "@/lib/works/removal";
+
 import { ConnectionCheck } from "./connection-check";
+import { CoverSweep } from "./cover-sweep";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +22,9 @@ export default async function SettingsPage() {
 
   const [token] = await db.select().from(igdbTokens).limit(1);
   const [entryTotal] = await db.select({ total: count() }).from(entries);
+
+  const coverFiles = await listCoverFiles();
+  const orphans = await orphanedCoverFiles(coverFiles);
 
 
   return (
@@ -47,6 +54,17 @@ export default async function SettingsPage() {
             </li>
           </ul>
           <ConnectionCheck />
+        </section>
+
+        <section>
+          <h2 className="mb-2 font-medium">Cover art</h2>
+          <p className="mb-3 font-narrow text-ink-dim">
+            {coverFiles.length} {coverFiles.length === 1 ? "file" : "files"} stored.{" "}
+            {orphans.length === 0
+              ? "Nothing unreferenced."
+              : `${orphans.length} ${orphans.length === 1 ? "file is" : "files are"} no longer referenced by anything.`}
+          </p>
+          {orphans.length > 0 ? <CoverSweep /> : null}
         </section>
 
         <section>

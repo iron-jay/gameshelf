@@ -1,6 +1,10 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
 import { requireUser } from "@/lib/auth";
+import { listCoverFiles } from "@/lib/covers";
+import { orphanedCoverFiles, removeCoverFiles } from "@/lib/works/removal";
 import { searchGames } from "@/lib/igdb/search";
 import { IgdbError, IgdbNotConfiguredError } from "@/lib/igdb/types";
 import { lookupArt, SgdbNotConfiguredError } from "@/lib/sgdb";
@@ -48,4 +52,19 @@ export async function checkConnections(): Promise<ConnectionReport> {
   })();
 
   return { igdb, sgdb };
+}
+
+/**
+ * Cover files nothing points at any more. Deleting a work or version clears its
+ * art, so this should normally find nothing — it exists for the cases that got
+ * away, like rows removed directly in SQL.
+ */
+export async function sweepOrphanedCovers(): Promise<{ removed: number }> {
+  await requireUser();
+
+  const orphans = await orphanedCoverFiles(await listCoverFiles());
+  await removeCoverFiles(orphans);
+
+  revalidatePath("/settings");
+  return { removed: orphans.length };
 }

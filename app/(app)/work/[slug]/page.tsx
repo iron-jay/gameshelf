@@ -69,6 +69,13 @@ export default async function WorkPage({ params }: { params: Promise<{ slug: str
             <Link href={`/work/${work.slug}/art`} className="text-ink-dim underline hover:text-ink">
               Change art
             </Link>
+            {" · "}
+            <Link
+              href={`/work/${work.slug}/delete`}
+              className="text-ink-dim underline hover:text-ink"
+            >
+              Delete
+            </Link>
           </p>
         </div>
       </div>

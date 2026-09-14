@@ -57,6 +57,15 @@ export default async function EditVersionPage({ params }: { params: Promise<{ id
         the cover has its own picker.
       </p>
 
+      <p className="mb-6 font-narrow">
+        <Link
+          href={`/version/${row.version.id}/delete`}
+          className="text-ink-dim underline hover:text-ink"
+        >
+          Delete this version
+        </Link>
+      </p>
+
       <EditVersionForm
         versionId={row.version.id}
         baseVersionId={row.version.baseVersionId}

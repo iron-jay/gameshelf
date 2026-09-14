@@ -920,3 +920,59 @@ reliable check.
 Deleting a version or a work. Much less pressing now that mistakes are fixable
 in place, but a version added to the wrong game still cannot be removed — and
 whoever builds it needs to clear the cover file too.
+
+---
+
+## 2026-09-14 — Deleting, and a sweep for stranded art
+
+The last of the gaps flagged through the build: nothing could remove a work or a
+version, and the cover file was the part that would have been forgotten.
+
+**Confirmation says what actually goes**
+
+Both deletes go through a page that names the damage first. The database
+cascades silently — a work takes its expansions, their versions, every entry,
+every play and every shelf tag with it — so the page counts all of that and
+lists the works by name before offering the button.
+
+It also names the versions that are *not* being deleted but will be affected.
+`base_version_id` is ON DELETE SET NULL, so a romhack built on a release you
+delete survives and quietly stops recording what it patches. Deleting the N64
+release of Ocarina of Time correctly warns that both Ship of Harkinian and
+Master of Time are built on it.
+
+The cascade walk is a recursive CTE rather than one level of children, because
+`parent_work_id` nests arbitrarily and a two-level chain would otherwise leave
+files behind after the rows had gone.
+
+**Order matters**
+
+Art filenames are read *before* the delete, because afterwards nothing records
+which files belonged to what. The files are removed after, so a failed unlink
+leaves a stray file for the sweep rather than undoing a delete that was
+confirmed.
+
+**The sweep**
+
+`orphanedCoverFiles` started as a helper nothing called, which is not worth
+keeping, so it is wired into settings: a count of stored files, how many nothing
+references, and a button that only appears when there is something to remove.
+Deleting properly should mean it always finds nothing — it is there for what got
+away, like rows removed directly in SQL, which is exactly how the two orphans
+found earlier this session were created.
+
+**Verification**
+
+Tested on a throwaway rather than on real rows. "Cave Story" was added through
+the homebrew door, which fetched art for it (an exact SteamGridDB match, 521 KB
+on disk), then deleted through the confirmation page: work gone, version
+cascaded, cover file gone, and the shelf left at exactly the 4 works, 6 versions
+and 6 entries it had before.
+
+The sweep was checked by planting a file with a valid-looking name that nothing
+referenced. Settings went from "7 files stored, 1 file is no longer referenced"
+to "6 files stored. Nothing unreferenced." with the button disappearing.
+
+Also fixed here: the removal summary was briefly using `--label` for the warning
+about dependent versions. Section 5b allows that colour exactly one meaning —
+this release is unofficial — and never emphasis.
