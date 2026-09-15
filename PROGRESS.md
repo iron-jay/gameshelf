@@ -1055,3 +1055,45 @@ remember to remove the block.
 The image has only ever been built and run on x86_64 under WSL2. It has not run
 on the actual Debian VM, and 2 GB is tight for `next build` — the README says to
 add swap or build elsewhere.
+
+---
+
+## 2026-09-15 — Optional sign-in, and a one-command VM setup
+
+**AUTH_DISABLED**
+
+For a single-user server on a network you trust. `getCurrentUser` returns the
+admin account without looking for a session, so every page loads from any device
+that can reach the port. The user still has to exist — the login form just
+redirects to the shelf rather than asking for anything.
+
+Deliberately a whole-app switch rather than a per-route one. Half-authenticated
+is a worse place to be than either end, and picking which routes stay locked
+would be inventing a threat model nobody asked for. So it also removes the
+password from editing, deleting, the cover route and the export — which is the
+right trade behind a firewall and the wrong one anywhere a port forward or a VPN
+guest could reach.
+
+It says so where it matters rather than only in a config file: the header reads
+`sign-in off` instead of offering a sign-out, and Settings states plainly what
+has been given up.
+
+Checked both ways on the real server. With it on, `/` returns 200 with the shelf
+rendered and no cookie, and `/login` redirects away. With it off, `/` is still a
+307 to `/login`. No regression either direction.
+
+**scripts/install-debian.sh**
+
+Docker's own installation docs are a keyring-and-repository dance, and Debian
+packages Docker itself. The script prefers `docker.io` plus `docker-compose-v2`
+when apt offers both — two packages, no third-party repository — and falls back
+to Docker's repository only where compose v2 is not packaged. It then creates
+the data directories, chowns covers to uid 1001, and drops `.env` in place.
+
+Idempotent, and it refuses to run without root rather than failing halfway. The
+README keeps the manual equivalent for anyone who would rather not run a script.
+
+Syntax-checked and the root guard exercised, but **not run on an actual Debian
+VM** — there isn't one here. The package-availability branch in particular is
+written to detect rather than assume, precisely because I could not verify which
+way Debian 13 falls.

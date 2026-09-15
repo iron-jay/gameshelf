@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { requireUser } from "@/lib/auth";
+import { authDisabled, requireUser } from "@/lib/auth";
 
 import { logout } from "./actions";
 
@@ -33,12 +33,20 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </Link>
         </nav>
 
-        <form action={logout} className="flex items-center gap-4">
-          <span className="font-narrow text-ink-dim">{user.displayName ?? user.username}</span>
-          <button type="submit" className="font-narrow text-ink-dim hover:text-ink">
-            Sign out
-          </button>
-        </form>
+        {authDisabled() ? (
+          <span className="font-narrow text-ink-dim">
+            {user.displayName ?? user.username} · sign-in off
+          </span>
+        ) : (
+          <form action={logout} className="flex items-center gap-4">
+            <span className="font-narrow text-ink-dim">
+              {user.displayName ?? user.username}
+            </span>
+            <button type="submit" className="font-narrow text-ink-dim hover:text-ink">
+              Sign out
+            </button>
+          </form>
+        )}
       </header>
 
       {children}

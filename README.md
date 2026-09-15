@@ -96,16 +96,31 @@ can be backed up together without the database living inside the build context:
 ```bash
 git clone <repo> /srv/gameshelf
 cd /srv/gameshelf
+sudo ./scripts/install-debian.sh
+```
+
+That installs Docker — from Debian's own `docker.io` and `docker-compose-v2`
+packages where they exist, which avoids adding a third-party repository at all,
+falling back to Docker's repository otherwise — creates the data directories,
+sets the ownership the container needs, and copies `.env.example` into place.
+It is idempotent, so running it again is harmless.
+
+Then fill in `.env`, log out and back in so the `docker` group applies, and:
+
+```bash
+docker compose up -d
+```
+
+The manual equivalent, if you would rather not run a script:
+
+```bash
+sudo apt install -y docker.io docker-compose-v2
+sudo usermod -aG docker "$USER"
 mkdir -p ../gameshelf-data/pgdata ../gameshelf-data/covers
-
-cp .env.example .env
-$EDITOR .env    # IGDB and SteamGridDB keys, SESSION_SECRET, ORIGIN, ADMIN_PASSWORD
-
 # The app runs as uid 1001 and a bind mount keeps the host's ownership, so
 # without this the first cover download fails with EACCES.
 sudo chown -R 1001:1001 ../gameshelf-data/covers
-
-docker compose up -d
+cp .env.example .env
 ```
 
 That starts three things in order: Postgres, a one-shot `migrate` container, then
@@ -116,6 +131,25 @@ runtime image contains only what Next traced from the app's own imports. It
 applies pending migrations and creates the `ADMIN_USERNAME` user if there is not
 one. Both are idempotent, so it runs on every deploy and does nothing when there
 is nothing to do.
+
+### Skipping sign-in
+
+On a single-user server that nothing outside your network can reach, set:
+
+```
+AUTH_DISABLED=true
+```
+
+Every page then loads without signing in, from any device that can reach the
+port. The admin user still has to exist — you just walk past the login form,
+which redirects to the shelf.
+
+It is a whole-app switch, not a per-route one, because half-authenticated is a
+worse place to be than either end. So it removes the password from editing and
+deleting as well as from reading, and from the cover and export routes. That is
+the right trade behind a firewall and the wrong one anywhere a port forward, a
+tunnel or a VPN guest could reach. The header says `sign-in off` while it is on,
+and Settings spells out what it means.
 
 ### Reverse proxy
 

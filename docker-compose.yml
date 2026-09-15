@@ -61,6 +61,9 @@ services:
       IGDB_CLIENT_SECRET: ${IGDB_CLIENT_SECRET:?}
       SGDB_API_KEY: ${SGDB_API_KEY:?}
       SESSION_SECRET: ${SESSION_SECRET:?}
+      # Set true only where the port is genuinely private: it removes the
+      # password for everything, including editing and deleting.
+      AUTH_DISABLED: ${AUTH_DISABLED:-false}
       COVERS_DIR: /data/covers
       # The session cookie's Secure flag is derived from this, so it must be the
       # public https:// URL in production.

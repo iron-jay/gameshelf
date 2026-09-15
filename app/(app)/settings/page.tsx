@@ -1,6 +1,6 @@
 import { count } from "drizzle-orm";
 
-import { requireUser } from "@/lib/auth";
+import { authDisabled, requireUser } from "@/lib/auth";
 import { listCoverFiles } from "@/lib/covers";
 import { db } from "@/lib/db";
 import { entries, igdbTokens } from "@/lib/db/schema";
@@ -33,11 +33,19 @@ export default async function SettingsPage() {
 
       <div className="flex max-w-2xl flex-col gap-10">
         <section>
-          <h2 className="mb-2 font-medium">Signed in</h2>
+          <h2 className="mb-2 font-medium">Access</h2>
           <p className="font-narrow text-ink-dim">
             {user.displayName ?? user.username}
             {user.isAdmin ? " · admin" : ""}
           </p>
+          {authDisabled() ? (
+            <p className="mt-2 max-w-2xl border-l-2 border-ink-dim pl-3 font-narrow">
+              Sign-in is off (<span className="font-mono">AUTH_DISABLED</span>).
+              Anything that can reach this port can read, edit and delete without a
+              password — which is the point on a private network, and a problem
+              anywhere else.
+            </p>
+          ) : null}
         </section>
 
         <section>

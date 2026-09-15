@@ -1,7 +1,7 @@
 import { count } from "drizzle-orm";
 import { redirect } from "next/navigation";
 
-import { getCurrentUser } from "@/lib/auth";
+import { authDisabled, getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 
@@ -10,7 +10,9 @@ import { LoginForm } from "./login-form";
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage() {
-  if (await getCurrentUser()) {
+  // Both cases land in the same place: with sign-in off there is no form
+  // worth showing, and signed in there is nothing to sign in to.
+  if (authDisabled() || (await getCurrentUser())) {
     redirect("/");
   }
 
