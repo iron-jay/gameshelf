@@ -58,6 +58,36 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # A green build only proves the images were produced. This proves they
+      # start, that the app image really has no dev dependencies in it, and that
+      # the migrate image really does.
+      - name: Smoke-test what was published
+        run: |
+          APP=ghcr.io/${{ github.repository }}:${{ github.sha }}
+          MIGRATE=ghcr.io/${{ github.repository }}-migrate:${{ github.sha }}
+
+          docker pull -q "$APP"
+          docker pull -q "$MIGRATE"
+
+          echo "app image"
+          docker run --rm --entrypoint sh "$APP" -c '
+            test -f server.js || { echo "  server.js missing"; exit 1; }
+            echo "  server.js present"
+            echo "  runs as uid $(id -u)"
+            echo "  node $(node --version)"
+            test -d node_modules/drizzle-kit && { echo "  dev deps leaked in"; exit 1; }
+            echo "  no dev dependencies"
+          '
+
+          echo "migrate image"
+          docker run --rm --entrypoint sh "$MIGRATE" -c '
+            echo "  migrations: $(ls drizzle/*.sql | wc -l)"
+            npx drizzle-kit --version >/dev/null 2>&1 || { echo "  drizzle-kit missing"; exit 1; }
+            echo "  drizzle-kit runs"
+            test -f scripts/seed.ts || { echo "  seed script missing"; exit 1; }
+            echo "  seed script present"
+          '
+
       - name: Summary
         run: |
           {
