@@ -135,16 +135,26 @@ is nothing to do.
 
 ### Images
 
-Every push to `main` builds two images in GitHub Actions and publishes them:
+Every push to `main` builds one image in GitHub Actions and publishes it:
 
 ```
-ghcr.io/iron-jay/gameshelf          the app
-ghcr.io/iron-jay/gameshelf-migrate  migrations and the first user
+ghcr.io/iron-jay/gameshelf
 ```
 
-The server pulls them rather than building. `next build` does not fit
-comfortably in 2 GB, and there is no reason to spend the VM's memory on work a
-runner has already done.
+The server pulls it rather than building. `next build` does not fit comfortably
+in 2 GB, and there is no reason to spend the VM's memory on work a runner has
+already done.
+
+The container applies migrations itself before serving anything — a bundled
+`migrate.mjs` runs, then `server.js`. Both halves are idempotent, so it happens
+on every start and does nothing when there is nothing to do. If the schema
+cannot be brought up to date the server does not come up, which is the right way
+round.
+
+It has to be bundled rather than imported at runtime: Next's standalone output
+contains only what the app itself imports, and `drizzle-orm/postgres-js/migrator`
+is not among them. esbuild inlines it, leaving `@node-rs/argon2` external
+because it is a native module and is already in the output.
 
 The packages are public even though the repository is not, so the server pulls
 without credentials. Nothing secret is in them — no `.env`, no keys — and an
@@ -162,9 +172,21 @@ a commit sha. To build the images by hand — if Actions is down, or to try
 something before pushing it:
 
 ```bash
-docker build --target runner   -t ghcr.io/iron-jay/gameshelf:latest .
-docker build --target migrator -t ghcr.io/iron-jay/gameshelf-migrate:latest .
+docker build --target runner -t ghcr.io/iron-jay/gameshelf:latest .
 ```
+
+### The account
+
+The first start creates one user from `ADMIN_USERNAME` (default `admin`) and
+`ADMIN_PASSWORD`. That only ever applies to an empty database — once an account
+exists those variables are ignored, and the name is changed in **Settings**
+rather than by editing `.env`.
+
+Renaming is safe with sign-in turned off too: that path looks for
+`ADMIN_USERNAME` and falls back to the oldest account when it no longer matches
+anybody, so a rename cannot lock you out of your own server.
+
+There is no way to change the password from the interface yet.
 
 ### Skipping sign-in
 

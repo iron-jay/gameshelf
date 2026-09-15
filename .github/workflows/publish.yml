@@ -1,8 +1,8 @@
 name: Publish images
 
-# Builds the two images the compose stack needs and pushes them to ghcr.io, so
-# the server pulls instead of building. `next build` does not fit comfortably in
-# the 2 GB the deployment target has.
+# Builds the image and pushes it to ghcr.io, so the server pulls instead of
+# building — `next build` does not fit comfortably in the 2 GB the deployment
+# target has.
 
 on:
   push:
@@ -31,8 +31,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # The app. Next's standalone output, no node_modules, runs as uid 1001.
-      - name: Build and push the app image
+      - name: Build and push the image
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -44,48 +43,33 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Migrations and the first user. A separate image because drizzle-kit and
-      # tsx are dev dependencies and are deliberately absent from the app image.
-      - name: Build and push the migrate image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          target: migrator
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository }}-migrate:latest
-            ghcr.io/${{ github.repository }}-migrate:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      # A green build only proves the images were produced. This proves they
-      # start, that the app image really has no dev dependencies in it, and that
-      # the migrate image really does.
+      # A green build only proves an image was produced. This proves it starts,
+      # that the migrate bundle resolves everything it needs, and that the dev
+      # dependencies really did stay out.
       - name: Smoke-test what was published
         run: |
           APP=ghcr.io/${{ github.repository }}:${{ github.sha }}
-          MIGRATE=ghcr.io/${{ github.repository }}-migrate:${{ github.sha }}
-
           docker pull -q "$APP"
-          docker pull -q "$MIGRATE"
 
-          echo "app image"
           docker run --rm --entrypoint sh "$APP" -c '
-            test -f server.js || { echo "  server.js missing"; exit 1; }
-            echo "  server.js present"
+            test -f server.js   || { echo "  server.js missing";  exit 1; }
+            test -f migrate.mjs || { echo "  migrate.mjs missing"; exit 1; }
+            echo "  server.js and migrate.mjs present"
+            echo "  migrations bundled: $(ls drizzle/*.sql | wc -l)"
             echo "  runs as uid $(id -u)"
             echo "  node $(node --version)"
+
             test -d node_modules/drizzle-kit && { echo "  dev deps leaked in"; exit 1; }
             echo "  no dev dependencies"
-          '
 
-          echo "migrate image"
-          docker run --rm --entrypoint sh "$MIGRATE" -c '
-            echo "  migrations: $(ls drizzle/*.sql | wc -l)"
-            npx drizzle-kit --version >/dev/null 2>&1 || { echo "  drizzle-kit missing"; exit 1; }
-            echo "  drizzle-kit runs"
-            test -f scripts/seed.ts || { echo "  seed script missing"; exit 1; }
-            echo "  seed script present"
+            # Imports are hoisted, so reaching the DATABASE_URL check means every
+            # import resolved — including @node-rs/argon2, which is deliberately
+            # left external and has to come from the standalone output.
+            out=$(node migrate.mjs 2>&1 || true)
+            case "$out" in
+              *"DATABASE_URL is not set"*) echo "  migrate bundle loads and resolves" ;;
+              *) echo "  migrate bundle is broken: $out"; exit 1 ;;
+            esac
           '
 
       - name: Summary
@@ -95,7 +79,6 @@ jobs:
             echo
             echo '```'
             echo "ghcr.io/${{ github.repository }}:latest"
-            echo "ghcr.io/${{ github.repository }}-migrate:latest"
             echo '```'
             echo
             echo "Deploy with \`docker compose pull && docker compose up -d\`."

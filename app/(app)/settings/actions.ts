@@ -1,9 +1,12 @@
 "use server";
 
+import { and, eq, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { requireUser } from "@/lib/auth";
 import { listCoverFiles } from "@/lib/covers";
+import { db } from "@/lib/db";
+import { users } from "@/lib/db/schema";
 import { orphanedCoverFiles, removeCoverFiles } from "@/lib/works/removal";
 import { searchGames } from "@/lib/igdb/search";
 import { IgdbError, IgdbNotConfiguredError } from "@/lib/igdb/types";
@@ -67,4 +70,52 @@ export async function sweepOrphanedCovers(): Promise<{ removed: number }> {
 
   revalidatePath("/settings");
   return { removed: orphans.length };
+}
+
+export type AccountState = { ok: boolean; message: string } | null;
+
+/** Letters, digits and the punctuation people actually put in usernames. */
+const USERNAME = /^[a-zA-Z0-9._-]{2,32}$/;
+
+/**
+ * Rename the account. ADMIN_USERNAME only ever named it at creation, so this is
+ * the thing that decides what it is called from then on — including for the
+ * no-sign-in path, which falls back to the oldest account when the environment
+ * variable no longer matches anybody.
+ */
+export async function updateAccount(
+  _prev: AccountState,
+  formData: FormData,
+): Promise<AccountState> {
+  const user = await requireUser();
+
+  const username = String(formData.get("username") ?? "").trim();
+  const displayName = String(formData.get("displayName") ?? "").trim();
+
+  if (!USERNAME.test(username)) {
+    return {
+      ok: false,
+      message: "Two to thirty-two characters: letters, digits, dot, dash or underscore.",
+    };
+  }
+
+  const [clash] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.username, username), ne(users.id, user.id)));
+
+  if (clash) {
+    return { ok: false, message: "Somebody already has that name." };
+  }
+
+  await db
+    .update(users)
+    .set({ username, displayName: displayName || null })
+    .where(eq(users.id, user.id));
+
+  // Sessions key on the user id, so renaming does not sign anybody out.
+  revalidatePath("/settings");
+  revalidatePath("/");
+
+  return { ok: true, message: "Saved." };
 }

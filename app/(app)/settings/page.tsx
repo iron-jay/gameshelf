@@ -7,6 +7,7 @@ import { entries, igdbTokens } from "@/lib/db/schema";
 
 import { orphanedCoverFiles } from "@/lib/works/removal";
 
+import { AccountForm } from "./account-form";
 import { ConnectionCheck } from "./connection-check";
 import { CoverSweep } from "./cover-sweep";
 
@@ -33,11 +34,12 @@ export default async function SettingsPage() {
 
       <div className="flex max-w-2xl flex-col gap-10">
         <section>
-          <h2 className="mb-2 font-medium">Access</h2>
+          <h2 className="mb-2 font-medium">Account</h2>
           <p className="font-narrow text-ink-dim">
-            {user.displayName ?? user.username}
+            Signed in as {user.username}
             {user.isAdmin ? " · admin" : ""}
           </p>
+          <AccountForm username={user.username} displayName={user.displayName} />
           {authDisabled() ? (
             <p className="mt-2 max-w-2xl border-l-2 border-ink-dim pl-3 font-narrow">
               Sign-in is off (<span className="font-mono">AUTH_DISABLED</span>).

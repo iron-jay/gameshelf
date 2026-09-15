@@ -1192,3 +1192,64 @@ image with no configuration does nothing at all.
 Worth recording: there is no REST endpoint for changing container package
 visibility. `PATCH /user/packages/container/<name>` returns Not Found. It is a
 web UI setting only.
+
+---
+
+## 2026-09-15 — One image, and the account is renameable
+
+**Collapsing the two images**
+
+The second image existed because `drizzle-kit` and `tsx` are dev dependencies
+and Next's standalone output only carries what the app imports. Checking rather
+than assuming turned out to matter: `drizzle-orm/postgres-js/migrator` is
+genuinely absent from the bundle, so a naive `migrate.mjs` importing it would
+have failed at runtime on the VM rather than in testing.
+
+The answer is esbuild. `scripts/migrate.ts` is bundled into the standalone
+output with drizzle inlined and `@node-rs/argon2` left external — it cannot be
+bundled, being native, and it is already there because login uses it. The
+container then runs `node migrate.mjs && node server.js`, so the server does not
+start if the schema could not be brought up to date.
+
+esbuild arrives with drizzle-kit today, but depending on a transitive binary in
+a production build is the kind of thing that breaks during an unrelated upgrade,
+so it is now an explicit dev dependency.
+
+Postgres notices are silenced in that script. Re-running against an up-to-date
+database emitted a NOTICE object per statement, which buried the one line worth
+reading in the deploy log.
+
+**The account**
+
+Default username is `admin` rather than `jay`, and it can be renamed in
+Settings — username and display name, with the uniqueness check the database
+would enforce anyway, reported as a message rather than a crash.
+
+Two consequences needed handling, and both were tested rather than reasoned
+about:
+
+The seed now asks "is there anybody at all" instead of "is there someone called
+ADMIN_USERNAME". Otherwise renaming the account would make the next restart
+quietly create a second one.
+
+The no-sign-in path falls back to the oldest account when `ADMIN_USERNAME` no
+longer matches anybody. Without that, renaming the account with `AUTH_DISABLED`
+on would have produced a redirect loop between `/` and `/login` — locked out of
+a server with no login form.
+
+Sessions key on the user id, so renaming does not sign you out. Confirmed.
+
+**Verified from nothing**
+
+Fresh tree, empty data, own project and ports: 317 MB image carrying `server.js`,
+`migrate.mjs`, five migrations and no dev dependencies. From an empty database it
+logged `[migrations] up to date` and `[user] created admin`, then served. A
+rename to `jay` / `Jay T` saved and left the session intact; a restart said
+`already exists, left alone` and there was still one user; and with
+`AUTH_DISABLED=true` and `ADMIN_USERNAME` still saying `admin`, the shelf loaded
+as Jay T with no cookie.
+
+**Still missing**
+
+Changing the password from the interface. Renaming an account you cannot change
+the password of is a slightly odd pair, and worth closing next.

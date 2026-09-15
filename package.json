@@ -12,7 +12,8 @@
     "db:studio": "drizzle-kit studio",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx --env-file=.env scripts/seed.ts",
-    "probe:sgdb": "tsx --env-file=.env scripts/probe-sgdb.ts"
+    "probe:sgdb": "tsx --env-file=.env scripts/probe-sgdb.ts",
+    "build:migrate": "esbuild scripts/migrate.ts --bundle --platform=node --format=esm --target=node22 --external:@node-rs/argon2 --outfile=.next/standalone/migrate.mjs"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.2.1",
@@ -29,6 +30,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "drizzle-kit": "^0.31.10",
+    "esbuild": "^0.25.12",
     "eslint": "^9",
     "eslint-config-next": "16.3.5",
     "tailwindcss": "^4",

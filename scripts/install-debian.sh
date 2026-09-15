@@ -88,7 +88,7 @@ Next:
        POSTGRES_PASSWORD, SESSION_SECRET  — openssl rand -base64 32
        IGDB_CLIENT_ID / IGDB_CLIENT_SECRET, SGDB_API_KEY
        ORIGIN                             — the public https:// URL
-       ADMIN_USERNAME / ADMIN_PASSWORD
+       ADMIN_PASSWORD                     — ADMIN_USERNAME defaults to admin
        AUTH_DISABLED=true                 — only if the port is private
 
   2. Log out and back in, so the docker group applies.

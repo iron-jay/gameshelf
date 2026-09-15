@@ -26,21 +26,25 @@ export function authDisabled(): boolean {
  * otherwise the oldest account — which on a single-user install is the only one.
  */
 async function assumedUser(): Promise<SessionUser | null> {
-  const username = process.env.ADMIN_USERNAME;
+  const columns = {
+    id: users.id,
+    username: users.username,
+    displayName: users.displayName,
+    isAdmin: users.isAdmin,
+  };
 
-  const [user] = await db
-    .select({
-      id: users.id,
-      username: users.username,
-      displayName: users.displayName,
-      isAdmin: users.isAdmin,
-    })
-    .from(users)
-    .where(username ? eq(users.username, username) : undefined)
-    .orderBy(asc(users.createdAt))
-    .limit(1);
+  const username = process.env.ADMIN_USERNAME?.trim();
 
-  return user ?? null;
+  if (username) {
+    const [named] = await db.select(columns).from(users).where(eq(users.username, username));
+    if (named) return named;
+  }
+
+  // ADMIN_USERNAME only ever names the account at creation time, and it can be
+  // renamed in settings afterwards. Falling back to the oldest account means a
+  // rename does not lock you out of your own server.
+  const [oldest] = await db.select(columns).from(users).orderBy(asc(users.createdAt)).limit(1);
+  return oldest ?? null;
 }
 
 /**

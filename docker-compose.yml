@@ -3,10 +3,10 @@
 # Dev (WSL2):  docker compose up -d db                 # Postgres only; app runs via npm run dev
 # Prod (VM):   docker compose pull && docker compose up -d
 #
-# The app and migrate images are built by GitHub Actions and pulled from
-# ghcr.io. `next build` does not fit comfortably in the 2 GB the deployment
-# target has, and there is no reason to spend the server's memory on it.
-# To build them by hand instead, see the README.
+# The image is built by GitHub Actions and pulled from ghcr.io. `next build`
+# does not fit comfortably in the 2 GB the deployment target has, and there is
+# no reason to spend the server's memory on it. The container applies
+# migrations itself on every start before serving anything.
 #
 # Both port bindings default to 127.0.0.1, so nothing is reachable from the LAN
 # without asking. On the server the reverse proxy reaches the app over loopback;
@@ -34,34 +34,21 @@ services:
       timeout: 5s
       retries: 5
 
-  # Runs to completion, then the app starts. drizzle-kit and tsx are dev
-  # dependencies and are not in the runtime image, so schema changes and the
-  # first user need a stage that still has node_modules.
-  migrate:
-    image: ${GAMESHELF_IMAGE:-ghcr.io/iron-jay/gameshelf}-migrate:${GAMESHELF_TAG:-latest}
-    restart: "no"
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: postgres://gameshelf:${POSTGRES_PASSWORD}@db:5432/gameshelf
-      ADMIN_USERNAME: ${ADMIN_USERNAME:-jay}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?}
-
   app:
     image: ${GAMESHELF_IMAGE:-ghcr.io/iron-jay/gameshelf}:${GAMESHELF_TAG:-latest}
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
     environment:
       DATABASE_URL: postgres://gameshelf:${POSTGRES_PASSWORD}@db:5432/gameshelf
       IGDB_CLIENT_ID: ${IGDB_CLIENT_ID:?}
       IGDB_CLIENT_SECRET: ${IGDB_CLIENT_SECRET:?}
       SGDB_API_KEY: ${SGDB_API_KEY:?}
       SESSION_SECRET: ${SESSION_SECRET:?}
+      # Only used to create the very first user; ignored afterwards.
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?}
       # Set true only where the port is genuinely private: it removes the
       # password for everything, including editing and deleting.
       AUTH_DISABLED: ${AUTH_DISABLED:-false}
