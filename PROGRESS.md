@@ -1163,3 +1163,17 @@ scope does not imply.
 So the deployment note about creating a `read:packages` token is not caution,
 it is the observed requirement. Worth knowing before standing in front of a VM
 wondering why `docker compose pull` says `denied`.
+
+### .env.example was never committed
+
+`create-next-app`'s `.gitignore` carries `.env*`, which swallowed the template
+along with the real thing. The deployment steps copy it into place, so
+`install-debian.sh` died on a fresh VM with `cannot stat '.env.example'`.
+
+The rehearsal did not catch it because it copied the working tree with `rsync`,
+where the file exists whether or not git knows about it. A rehearsal that starts
+from `git clone` would have. That is the lesson: when the thing being tested is
+a deployment, the input has to be what the deployment actually receives, not
+what happens to be on the machine building it.
+
+Fixed with `!.env.example` and a forced add.
