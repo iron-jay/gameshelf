@@ -1136,3 +1136,30 @@ and it is in the deployment docs rather than left to be discovered.
 Making the packages public while the repository stayed private would have
 avoided it — and would also have published the built application, which rather
 defeats the point of a private repository.
+
+### What the smoke test confirmed
+
+Added because a green build only proves images were produced, not that they
+work. On every publish it now pulls them back and checks:
+
+```
+app image        server.js present · runs as uid 1001 · node v22.23.2
+                 no dev dependencies
+migrate image    migrations: 5 · drizzle-kit runs · seed script present
+```
+
+The "no dev dependencies" check is the one worth keeping. The whole reason for
+two images is that the runtime one carries none, and nothing else would notice
+if a change to the Dockerfile quietly undid that.
+
+### The registry token, confirmed the hard way
+
+Trying to pull the published images from this machine failed with `denied`,
+using a `gh` session holding `gist, read:org, repo, workflow`. Pushing from
+Actions works because `GITHUB_TOKEN` is granted `packages: write` by the
+workflow; pulling from anywhere else needs `read:packages`, which a `repo`
+scope does not imply.
+
+So the deployment note about creating a `read:packages` token is not caution,
+it is the observed requirement. Worth knowing before standing in front of a VM
+wondering why `docker compose pull` says `denied`.
