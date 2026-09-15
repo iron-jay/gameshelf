@@ -74,6 +74,95 @@ be fetched again, not yours.
 
 ## Deployment
 
-```bash
-docker compose up -d     # app + db
+Target is a Debian VM on Proxmox rather than an LXC — `CLAUDE.md` section 7 says
+why. The steps below were rehearsed end to end against a clean database before
+being written down.
+
+### Layout
+
+The compose file expects runtime data as a sibling of the repository, so the two
+can be backed up together without the database living inside the build context:
+
 ```
+/srv/
+├── gameshelf/          this repository
+└── gameshelf-data/
+    ├── pgdata/         Postgres
+    └── covers/         downloaded cover art
+```
+
+### First run
+
+```bash
+git clone <repo> /srv/gameshelf
+cd /srv/gameshelf
+mkdir -p ../gameshelf-data/pgdata ../gameshelf-data/covers
+
+cp .env.example .env
+$EDITOR .env    # IGDB and SteamGridDB keys, SESSION_SECRET, ORIGIN, ADMIN_PASSWORD
+
+# The app runs as uid 1001 and a bind mount keeps the host's ownership, so
+# without this the first cover download fails with EACCES.
+sudo chown -R 1001:1001 ../gameshelf-data/covers
+
+docker compose up -d
+```
+
+That starts three things in order: Postgres, a one-shot `migrate` container, then
+the app. The app will not start unless migrate exits successfully.
+
+`migrate` exists because `drizzle-kit` and `tsx` are dev dependencies and the
+runtime image contains only what Next traced from the app's own imports. It
+applies pending migrations and creates the `ADMIN_USERNAME` user if there is not
+one. Both are idempotent, so it runs on every deploy and does nothing when there
+is nothing to do.
+
+### Reverse proxy
+
+The app listens on plain HTTP on `127.0.0.1:3000`; TLS terminates at the proxy.
+Two things matter:
+
+- **Forward the original `Host`.** Next checks a server action's `Origin`
+  against the host it believes it is serving, and this app is server actions
+  from top to bottom — login included. nginx's `proxy_set_header Host $host` and
+  Caddy's default both do the right thing. A request carrying the public name in
+  both `Host` and `Origin` is accepted; one with a foreign `Origin` is rejected.
+- **`ORIGIN` must be the public `https://` URL.** The session cookie's `Secure`
+  flag is derived from it, so an `http://` value ships insecure cookies.
+
+Caddy needs nothing beyond:
+
+```
+gameshelf.example.com {
+    reverse_proxy 127.0.0.1:3000
+}
+```
+
+### Updating
+
+```bash
+git pull
+docker compose up -d --build
+```
+
+Migrations run before the new app starts.
+
+### Backups
+
+Both bind mounts sit under `../gameshelf-data`, so a Proxmox VM backup covers
+them. For a logical dump as well:
+
+```cron
+0 3 * * * cd /srv/gameshelf && docker compose exec -T db pg_dump -U gameshelf gameshelf | gzip > ../gameshelf-data/dump-$(date +\%F).sql.gz
+```
+
+### Ports
+
+Both services bind to `127.0.0.1` so nothing is exposed to the LAN by default.
+Override with `APP_BIND`, `APP_PORT`, `DB_BIND` and `DB_PORT` — for instance if
+the reverse proxy runs on another host.
+
+### Building on a small VM
+
+`CLAUDE.md` suggests 2 vCPU / 2 GB. `npm ci` plus `next build` is tight in 2 GB;
+add swap, or build the image somewhere larger and pull it.

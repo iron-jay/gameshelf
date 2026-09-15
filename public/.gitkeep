@@ -1,0 +1,5 @@
+Static assets served from the site root go here.
+
+The directory is empty but tracked on purpose: the Dockerfile copies it into the
+image, and git does not track empty directories, so without this the production
+build fails on a missing path.

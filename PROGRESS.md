@@ -976,3 +976,82 @@ to "6 files stored. Nothing unreferenced." with the button disappearing.
 Also fixed here: the removal summary was briefly using `--label` for the warning
 about dependent versions. Section 5b allows that colour exactly one meaning —
 this release is unofficial — and never emphasis.
+
+---
+
+## 2026-09-15 — Containerising, rehearsed against a clean database
+
+The Dockerfile had never once been built. Every `docker compose up -d db` this
+whole project started Postgres only, and the app always ran on the host. So the
+first job was finding out whether it worked at all. It did not.
+
+**Two build failures**
+
+`next build` imports every page module to collect metadata, and `lib/db/index.ts`
+threw at module scope when `DATABASE_URL` was unset — which it is in an image,
+since `.dockerignore` excludes `.env` and should. The connection is now made on
+first use behind a proxy, so the several dozen `db.select(...)` call sites stay
+as they are. A build should not need a database.
+
+Then `COPY /app/public` failed, because the Vercel boilerplate was deleted at
+step 1 and git does not track empty directories. `public/.gitkeep` keeps the
+directory, which is better than dropping the COPY and silently not shipping
+static assets the day someone adds one.
+
+**Migrations and the first user**
+
+The real blocker, and it needed a structural answer. `drizzle-kit` and `tsx` are
+dev dependencies, and `.next/standalone` contains only what Next traced from the
+app's own imports, so neither is in the runtime image. A fresh VM would have got
+a running app pointed at an empty database with no way to create the schema.
+
+There is now a `migrator` stage that keeps `node_modules`, and a compose service
+that runs it to completion before the app starts — `service_completed_successfully`,
+so a failed migration stops the deploy rather than producing a broken app. It
+applies migrations and seeds the admin user, both idempotent, so it runs on every
+deploy and does nothing when there is nothing to do.
+
+**The rehearsal**
+
+Rather than deploy and find out, the whole thing was run from nothing: the
+working tree copied to a separate directory, empty data directories, its own
+compose project and its own ports, leaving the development stack alone.
+
+From an empty database: Postgres came up healthy, migrations applied, the admin
+user was created, the app started. Login worked — which is the test worth caring
+about, because it exercises the `@node-rs/argon2` native binding surviving Next's
+file tracing, the session cookie, and a server action, all at once. IGDB search
+returned real results against a token it had to fetch fresh. Adding a game wrote
+a cover to the bind mount as uid 1001.
+
+A second `up -d --build` re-ran migrate cleanly and reported "[exists] jay — left
+unchanged", with the data intact.
+
+**The proxy question, answered rather than guessed**
+
+Next validates a server action's `Origin` against the host it thinks it serves,
+and this app is server actions throughout. Four POSTs to the login action:
+
+| Request | Result |
+|---|---|
+| Origin matching the real host | 303, accepted |
+| Origin from somewhere else | 500, rejected |
+| Host and Origin both carrying a public name, proxy-style | 303, accepted |
+| No Origin at all | 303, accepted |
+
+So a proxy that forwards `Host` — the nginx and Caddy default — needs no
+application change. Worth having tested: the failure mode would have been every
+button in the app silently not working behind TLS.
+
+**Also changed**
+
+Both port bindings default to `127.0.0.1` rather than `0.0.0.0`, with
+`APP_BIND` / `APP_PORT` / `DB_BIND` / `DB_PORT` as overrides. The old compose
+exposed Postgres to the LAN with a comment asking whoever deployed it to
+remember to remove the block.
+
+**Not done**
+
+The image has only ever been built and run on x86_64 under WSL2. It has not run
+on the actual Debian VM, and 2 GB is tight for `next build` — the README says to
+add swap or build elsewhere.

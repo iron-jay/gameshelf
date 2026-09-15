@@ -1,7 +1,11 @@
-# gameshelf — app + database
+# gameshelf — database, migrations, app
 #
-# Dev (WSL2):  docker compose up -d db     # DB only, app runs via npm run dev
-# Prod (VM):   docker compose up -d        # both services
+# Dev (WSL2):  docker compose up -d db     # Postgres only; app runs via npm run dev
+# Prod (VM):   docker compose up -d        # everything
+#
+# Both port bindings default to 127.0.0.1, so nothing is reachable from the LAN
+# without asking. On the server the reverse proxy reaches the app over loopback;
+# set APP_BIND if it lives on another host.
 
 services:
   db:
@@ -18,20 +22,39 @@ services:
       # fails the build.
       - ../gameshelf-data/pgdata:/var/lib/postgresql/data
     ports:
-      # Exposed for dev. Remove this block on the server.
-      - "5432:5432"
+      - "${DB_BIND:-127.0.0.1}:${DB_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U gameshelf"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  # Runs to completion, then the app starts. drizzle-kit and tsx are dev
+  # dependencies and are not in the runtime image, so schema changes and the
+  # first user need a stage that still has node_modules.
+  migrate:
+    build:
+      context: .
+      target: migrator
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://gameshelf:${POSTGRES_PASSWORD}@db:5432/gameshelf
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-jay}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?}
+
   app:
-    build: .
+    build:
+      context: .
+      target: runner
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     environment:
       DATABASE_URL: postgres://gameshelf:${POSTGRES_PASSWORD}@db:5432/gameshelf
       IGDB_CLIENT_ID: ${IGDB_CLIENT_ID:?}
@@ -39,11 +62,12 @@ services:
       SGDB_API_KEY: ${SGDB_API_KEY:?}
       SESSION_SECRET: ${SESSION_SECRET:?}
       COVERS_DIR: /data/covers
+      # The session cookie's Secure flag is derived from this, so it must be the
+      # public https:// URL in production.
       ORIGIN: ${ORIGIN:-http://localhost:3000}
-      ADMIN_USERNAME: ${ADMIN_USERNAME:-jay}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?}
     volumes:
       # Downloaded cover art — keep it out of the image and in backups.
+      # The container runs as uid 1001; the host directory must match.
       - ../gameshelf-data/covers:/data/covers
     ports:
-      - "3000:3000"
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-3000}:3000"
