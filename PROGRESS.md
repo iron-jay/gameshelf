@@ -1097,3 +1097,42 @@ Syntax-checked and the root guard exercised, but **not run on an actual Debian
 VM** — there isn't one here. The package-availability branch in particular is
 written to detect rather than assume, precisely because I could not verify which
 way Debian 13 falls.
+
+---
+
+## 2026-09-15 — Images built in CI, pulled by the server
+
+The deployment target is 2 vCPU / 2 GB and `next build` does not fit comfortably
+in that. Rather than tell whoever deploys it to add swap, the build moved to
+GitHub Actions and the server now only pulls.
+
+**Two images, not one**
+
+`ghcr.io/iron-jay/gameshelf` is the app — Next's standalone output, no
+node_modules, uid 1001. `ghcr.io/iron-jay/gameshelf-migrate` keeps node_modules
+so it can run drizzle-kit and tsx. They are separate for the same reason the
+migrator stage exists at all: the runtime image deliberately does not carry dev
+dependencies, and merging them would undo that.
+
+Both are tagged `latest` and with the commit sha, so `GAMESHELF_TAG` in `.env`
+can pin a deploy to a specific build.
+
+**Compose no longer builds**
+
+The `build:` blocks are gone in favour of `image:`. Keeping both would have left
+a bad failure mode: if `docker compose pull` failed for an auth reason,
+`up -d` would quietly fall back to building on the 2 GB box and die there
+instead of saying what was actually wrong.
+
+Building by hand is still two `docker build --target` commands, in the README
+for when Actions is down or something needs trying before it is pushed.
+
+**One credential the server needs**
+
+The repository is private so the packages are too, and the VM has to
+`docker login ghcr.io` once with a `read:packages` token. That is a real step
+and it is in the deployment docs rather than left to be discovered.
+
+Making the packages public while the repository stayed private would have
+avoided it — and would also have published the built application, which rather
+defeats the point of a private repository.

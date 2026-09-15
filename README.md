@@ -105,9 +105,11 @@ falling back to Docker's repository otherwise — creates the data directories,
 sets the ownership the container needs, and copies `.env.example` into place.
 It is idempotent, so running it again is harmless.
 
-Then fill in `.env`, log out and back in so the `docker` group applies, and:
+Then fill in `.env`, log out and back in so the `docker` group applies, sign in
+to the registry (once — see below), and:
 
 ```bash
+docker compose pull
 docker compose up -d
 ```
 
@@ -131,6 +133,38 @@ runtime image contains only what Next traced from the app's own imports. It
 applies pending migrations and creates the `ADMIN_USERNAME` user if there is not
 one. Both are idempotent, so it runs on every deploy and does nothing when there
 is nothing to do.
+
+### Images
+
+Every push to `main` builds two images in GitHub Actions and publishes them:
+
+```
+ghcr.io/iron-jay/gameshelf          the app
+ghcr.io/iron-jay/gameshelf-migrate  migrations and the first user
+```
+
+The server pulls them rather than building. `next build` does not fit
+comfortably in 2 GB, and there is no reason to spend the VM's memory on work a
+runner has already done.
+
+Because the repository is private the packages are too, so the VM has to sign in
+once. Create a token at **github.com/settings/tokens** with only the
+`read:packages` scope, then:
+
+```bash
+echo "$TOKEN" | docker login ghcr.io -u iron-jay --password-stdin
+```
+
+That is stored in `~/.docker/config.json` and survives reboots.
+
+To pin a specific build rather than the newest, set `GAMESHELF_TAG` in `.env` to
+a commit sha. To build the images by hand — if Actions is down, or to try
+something before pushing it:
+
+```bash
+docker build --target runner   -t ghcr.io/iron-jay/gameshelf:latest .
+docker build --target migrator -t ghcr.io/iron-jay/gameshelf-migrate:latest .
+```
 
 ### Skipping sign-in
 
@@ -175,11 +209,13 @@ gameshelf.example.com {
 ### Updating
 
 ```bash
-git pull
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 ```
 
-Migrations run before the new app starts.
+Migrations run before the new app starts. Add `git pull` first when
+`docker-compose.yml` or `.env.example` have changed — the compose file lives in
+the repository, the images do not.
 
 ### Backups
 
@@ -196,7 +232,8 @@ Both services bind to `127.0.0.1` so nothing is exposed to the LAN by default.
 Override with `APP_BIND`, `APP_PORT`, `DB_BIND` and `DB_PORT` — for instance if
 the reverse proxy runs on another host.
 
-### Building on a small VM
+### Sizing
 
-`CLAUDE.md` suggests 2 vCPU / 2 GB. `npm ci` plus `next build` is tight in 2 GB;
-add swap, or build the image somewhere larger and pull it.
+`CLAUDE.md` suggests 2 vCPU / 2 GB, which is comfortable now that the server only
+ever pulls. 32 GB of disk leaves room for the images, Postgres and a cover
+library — the art runs a few hundred KB per game.

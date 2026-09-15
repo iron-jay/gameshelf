@@ -1,7 +1,12 @@
 # gameshelf — database, migrations, app
 #
-# Dev (WSL2):  docker compose up -d db     # Postgres only; app runs via npm run dev
-# Prod (VM):   docker compose up -d        # everything
+# Dev (WSL2):  docker compose up -d db                 # Postgres only; app runs via npm run dev
+# Prod (VM):   docker compose pull && docker compose up -d
+#
+# The app and migrate images are built by GitHub Actions and pulled from
+# ghcr.io. `next build` does not fit comfortably in the 2 GB the deployment
+# target has, and there is no reason to spend the server's memory on it.
+# To build them by hand instead, see the README.
 #
 # Both port bindings default to 127.0.0.1, so nothing is reachable from the LAN
 # without asking. On the server the reverse proxy reaches the app over loopback;
@@ -33,9 +38,7 @@ services:
   # dependencies and are not in the runtime image, so schema changes and the
   # first user need a stage that still has node_modules.
   migrate:
-    build:
-      context: .
-      target: migrator
+    image: ${GAMESHELF_IMAGE:-ghcr.io/iron-jay/gameshelf}-migrate:${GAMESHELF_TAG:-latest}
     restart: "no"
     depends_on:
       db:
@@ -46,9 +49,7 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?}
 
   app:
-    build:
-      context: .
-      target: runner
+    image: ${GAMESHELF_IMAGE:-ghcr.io/iron-jay/gameshelf}:${GAMESHELF_TAG:-latest}
     restart: unless-stopped
     depends_on:
       db:
