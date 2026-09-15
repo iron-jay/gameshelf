@@ -9,6 +9,8 @@ import { orphanedCoverFiles } from "@/lib/works/removal";
 
 import { AccountForm } from "./account-form";
 import { ConnectionCheck } from "./connection-check";
+import { GrouveeImport } from "./grouvee-import";
+import { PasswordForm } from "./password-form";
 import { CoverSweep } from "./cover-sweep";
 
 export const dynamic = "force-dynamic";
@@ -40,6 +42,9 @@ export default async function SettingsPage() {
             {user.isAdmin ? " · admin" : ""}
           </p>
           <AccountForm username={user.username} displayName={user.displayName} />
+
+          <h3 className="mt-8 font-medium">Password</h3>
+          <PasswordForm />
           {authDisabled() ? (
             <p className="mt-2 max-w-2xl border-l-2 border-ink-dim pl-3 font-narrow">
               Sign-in is off (<span className="font-mono">AUTH_DISABLED</span>).
@@ -75,6 +80,16 @@ export default async function SettingsPage() {
               : `${orphans.length} ${orphans.length === 1 ? "file is" : "files are"} no longer referenced by anything.`}
           </p>
           {orphans.length > 0 ? <CoverSweep /> : null}
+        </section>
+
+        <section>
+          <h2 className="mb-1 font-medium">Import from Grouvee</h2>
+          <p className="mb-1 font-narrow text-ink-dim">
+            The JSON export from <span className="font-mono">grouvee.com</span> — Settings
+            &rarr; Export. Every game there carries an IGDB id, so matching is exact
+            rather than a guess at the title.
+          </p>
+          <GrouveeImport />
         </section>
 
         <section>

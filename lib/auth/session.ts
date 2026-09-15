@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { cookies } from "next/headers";
 
 import { db } from "@/lib/db";
@@ -77,6 +77,16 @@ export async function validateSessionToken(token: string): Promise<SessionUser |
     displayName: row.displayName,
     isAdmin: row.isAdmin,
   };
+}
+
+/**
+ * Ends every other session for this user, keeping the one making the request.
+ * Signing other devices out is most of the point of changing a password.
+ */
+export async function invalidateOtherSessions(userId: string, keepToken: string): Promise<void> {
+  await db
+    .delete(sessions)
+    .where(and(eq(sessions.userId, userId), ne(sessions.id, digest(keepToken))));
 }
 
 export async function invalidateSession(token: string): Promise<void> {

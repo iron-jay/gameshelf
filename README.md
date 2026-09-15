@@ -52,6 +52,7 @@ anchor the bundler catches on.
 | `npm run db:seed` | Create the single user from `.env` |
 | `npm run db:studio` | Drizzle Studio |
 | `npm run probe:sgdb` | Check SteamGridDB matching against the live API |
+| `npm run probe:grouvee -- <file>` | Report what a Grouvee export would import, without writing |
 
 Migrations are the artifact that builds a database. `schema.sql` is the readable
 reference for the design, kept in step with the Drizzle schema by hand. After

@@ -1253,3 +1253,59 @@ as Jay T with no cookie.
 
 Changing the password from the interface. Renaming an account you cannot change
 the password of is a slightly odd pair, and worth closing next.
+
+---
+
+## 2026-09-15 — Password change, and importing from Grouvee
+
+**Password**
+
+Current password, new, and again, in Settings. Changing it ends every other
+session for that user and keeps the one making the request — those other devices
+were authorised by a password that no longer exists.
+
+**Grouvee**
+
+Reading the export before designing anything for it was the whole game. It
+turned out to carry an `igdb_id` on every one of the 324 games, which means
+matching is exact rather than a title search with a confidence tier — the
+opposite of the SteamGridDB problem.
+
+What is actually in it: 324 games, two shelves (Played 314, To Play 10), two
+ratings, no reviews, no play log, no platforms. Grouvee's built-in shelves are a
+status by another name so they become one; anything the user invented stays a
+free-form shelf.
+
+Dates matter more than they look. `date_added_to_collection` becomes
+`entries.added_at`, so an imported shelf sorts the way it was actually built
+rather than stamping three hundred games with today.
+
+**Batched, and driven by the client**
+
+IGDB takes `where id = (…)` up to 500 at a time, so a batch is one request
+rather than forty. Covers are the slow part and they are fetched six at a time
+after the database work, outside the transactions.
+
+The client loops the batches so it can show progress. Three hundred games is a
+minute or two of image downloads, and one silent request would look like a hang.
+Every step is idempotent — `ensureWorkFromIgdb`, `onConflictDoNothing` on the
+entry — so a retried batch changes nothing.
+
+**Tested against the real file**
+
+The parser on the actual export: 324 games, nothing unmatched, 314 played, 10
+backlog, all dated. Then a real three-game slice chosen to include Ocarina of
+Time, which was already on the shelf: `added: 2, alreadyThere: 1, missing: []`.
+The two new ones arrived with their 2017 dates and their covers; the existing
+Ocarina entries were left exactly as they were rather than being overwritten by
+the import's idea of their status.
+
+`scripts/probe-grouvee.ts` stays as a dry run — it reports what an export would
+do and writes nothing.
+
+**Worth noting**
+
+The import never overwrites. A game already on the shelf is counted and skipped,
+including its status and rating. That is the right default for a re-run, but it
+does mean the import cannot be used to update an existing shelf from Grouvee,
+only to fill in what is missing.

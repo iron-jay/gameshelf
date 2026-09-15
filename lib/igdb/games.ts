@@ -32,3 +32,24 @@ export async function getGameById(id: number): Promise<IgdbGame | null> {
   const rows = await igdbRequest<IgdbGame[]>("games", `fields ${FIELDS}; where id = ${id}; limit 1;`);
   return rows[0] ?? null;
 }
+
+/** IGDB refuses more than this in one response. */
+export const MAX_GAMES_PER_REQUEST = 500;
+
+/**
+ * Several games in one round trip. An import of a few hundred would otherwise
+ * be a few hundred requests at four a second, which is several minutes of
+ * waiting for data IGDB is happy to hand over all at once.
+ */
+export async function getGamesByIds(ids: number[]): Promise<IgdbGame[]> {
+  const wanted = [...new Set(ids)].filter((id) => Number.isInteger(id) && id > 0);
+  if (wanted.length === 0) return [];
+  if (wanted.length > MAX_GAMES_PER_REQUEST) {
+    throw new Error(`Too many ids for one request: ${wanted.length}`);
+  }
+
+  return igdbRequest<IgdbGame[]>(
+    "games",
+    `fields ${FIELDS}; where id = (${wanted.join(",")}); limit ${wanted.length};`,
+  );
+}

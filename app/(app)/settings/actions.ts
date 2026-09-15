@@ -4,6 +4,8 @@ import { and, eq, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { requireUser } from "@/lib/auth";
+import { hashPassword, verifyPassword } from "@/lib/auth/password";
+import { invalidateOtherSessions, readSessionToken } from "@/lib/auth/session";
 import { listCoverFiles } from "@/lib/covers";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
@@ -118,4 +120,49 @@ export async function updateAccount(
   revalidatePath("/");
 
   return { ok: true, message: "Saved." };
+}
+
+export type PasswordState = { ok: boolean; message: string } | null;
+
+/** Short enough not to be annoying on a private server, long enough to mean something. */
+const MIN_PASSWORD = 8;
+
+export async function changePassword(
+  _prev: PasswordState,
+  formData: FormData,
+): Promise<PasswordState> {
+  const user = await requireUser();
+
+  const current = String(formData.get("currentPassword") ?? "");
+  const next = String(formData.get("newPassword") ?? "");
+  const confirm = String(formData.get("confirmPassword") ?? "");
+
+  if (next.length < MIN_PASSWORD) {
+    return { ok: false, message: `At least ${MIN_PASSWORD} characters.` };
+  }
+  if (next !== confirm) {
+    return { ok: false, message: "The two new passwords do not match." };
+  }
+
+  const [row] = await db
+    .select({ passwordHash: users.passwordHash })
+    .from(users)
+    .where(eq(users.id, user.id));
+
+  if (!row || !(await verifyPassword(row.passwordHash, current))) {
+    return { ok: false, message: "That is not the current password." };
+  }
+
+  await db
+    .update(users)
+    .set({ passwordHash: await hashPassword(next) })
+    .where(eq(users.id, user.id));
+
+  // Other devices holding a session were authorised by the old password.
+  const token = await readSessionToken();
+  if (token) {
+    await invalidateOtherSessions(user.id, token);
+  }
+
+  return { ok: true, message: "Password changed. Any other signed-in device has been signed out." };
 }
