@@ -105,8 +105,7 @@ falling back to Docker's repository otherwise — creates the data directories,
 sets the ownership the container needs, and copies `.env.example` into place.
 It is idempotent, so running it again is harmless.
 
-Then fill in `.env`, log out and back in so the `docker` group applies, sign in
-to the registry (once — see below), and:
+Then fill in `.env`, log out and back in so the `docker` group applies, and:
 
 ```bash
 docker compose pull
@@ -147,15 +146,16 @@ The server pulls them rather than building. `next build` does not fit
 comfortably in 2 GB, and there is no reason to spend the VM's memory on work a
 runner has already done.
 
-Because the repository is private the packages are too, so the VM has to sign in
-once. Create a token at **github.com/settings/tokens** with only the
-`read:packages` scope, then:
+The packages are public even though the repository is not, so the server pulls
+without credentials. Nothing secret is in them — no `.env`, no keys — and an
+image is inert without the configuration you supply, so the only thing published
+is the compiled app and the schema.
 
-```bash
-echo "$TOKEN" | docker login ghcr.io -u iron-jay --password-stdin
-```
-
-That is stored in `~/.docker/config.json` and survives reboots.
+If you make them private again, every machine that pulls needs a **classic**
+personal access token with `read:packages` (fine-grained tokens are not reliably
+accepted by ghcr), and `docker login ghcr.io -u iron-jay` once per user — Docker
+stores credentials per-user, so signing in as root does not help a deploy that
+runs as someone else.
 
 To pin a specific build rather than the newest, set `GAMESHELF_TAG` in `.env` to
 a commit sha. To build the images by hand — if Actions is down, or to try

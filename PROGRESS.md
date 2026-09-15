@@ -1177,3 +1177,18 @@ a deployment, the input has to be what the deployment actually receives, not
 what happens to be on the machine building it.
 
 Fixed with `!.env.example` and a forced add.
+
+### Packages made public, repository left private
+
+Pulling a private package needs a classic PAT with `read:packages` on every
+machine that pulls, per user, and fine-grained tokens are not reliably accepted.
+That is a lot of ceremony for a deployment whose images contain nothing secret.
+
+So the two packages are public and the repository stays private. What that
+publishes is the compiled application and the schema; what it does not publish
+is `.env`, any key, or anything that makes the image useful on its own — an
+image with no configuration does nothing at all.
+
+Worth recording: there is no REST endpoint for changing container package
+visibility. `PATCH /user/packages/container/<name>` returns Not Found. It is a
+web UI setting only.
