@@ -9,16 +9,11 @@ import { igdbImageUrl } from "@/lib/igdb/types";
 import { slugify } from "@/lib/slug";
 import { ensureWorkFromIgdb, upsertPlatform } from "@/lib/works/ensure";
 
+import { IMPORT_CHUNK, type ImportChunkResult } from "./constants";
+
+export { IMPORT_CHUNK };
+export type { ImportChunkResult };
 import type { GrouveeItem } from "./grouvee";
-
-/** Small enough to stay well inside one IGDB request and to report progress usefully. */
-export const IMPORT_CHUNK = 40;
-
-export type ImportChunkResult = {
-  added: number;
-  alreadyThere: number;
-  missing: string[];
-};
 
 /** Find or create one of this user's shelves, the same way tagging does. */
 async function shelfIdFor(userId: string, name: string): Promise<string | null> {

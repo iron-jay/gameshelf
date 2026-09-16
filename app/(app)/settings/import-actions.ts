@@ -4,10 +4,8 @@ import { revalidatePath } from "next/cache";
 
 import { requireUser } from "@/lib/auth";
 import { parseGrouvee, type GrouveeItem, type GrouveeParse } from "@/lib/import/grouvee";
-import { importItems, IMPORT_CHUNK, type ImportChunkResult } from "@/lib/import/run";
-
-export { IMPORT_CHUNK };
-export type { ImportChunkResult };
+import { IMPORT_CHUNK, type ImportChunkResult } from "@/lib/import/constants";
+import { importItems } from "@/lib/import/run";
 
 export type ParseState =
   | { ok: true; parse: GrouveeParse }

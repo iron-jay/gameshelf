@@ -14,7 +14,8 @@
     "db:seed": "tsx --env-file=.env scripts/seed.ts",
     "probe:sgdb": "tsx --env-file=.env scripts/probe-sgdb.ts",
     "build:migrate": "esbuild scripts/migrate.ts --bundle --platform=node --format=esm --target=node22 --external:@node-rs/argon2 --outfile=.next/standalone/migrate.mjs",
-    "probe:grouvee": "tsx --env-file=.env scripts/probe-grouvee.ts"
+    "probe:grouvee": "tsx --env-file=.env scripts/probe-grouvee.ts",
+    "check:actions": "tsx scripts/check-server-actions.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.2.1",

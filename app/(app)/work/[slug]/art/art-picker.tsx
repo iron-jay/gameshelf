@@ -5,6 +5,8 @@ import { useActionState, useState } from "react";
 import type { ArtCandidate } from "@/lib/sgdb";
 import type { ArtActionState } from "@/lib/versions/types";
 
+import { FilePicker } from "../../../file-picker";
+
 import { applyArt, applyArtFromReference, searchArt, uploadArt } from "./actions";
 
 const FIELD =
@@ -192,11 +194,10 @@ export function ArtPicker({
         <h2 className="mb-2 font-medium">Upload a file</h2>
         <form action={uploadAction} className="flex flex-wrap items-center gap-2">
           {hidden}
-          <input
+          <FilePicker
             name="file"
-            type="file"
             accept="image/jpeg,image/png,image/webp"
-            className="font-narrow"
+            label="Choose image"
           />
           <button type="submit" disabled={uploading} className={BUTTON}>
             {uploading ? "Uploading…" : "Upload"}

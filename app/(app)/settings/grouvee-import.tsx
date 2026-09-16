@@ -4,12 +4,11 @@ import { useActionState, useState } from "react";
 
 import type { GrouveeParse } from "@/lib/import/grouvee";
 
-import {
-  IMPORT_CHUNK,
-  importGrouveeItems,
-  parseGrouveeUpload,
-  type ParseState,
-} from "./import-actions";
+import { IMPORT_CHUNK } from "@/lib/import/constants";
+
+import { FilePicker } from "../file-picker";
+
+import { importGrouveeItems, parseGrouveeUpload, type ParseState } from "./import-actions";
 
 type Progress = {
   done: number;
@@ -75,13 +74,15 @@ export function GrouveeImport() {
 
   return (
     <div className="mt-3 flex max-w-2xl flex-col gap-4">
-      <form action={action} className="flex flex-wrap items-center gap-2">
-        <input
+      <form action={action} className="flex flex-wrap items-center gap-3">
+        <FilePicker
           name="file"
-          type="file"
           accept="application/json,.json"
-          className="font-narrow"
+          label="Choose export"
         />
+        {/* Not disabled until a file is picked: that would make the button
+            depend on a change event firing, and the server already answers
+            "choose a file" perfectly well on its own. */}
         <button
           type="submit"
           disabled={parsing}

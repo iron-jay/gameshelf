@@ -1309,3 +1309,57 @@ The import never overwrites. A game already on the shelf is counted and skipped,
 including its status and rating. That is the right default for a re-run, but it
 does mean the import cannot be used to update an existing shelf from Grouvee,
 only to fill in what is missing.
+
+---
+
+## 2026-09-16 — The import was broken by one exported constant
+
+Reported as "read the file throws a server error, with or without a file". The
+"without a file" half was the clue: the failure could not be about parsing.
+
+```
+Error: A "use server" file can only export async functions, found number.
+  6 | export {IMPORT_CHUNK as '...'} from 'ACTIONS_MODULE2'
+POST /settings 500
+```
+
+`IMPORT_CHUNK` was a number exported from a `"use server"` module, which Next
+forbids. It does not break only that export — it breaks the whole generated
+actions module for any page importing it, so the connection check, the cover
+sweep, the password change and the account rename were all dead on that page
+too. The form, unable to bind its action, fell back to a native POST to the page
+route, which is where the 500 came from.
+
+It came from extracting the import logic into `lib/`: the constant went with the
+function and the re-export looked harmless.
+
+**Neither the build nor eslint said anything.** `next build` passed, `tsc`
+passed, eslint passed. The first sign was a 500 from a form. So there is now
+`scripts/check-server-actions.ts`, which walks every `"use server"` file and
+asserts each export is an async function, and the Dockerfile runs it before
+building. Verified by reintroducing the bug: it exits 1 and names the line.
+
+**Also fixed: the file input**
+
+The native control renders differently in every browser and its button is
+usually small, grey and not obviously the thing to press. There is now a shared
+`FilePicker` — a styled label with the real input visually hidden behind
+`sr-only`, so labelling, keyboard focus and form submission all still work. Both
+uploads use it, the Grouvee export and the cover art, which had the same problem
+waiting.
+
+The submit button is deliberately **not** disabled until a file is chosen. That
+would make it depend on a change event firing, and the server already answers
+"choose a file" perfectly well on its own — gating it would trade a clear
+message for a button that might never enable.
+
+**What was and was not verified**
+
+The whole flow, on the real export: the summary reads "324 games from
+JayTruscott, exported 2026-09-14. 314 played, 10 backlog." and the Import button
+appears.
+
+Not verified: that the filename appears next to the picker after choosing one.
+Setting `input.files` from a script does not trigger React's `onChange`, so the
+harness cannot exercise it — a real click will. That is exactly why the submit
+button no longer depends on it.

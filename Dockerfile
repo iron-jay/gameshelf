@@ -12,7 +12,10 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 # The migrate bundle lands inside .next/standalone, so the runtime stage picks
 # it up with everything else.
-RUN npm run build && npm run build:migrate
+# A "use server" file exporting anything but async functions breaks every action
+# on the pages importing it, and neither the build nor eslint notices. Cheaper to
+# fail here than to publish it.
+RUN npm run check:actions && npm run build && npm run build:migrate
 
 FROM node:22-alpine AS runner
 WORKDIR /app
