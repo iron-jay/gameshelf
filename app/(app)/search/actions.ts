@@ -8,7 +8,7 @@ import { downloadCover } from "@/lib/covers";
 import { db } from "@/lib/db";
 import { entries, versions, works } from "@/lib/db/schema";
 import { getGameById } from "@/lib/igdb/games";
-import { releaseDateFor } from "@/lib/igdb/mapping";
+import { originalVersionName, releaseDateFor } from "@/lib/igdb/mapping";
 import { igdbImageUrl, IgdbError } from "@/lib/igdb/types";
 import { ensureWorkFromIgdb, primaryPlatformFor, upsertPlatform } from "@/lib/works/ensure";
 
@@ -58,7 +58,7 @@ export async function addToShelf(_prev: AddState, formData: FormData): Promise<A
         .insert(versions)
         .values({
           workId: work.id,
-          name: igdbPlatform?.abbreviation ?? igdbPlatform?.name ?? "Original release",
+          name: originalVersionName(igdbPlatform),
           kind: "original",
           platformId,
           releaseDate: releaseDateFor(game),

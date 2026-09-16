@@ -4,7 +4,7 @@ import { downloadCover } from "@/lib/covers";
 import { db } from "@/lib/db";
 import { entries, shelfEntries, shelves, versions, works } from "@/lib/db/schema";
 import { getGamesByIds } from "@/lib/igdb/games";
-import { primaryPlatformFor, releaseDateFor } from "@/lib/igdb/mapping";
+import { originalVersionName, primaryPlatformFor, releaseDateFor } from "@/lib/igdb/mapping";
 import { igdbImageUrl } from "@/lib/igdb/types";
 import { slugify } from "@/lib/slug";
 import { ensureWorkFromIgdb, upsertPlatform } from "@/lib/works/ensure";
@@ -89,7 +89,7 @@ export async function importItems(
           .insert(versions)
           .values({
             workId: work.id,
-            name: platform?.abbreviation ?? platform?.name ?? "Original release",
+            name: originalVersionName(platform),
             kind: "original",
             platformId,
             releaseDate: releaseDateFor(game),

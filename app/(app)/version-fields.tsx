@@ -30,7 +30,15 @@ export type VersionFieldValues = {
  * Only one control carries the name at a time, so there is never a question of
  * which one the form submits.
  */
-function PlatformField({ value, platforms }: { value: string; platforms: string[] }) {
+function PlatformField({
+  value,
+  platforms,
+  onChange,
+}: {
+  value: string;
+  platforms: string[];
+  onChange: (platform: string) => void;
+}) {
   const [typing, setTyping] = useState(
     platforms.length === 0 || (value !== "" && !platforms.includes(value)),
   );
@@ -48,7 +56,10 @@ function PlatformField({ value, platforms }: { value: string; platforms: string[
             list="platform-names"
             placeholder="PC, Nintendo 64…"
             value={text}
-            onChange={(event) => setText(event.target.value)}
+            onChange={(event) => {
+              setText(event.target.value);
+              onChange(event.target.value);
+            }}
             className={FIELD}
           />
           {/* Still suggests, so a near-miss on an existing name is visible
@@ -73,7 +84,12 @@ function PlatformField({ value, platforms }: { value: string; platforms: string[
           name="platformName"
           defaultValue={value}
           onChange={(event) => {
-            if (event.target.value !== OTHER_PLATFORM) return;
+            if (event.target.value !== OTHER_PLATFORM) {
+              onChange(event.target.value);
+              return;
+            }
+            // The name is left alone until something is actually typed, rather
+            // than blanked for as long as the box is empty.
             setText("");
             setTyping(true);
           }}
@@ -119,6 +135,9 @@ export function VersionFields({
   onNameBlur?: (value: string) => void;
   autoFocus?: boolean;
 }) {
+  const [name, setName] = useState(values?.name ?? "");
+  const [kind, setKind] = useState(values?.kind ?? kinds[0]);
+
   return (
     <>
       <label className="flex flex-col gap-1.5">
@@ -128,7 +147,8 @@ export function VersionFields({
           type="text"
           required
           autoFocus={autoFocus}
-          defaultValue={values?.name ?? ""}
+          value={name}
+          onChange={(event) => setName(event.target.value)}
           className={FIELD}
           onBlur={onNameBlur ? (event) => onNameBlur(event.target.value) : undefined}
         />
@@ -137,7 +157,12 @@ export function VersionFields({
 
       <label className="flex flex-col gap-1.5">
         <span className="font-narrow text-ink-dim">Kind</span>
-        <select name="kind" defaultValue={values?.kind ?? kinds[0]} className={FIELD}>
+        <select
+          name="kind"
+          value={kind}
+          onChange={(event) => setKind(event.target.value)}
+          className={FIELD}
+        >
           {kinds.map((value) => (
             <option key={value} value={value}>
               {KIND_LABELS[value as FormKind] ?? value.replace(/_/g, " ")}
@@ -168,7 +193,18 @@ export function VersionFields({
           />
         </label>
 
-        <PlatformField value={values?.platformName ?? ""} platforms={platforms} />
+        <PlatformField
+          value={values?.platformName ?? ""}
+          platforms={platforms}
+          // An original release has no name of its own — the platform is what
+          // tells it apart from every other original release, so the two track
+          // each other and the name stays editable afterwards. Anything else
+          // was named by whoever made it ("Master of Time"), and moving it to
+          // the right platform must not take that away.
+          onChange={(platform) => {
+            if (kind === "original" && platform) setName(platform);
+          }}
+        />
 
         <label className="flex flex-col gap-1.5">
           <span className="font-narrow text-ink-dim">Release date</span>

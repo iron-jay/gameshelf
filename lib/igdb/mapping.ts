@@ -64,6 +64,18 @@ export function primaryPlatformFor(game: IgdbGame): IgdbPlatform | undefined {
   return available.find((p) => p.id === earliest.platform) ?? available[0];
 }
 
+/**
+ * What to call the original release of a game.
+ *
+ * The platform is the only thing distinguishing it from any other original
+ * release, so the platform is the name — spelled out rather than abbreviated,
+ * because "Nintendo 64" reads as a name and "N64" reads as a code. Anything
+ * with a name of its own comes in through the version form instead.
+ */
+export function originalVersionName(platform: IgdbPlatform | undefined): string {
+  return platform?.name ?? "Original release";
+}
+
 /** IGDB dates are unix seconds; works.first_release_date is a plain date. */
 export function releaseDateFor(game: IgdbGame): string | null {
   if (!game.first_release_date) return null;

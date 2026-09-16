@@ -1412,3 +1412,55 @@ filters left the cookie empty and did not come back; free-typing "Sega Saturn"
 created a local platform row, and the field rendered as a select with it
 selected on reload. Test row removed and the version put back on Nintendo 64
 afterwards.
+
+---
+
+## 2026-09-17 — Naming an original release
+
+"What is the difference between name and platform on this page?" — a fair
+question, because on an original release they held the same string. The name is
+free text and distinguishes this release from the other versions of a work; the
+platform is a row in `platforms` that drives the shelf filter, the grouping and
+the stats breakdown. They coincided because the add flow, having no name to work
+with, named the version after its platform.
+
+Two changes, both about making that coincidence deliberate rather than
+accidental.
+
+**The default is the platform's full name**, not its abbreviation. "Nintendo 64"
+reads as a name; "N64" reads as a code, and §5b reserves mono-looking codes for
+things that actually are codes. Both creation sites — add-to-shelf and the
+Grouvee import — had the same `abbreviation ?? name ?? "Original release"`
+expression inline; they now share `originalVersionName` in `lib/igdb/mapping`,
+so the next change to it happens once.
+
+**Changing the platform renames the version to match**, and only for
+`original`. The name stays editable afterwards, so a "N64 (PAL)" survives. The
+guard is the kind selected in the form rather than a string comparison against
+the old platform: a romhack has a name someone gave it, and moving "Master of
+Time" to the right platform must never overwrite it. Kind is exact where a
+heuristic would not be — the existing rows are named after abbreviations, which
+are not in the list the form is given, so a match against it would silently do
+nothing.
+
+Free text mirrors as you type. Picking "Something else…" leaves the name alone
+until something is actually typed, rather than blanking it for as long as the
+box is empty.
+
+**This only affects versions created from here on.** Originals already on a
+shelf keep their abbreviations. The backfill is one statement, and it touches
+only rows whose name is still exactly the abbreviation, never a name anyone
+typed:
+
+```sql
+update versions v set name = p.name from platforms p
+ where p.id = v.platform_id and v.kind = 'original' and v.name = p.abbreviation;
+```
+
+**Verified** in the form against the dev database: with kind `romhack`, moving
+the platform from Nintendo 64 to Wii left "Master of Time" alone; with kind
+`original`, the name followed PlayStation 4 and then Linux, and mirrored "Sega
+Saturn" as it was typed into the free-text box. Nothing was submitted, and the
+row is untouched. `originalVersionName` checked directly: a platform with an
+abbreviation gives the full name, one without gives its name, and none gives
+"Original release".
