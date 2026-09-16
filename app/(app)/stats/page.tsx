@@ -1,9 +1,10 @@
 import { and, count, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
-import Link from "next/link";
 
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { entries, entryCards, plays } from "@/lib/db/schema";
+
+import { ShelfLink } from "../shelf-link";
 
 export const dynamic = "force-dynamic";
 
@@ -151,9 +152,7 @@ export default async function StatsPage() {
         </section>
 
         <p className="font-narrow text-ink-dim">
-          <Link href="/" className="underline">
-            Back to the shelf
-          </Link>
+          <ShelfLink className="underline">Back to the shelf</ShelfLink>
         </p>
       </div>
     </main>

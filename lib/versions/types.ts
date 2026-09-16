@@ -1,5 +1,12 @@
 import type { ArtCandidate, MatchConfidence } from "@/lib/sgdb";
 
+/**
+ * The platform select's escape hatch. Picking it swaps the select for a text
+ * box; the action treats it as no platform, so with scripting off it submits
+ * harmlessly instead of creating a platform by that name.
+ */
+export const OTHER_PLATFORM = "__other__";
+
 /** The version kinds the community form can produce. */
 export const COMMUNITY_KINDS = [
   "romhack",

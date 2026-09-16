@@ -3,6 +3,7 @@ import Link from "next/link";
 import { authDisabled, requireUser } from "@/lib/auth";
 
 import { logout } from "./actions";
+import { ShelfLink } from "./shelf-link";
 
 /**
  * Everything in this route group is behind the session check. Guarding here
@@ -16,9 +17,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <>
       <header className="flex items-center justify-between border-b border-line px-4 py-3">
         <nav className="flex items-center gap-5">
-          <Link href="/" className="font-medium">
-            gameshelf
-          </Link>
+          <ShelfLink className="font-medium">gameshelf</ShelfLink>
           <Link href="/search" className="font-narrow text-ink-dim hover:text-ink">
             Search
           </Link>

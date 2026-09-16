@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { entryCards, logStatus, shelfEntries, shelves, versionKind } from "@/lib/db/schema";
 
 import { FilterForm } from "./filter-form";
+import { RememberShelfView } from "./remember-shelf-view";
 import { ShelfTile, type ShelfCard } from "./shelf-tile";
 
 export const dynamic = "force-dynamic";
@@ -58,12 +59,16 @@ function isGroupBy(value: string | undefined): value is GroupBy {
   return Boolean(value) && value! in GROUPINGS;
 }
 
-function hrefWith(current: Params, patch: Params): string {
+function queryFor(params: Params): string {
   const query = new URLSearchParams();
-  for (const [key, value] of Object.entries({ ...current, ...patch })) {
+  for (const [key, value] of Object.entries(params)) {
     if (value) query.set(key, value);
   }
-  const qs = query.toString();
+  return query.toString();
+}
+
+function hrefWith(current: Params, patch: Params): string {
+  const qs = queryFor({ ...current, ...patch });
   return qs ? `/?${qs}` : "/";
 }
 
@@ -220,6 +225,8 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
 
   return (
     <main className="flex-1 p-6">
+      <RememberShelfView query={queryFor(params)} />
+
       <nav className="mb-4 flex flex-wrap items-center gap-4 font-narrow">
         <Link
           href={hrefWith(params, { status: undefined })}

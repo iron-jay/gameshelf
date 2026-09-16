@@ -1363,3 +1363,52 @@ Not verified: that the filename appears next to the picker after choosing one.
 Setting `input.files` from a script does not trigger React's `onChange`, so the
 harness cannot exercise it — a real click will. That is exactly why the submit
 button no longer depends on it.
+
+---
+
+## 2026-09-17 — Coming back to the shelf you left, and a platform you can pick
+
+Two things, both about state the interface was throwing away.
+
+**The shelf forgot its grouping.** All of the shelf's state lives in the URL,
+which is what makes a view bookmarkable — and also what loses it, because the
+header link goes to a bare `/`. Group by platform, open a game, click gameshelf,
+and you are back to an ungrouped list.
+
+The shelf now records its own query string in a `shelf-view` cookie, and the
+links back to it (the header, and stats' "Back to the shelf") restore it.
+Nothing else reads the cookie: `/` typed or bookmarked is still a clean shelf,
+and a view is never restored behind your back. Clearing every filter is itself a
+view, so it is stored as an empty string rather than deleted — turning grouping
+off and coming back does not turn it on again.
+
+**The first attempt read the cookie in the layout and it did not work.** The
+header link kept its old href as I navigated. Layouts are not re-rendered on
+client navigation — that is the point of them — so a value read there is
+however stale the last full page load left it. The read has to happen at click
+time, so `ShelfLink` is a client component that reads `document.cookie` in its
+onClick and pushes. Its `href` stays `/`, which keeps the markup identical
+across hydration and leaves the link working with scripting off. Modified clicks
+fall through untouched: a new tab should be the plain shelf, not a copy of this
+one's filters.
+
+**Platform was a text box pretending to have suggestions.** It had a `datalist`,
+but nothing on screen says a datalist is there, so in practice you retype
+"Nintendo 64" and get a second row differing by a space. It is a select now,
+listing the platforms already in use, with "Something else…" swapping in a text
+box — because a recomp running on something nothing else on the shelf runs on is
+the normal case here, not the exception. The text box keeps the datalist, so a
+near-miss on an existing name is visible before it becomes a duplicate.
+
+Only one control carries the `platformName` name at a time, so there is no
+question of which one the form submits. The sentinel the "Something else…"
+option carries is mapped to null in the action: with scripting off the select
+cannot swap itself, and submitting it should mean no platform rather than create
+a platform called `__other__`.
+
+**Verified** end to end against the dev database: grouping by platform survived
+a round trip through a version page and back via the header; clearing the
+filters left the cookie empty and did not come back; free-typing "Sega Saturn"
+created a local platform row, and the field rendered as a select with it
+selected on reload. Test row removed and the version put back on Nintendo 64
+afterwards.

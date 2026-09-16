@@ -16,7 +16,7 @@ import type {
   BaseGameOption,
   CreateVersionState,
 } from "@/lib/versions/types";
-import { isCommunityKind, isFormKind } from "@/lib/versions/types";
+import { isCommunityKind, isFormKind, OTHER_PLATFORM } from "@/lib/versions/types";
 
 function isVersionKind(value: string): value is (typeof versionKind.enumValues)[number] {
   return (versionKind.enumValues as readonly string[]).includes(value);
@@ -80,6 +80,16 @@ function optional(formData: FormData, field: string): string | null {
   return text === "" ? null : text;
 }
 
+/**
+ * The form's "Something else…" option normally swaps itself for a text box
+ * before it can be submitted. With scripting off it cannot, so the sentinel has
+ * to mean no platform rather than become one.
+ */
+function platformFrom(formData: FormData): string | null {
+  const name = optional(formData, "platformName");
+  return name === OTHER_PLATFORM ? null : name;
+}
+
 export async function createVersion(
   _prev: CreateVersionState,
   formData: FormData,
@@ -113,7 +123,7 @@ export async function createVersion(
   const artSgdbGameId = Number(formData.get("artSgdbGameId") ?? 0) || null;
   const artConfidence = optional(formData, "artConfidence");
 
-  const platformName = optional(formData, "platformName");
+  const platformName = platformFrom(formData);
 
   const outcome = await db.transaction(async (tx) => {
     const platformId = await resolvePlatform(tx, platformName);
@@ -280,7 +290,7 @@ export async function updateVersion(
     baseVersionId = sibling?.id ?? null;
   }
 
-  const platformName = optional(formData, "platformName");
+  const platformName = platformFrom(formData);
 
   const workSlug = await db.transaction(async (tx) => {
     const platformId = await resolvePlatform(tx, platformName);

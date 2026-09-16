@@ -1,6 +1,8 @@
 "use client";
 
-import { KIND_LABELS, type FormKind } from "@/lib/versions/types";
+import { useState } from "react";
+
+import { KIND_LABELS, OTHER_PLATFORM, type FormKind } from "@/lib/versions/types";
 
 export const FIELD =
   "w-full border border-line bg-ground px-3 py-2 text-ink outline-none focus:border-ink-dim";
@@ -15,6 +17,80 @@ export type VersionFieldValues = {
   url?: string | null;
   notes?: string | null;
 };
+
+/**
+ * Platforms already in use, offered as a list, with free text a click away.
+ *
+ * A bare text field with a `datalist` was the first attempt: the suggestions are
+ * there but nothing on screen says so, so in practice you retype "Nintendo 64"
+ * and get a second row differing by a space. A select shows what exists. The
+ * text box still has to be reachable, though — a recomp running on something
+ * nothing else on the shelf runs on is the normal case here, not the exception.
+ *
+ * Only one control carries the name at a time, so there is never a question of
+ * which one the form submits.
+ */
+function PlatformField({ value, platforms }: { value: string; platforms: string[] }) {
+  const [typing, setTyping] = useState(
+    platforms.length === 0 || (value !== "" && !platforms.includes(value)),
+  );
+  const [text, setText] = useState(value);
+
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="font-narrow text-ink-dim">Platform</span>
+
+      {typing ? (
+        <>
+          <input
+            name="platformName"
+            type="text"
+            list="platform-names"
+            placeholder="PC, Nintendo 64…"
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            className={FIELD}
+          />
+          {/* Still suggests, so a near-miss on an existing name is visible
+              before it becomes a duplicate row. */}
+          <datalist id="platform-names">
+            {platforms.map((platform) => (
+              <option key={platform} value={platform} />
+            ))}
+          </datalist>
+          {platforms.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setTyping(false)}
+              className="self-start font-narrow text-ink-dim underline hover:text-ink"
+            >
+              Choose one already in use
+            </button>
+          ) : null}
+        </>
+      ) : (
+        <select
+          name="platformName"
+          defaultValue={value}
+          onChange={(event) => {
+            if (event.target.value !== OTHER_PLATFORM) return;
+            setText("");
+            setTyping(true);
+          }}
+          className={FIELD}
+        >
+          <option value="">No platform</option>
+          {platforms.map((platform) => (
+            <option key={platform} value={platform}>
+              {platform}
+            </option>
+          ))}
+          <option value={OTHER_PLATFORM}>Something else…</option>
+        </select>
+      )}
+    </label>
+  );
+}
 
 /**
  * The fields a version has, shared by the add form and the edit form.
@@ -92,22 +168,7 @@ export function VersionFields({
           />
         </label>
 
-        <label className="flex flex-col gap-1.5">
-          <span className="font-narrow text-ink-dim">Platform</span>
-          <input
-            name="platformName"
-            type="text"
-            list="platform-names"
-            placeholder="PC, Nintendo 64…"
-            defaultValue={values?.platformName ?? ""}
-            className={FIELD}
-          />
-          <datalist id="platform-names">
-            {platforms.map((platform) => (
-              <option key={platform} value={platform} />
-            ))}
-          </datalist>
-        </label>
+        <PlatformField value={values?.platformName ?? ""} platforms={platforms} />
 
         <label className="flex flex-col gap-1.5">
           <span className="font-narrow text-ink-dim">Release date</span>
