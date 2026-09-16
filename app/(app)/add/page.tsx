@@ -1,10 +1,7 @@
 import Link from "next/link";
 
-import { asc } from "drizzle-orm";
-
 import { requireUser } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { platforms } from "@/lib/db/schema";
+import { platformsInUse } from "@/lib/platforms";
 import { isFormKind, KIND_LABELS, type FormKind } from "@/lib/versions/types";
 
 import { VersionForm } from "../version-form";
@@ -35,9 +32,7 @@ export default async function AddPage({
   const { kind } = await searchParams;
 
   if (isFormKind(kind)) {
-    const platformNames = (
-      await db.select({ name: platforms.name }).from(platforms).orderBy(asc(platforms.name))
-    ).map((row) => row.name);
+    const platformNames = await platformsInUse();
 
     return (
       <main className="flex-1 p-6">

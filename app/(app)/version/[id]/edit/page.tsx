@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { platforms, versionKind, versions, works } from "@/lib/db/schema";
+import { platformsInUse } from "@/lib/platforms";
 
 import { EditVersionForm } from "./edit-form";
 
@@ -36,9 +37,7 @@ export default async function EditVersionPage({ params }: { params: Promise<{ id
     .where(and(eq(versions.workId, row.version.workId), ne(versions.id, row.version.id)))
     .orderBy(asc(versions.createdAt));
 
-  const platformNames = (
-    await db.select({ name: platforms.name }).from(platforms).orderBy(asc(platforms.name))
-  ).map((platform) => platform.name);
+  const platformNames = await platformsInUse();
 
   return (
     <main className="flex-1 p-6">

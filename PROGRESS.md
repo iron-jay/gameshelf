@@ -1464,3 +1464,30 @@ Saturn" as it was typed into the free-text box. Nothing was submitted, and the
 row is untouched. `originalVersionName` checked directly: a platform with an
 abbreviation gives the full name, one without gives its name, and none gives
 "Original release".
+
+---
+
+## 2026-09-17 — The platform list offers only platforms in use
+
+A Grouvee import landed a game on 64DD. Corrected to Nintendo 64 — and 64DD was
+still in the dropdown, ready to be picked again by mistake.
+
+The form was listing every row in `platforms`. A row is created the moment IGDB
+mentions a platform, so the table accumulates platforms nothing is filed under:
+this dev database had three (Linux, Wii, Xbox 360) before I touched anything.
+The list now comes from `platformsInUse()` — a join through `versions`, so a
+platform appears only while something is actually on it. All three call sites
+(both doors and the edit form) had the same query written out inline and now
+share it.
+
+The orphaned row is left alone rather than deleted. It is keyed on its IGDB id,
+so it gets reused rather than duplicated if something genuinely does turn up on
+that platform; it just has to be typed out once, which is the point of the
+request. Deleting rows to hide them from a list is a heavier answer to a
+question about a dropdown.
+
+**Verified** the whole cycle against the dev database: the three unused
+platforms disappeared from the edit form; typing "Nintendo 64DD" as free text
+and saving put it in the list on reload; moving the version back to Nintendo 64
+took it out again, on the edit form and on both add doors. Test row removed
+afterwards and the version left on Nintendo 64.

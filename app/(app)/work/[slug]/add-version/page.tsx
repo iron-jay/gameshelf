@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { platforms, versions, works } from "@/lib/db/schema";
+import { versions, works } from "@/lib/db/schema";
+import { platformsInUse } from "@/lib/platforms";
 
 import { VersionForm } from "../../../version-form";
 
@@ -31,9 +32,7 @@ export default async function AddVersionPage({ params }: { params: Promise<{ slu
     .where(eq(versions.workId, work.id))
     .orderBy(asc(versions.createdAt));
 
-  const platformNames = (
-    await db.select({ name: platforms.name }).from(platforms).orderBy(asc(platforms.name))
-  ).map((row) => row.name);
+  const platformNames = await platformsInUse();
 
   return (
     <main className="flex-1 p-6">
