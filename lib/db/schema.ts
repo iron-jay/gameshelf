@@ -66,6 +66,7 @@ export const logStatus = pgEnum("log_status", [
   "backlog",
   "playing",
   "played",
+  "dropped",
 ]);
 
 export const completionLevel = pgEnum("completion_level", [

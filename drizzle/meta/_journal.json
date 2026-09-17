@@ -43,6 +43,13 @@
       "when": 1789632156241,
       "tag": "0005_four_shelves",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789682329926,
+      "tag": "0006_dropped_returns",
+      "breakpoints": true
     }
   ]
 }

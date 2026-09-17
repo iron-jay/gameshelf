@@ -46,14 +46,15 @@ CREATE TYPE work_kind AS ENUM (
 -- Where a cover image came from, so it can be re-fetched or left alone.
 CREATE TYPE art_source AS ENUM ('igdb', 'steamgriddb', 'upload');
 
--- The four shelves, in the order a shelf reads in. 'dropped' and 'shelved'
--- were removed in 0005: both meant "I stopped", and neither could say it
--- differently from the other. How far you got is plays.completion.
+-- The shelves, in the order a shelf reads in. 'shelved' was removed in 0005 --
+-- it and 'dropped' both meant "I stopped" and neither said it differently from
+-- the other. 'dropped' came back in 0006: it says something 'played' does not.
 CREATE TYPE log_status AS ENUM (
   'wishlist',
   'backlog',
   'playing',
-  'played'
+  'played',
+  'dropped'      -- played it and stopped, which 'played' does not say
 );
 
 -- The UI default when marking something done is 'credits'.

@@ -6,7 +6,7 @@ export type GrouveeItem = {
   igdbId: number;
   name: string;
   status: Status;
-  /** 1..10 half-stars, the way entries.rating stores it. */
+  /** 1..10, the way entries.rating stores it. */
   rating: number | null;
   review: string | null;
   /** ISO timestamp, so the imported shelf keeps its original order. */
@@ -35,14 +35,13 @@ const SHELF_STATUS: Readonly<Record<string, Status>> = {
   backlog: "backlog",
   "wish list": "wishlist",
   wishlist: "wishlist",
-  // Grouvee distinguishes stopping from finishing; gameshelf has four shelves
-  // and does not. All of these mean you played it, and how far you got is a
-  // play's completion rather than a shelf.
-  "did not finish": "played",
-  dropped: "played",
-  abandoned: "played",
-  "on hold": "played",
-  shelved: "played",
+  "did not finish": "dropped",
+  dropped: "dropped",
+  abandoned: "dropped",
+  // Grouvee keeps "paused indefinitely" apart from "stopped"; this app does
+  // not, and of the two shelves it has, stopped is the nearer one.
+  "on hold": "dropped",
+  shelved: "dropped",
 };
 
 function asRecord(value: unknown): Record<string, unknown> | null {

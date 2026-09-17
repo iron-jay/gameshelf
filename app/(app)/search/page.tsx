@@ -1,8 +1,10 @@
-import { ilike } from "drizzle-orm";
+import { and, eq, ilike, inArray } from "drizzle-orm";
 import Image from "next/image";
+import Link from "next/link";
 
+import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { works } from "@/lib/db/schema";
+import { entries, versions, works } from "@/lib/db/schema";
 import { platformNameFor, primaryPlatformFor, releaseDateFor } from "@/lib/igdb/mapping";
 import { searchGames } from "@/lib/igdb/search";
 import { STATUS_ORDER } from "@/lib/status";
@@ -13,7 +15,15 @@ import { AddButton } from "./add-button";
 export const dynamic = "force-dynamic";
 
 type SearchResult =
-  | { kind: "local"; id: string; title: string; year: number | null; coverUrl: string | null }
+  | {
+      kind: "local";
+      id: string;
+      title: string;
+      year: number | null;
+      coverUrl: string | null;
+      /** The entry if there is exactly one, otherwise the work. */
+      href: string;
+    }
   | {
       kind: "igdb";
       id: number;
@@ -74,6 +84,7 @@ export default async function SearchPage({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
+  const user = await requireUser();
   const { q = "" } = await searchParams;
   const term = q.trim();
 
@@ -83,6 +94,7 @@ export default async function SearchPage({
     ? await db
         .select({
           id: works.id,
+          slug: works.slug,
           title: works.title,
           firstReleaseDate: works.firstReleaseDate,
           coverUrl: works.coverUrl,
@@ -91,6 +103,31 @@ export default async function SearchPage({
         .where(ilike(works.title, `%${term}%`))
         .limit(10)
     : [];
+
+  // Which of those you already have an entry for, so a result you own opens the
+  // entry instead of making you find it. A work with two versions on your shelf
+  // has no single entry to open, so that one goes to the work page and lets you
+  // pick — guessing between a romhack and the original would be worse.
+  const shelved = local.length
+    ? await db
+        .select({ workId: versions.workId, versionId: versions.id })
+        .from(entries)
+        .innerJoin(versions, eq(versions.id, entries.versionId))
+        .where(
+          and(
+            eq(entries.userId, user.id),
+            inArray(
+              versions.workId,
+              local.map((work) => work.id),
+            ),
+          ),
+        )
+    : [];
+
+  const entriesByWork = new Map<string, string[]>();
+  for (const row of shelved) {
+    entriesByWork.set(row.workId, [...(entriesByWork.get(row.workId) ?? []), row.versionId]);
+  }
 
   let remote: SearchResult[] = [];
   let notice: string | null = null;
@@ -109,15 +146,18 @@ export default async function SearchPage({
   }
 
   const results: SearchResult[] = [
-    ...local.map(
-      (w): SearchResult => ({
+    ...local.map((w): SearchResult => {
+      const mine = entriesByWork.get(w.id) ?? [];
+
+      return {
         kind: "local",
         id: w.id,
         title: w.title,
         year: w.firstReleaseDate ? Number(w.firstReleaseDate.slice(0, 4)) : null,
         coverUrl: w.coverUrl,
-      }),
-    ),
+        href: mine.length === 1 ? `/version/${mine[0]}` : `/work/${w.slug}`,
+      };
+    }),
     ...remote,
   ];
 
@@ -175,7 +215,13 @@ export default async function SearchPage({
 
             <div className="min-w-0">
               <p className="truncate">
-                {r.title}
+                {r.kind === "local" ? (
+                  <Link href={r.href} className="underline hover:text-ink">
+                    {r.title}
+                  </Link>
+                ) : (
+                  r.title
+                )}
                 {r.year ? <span className="ml-2 text-ink-dim">{r.year}</span> : null}
               </p>
               {/* Once the picker is listing the platforms, repeating a

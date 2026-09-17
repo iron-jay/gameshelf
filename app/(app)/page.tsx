@@ -1,4 +1,4 @@
-import { and, asc, count, eq, inArray, sql, type SQL } from "drizzle-orm";
+import { and, asc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { cookies } from "next/headers";
 import Link from "next/link";
 
@@ -8,7 +8,6 @@ import { entryCards, shelfEntries, shelves, versionKind } from "@/lib/db/schema"
 
 import { platformsInUse } from "@/lib/platforms";
 import { isStatus, STATUS_ORDER } from "@/lib/status";
-import { promoteReleasedWishlist } from "@/lib/wishlist";
 
 import { FilterForm } from "./filter-form";
 import { RememberShelfView } from "./remember-shelf-view";
@@ -47,7 +46,6 @@ type Params = {
   platform?: string;
   sort?: string;
   dlc?: string;
-  review?: string;
   shelf?: string;
   groupBy?: string;
 };
@@ -140,19 +138,13 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
   const groupBy: GroupBy = isGroupBy(params.groupBy) ? params.groupBy : "none";
   const platform = params.platform?.trim() || undefined;
   const shelfSlug = params.shelf?.trim() || undefined;
-  const reviewOnly = params.review === "needed";
   // The DLC toggle and the grouping selector are different axes, so they get
   // separate parameters rather than sharing an ambiguous "group".
   const nestDlc = params.dlc !== "separate";
 
-  // Before anything is read, so a game that came out overnight is on the
-  // backlog by the time the page renders rather than one refresh later.
-  await promoteReleasedWishlist(user.id);
-
   const filters = [eq(entryCards.userId, user.id)];
   if (status) filters.push(eq(entryCards.status, status));
   if (platform) filters.push(eq(entryCards.platformName, platform));
-  if (reviewOnly) filters.push(eq(entryCards.coverNeedsReview, true));
   if (shelfSlug) {
     filters.push(
       inArray(
@@ -188,11 +180,6 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
     .from(shelves)
     .where(eq(shelves.userId, user.id))
     .orderBy(asc(shelves.name));
-
-  const [reviewCount] = await db
-    .select({ total: count() })
-    .from(entryCards)
-    .where(and(eq(entryCards.userId, user.id), eq(entryCards.coverNeedsReview, true)));
 
   // A Destiny 2 player's shelf is otherwise 90% Destiny 2. A child whose parent
   // is not itself on the shelf still shows, or it would vanish entirely.
@@ -238,6 +225,24 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
     <main className="flex-1 p-6">
       <RememberShelfView query={queryFor(params)} />
 
+      {/* Searching is the way onto a shelf, so it belongs where the shelf is
+          rather than only behind a nav link. It hands off to /search, which
+          already interleaves what you own with what IGDB has. */}
+      <form className="mb-4 flex gap-2" action="/search">
+        <input
+          name="q"
+          type="search"
+          placeholder="Search for a game"
+          className="w-full max-w-md border border-line bg-panel px-3 py-2 text-ink outline-none focus:border-ink-dim"
+        />
+        <button
+          type="submit"
+          className="border border-line bg-panel px-4 py-2 font-medium hover:border-ink-dim"
+        >
+          Search
+        </button>
+      </form>
+
       <nav className="mb-4 flex flex-wrap items-center gap-4 font-narrow">
         <Link
           href={hrefWith(params, { status: undefined })}
@@ -258,7 +263,6 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
 
       <FilterForm defaults={{ sort: "added", groupBy: "none" }}>
         {status ? <input type="hidden" name="status" value={status} /> : null}
-        {reviewOnly ? <input type="hidden" name="review" value="needed" /> : null}
 
         <select name="sort" defaultValue={sort} className={SELECT}>
           {Object.entries(SORTS).map(([value, label]) => (
@@ -306,23 +310,6 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
           {hiddenCount > 0 ? ` · ${hiddenCount} grouped under parents` : ""}
         </span>
       </FilterForm>
-
-      {/* Only worth offering when there is something to review. Kept visible
-          while the filter is on, so turning it off does not require the URL. */}
-      {reviewCount.total > 0 || reviewOnly ? (
-        <p className="mb-6 font-narrow">
-          <Link
-            href={hrefWith(params, { review: reviewOnly ? undefined : "needed" })}
-            className={
-              reviewOnly ? "font-medium underline" : "text-ink-dim underline hover:text-ink"
-            }
-          >
-            {reviewOnly
-              ? "Showing covers needing review — show everything"
-              : `${reviewCount.total} ${reviewCount.total === 1 ? "cover needs" : "covers need"} review`}
-          </Link>
-        </p>
-      ) : null}
 
       {visible.length === 0 ? (
         <p className="font-narrow text-ink-dim">

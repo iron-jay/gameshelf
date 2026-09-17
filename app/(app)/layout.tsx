@@ -24,9 +24,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <Link href="/add" className="font-narrow text-ink-dim hover:text-ink">
             Add
           </Link>
-          <Link href="/stats" className="font-narrow text-ink-dim hover:text-ink">
-            Stats
-          </Link>
           <Link href="/settings" className="font-narrow text-ink-dim hover:text-ink">
             Settings
           </Link>

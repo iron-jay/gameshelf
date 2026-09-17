@@ -8,7 +8,6 @@ import { db } from "@/lib/db";
 import {
   completionLevel,
   entries,
-  plays,
   shelfEntries,
   shelves,
   versions,
@@ -16,10 +15,7 @@ import {
 import { slugify } from "@/lib/slug";
 import { isStatus } from "@/lib/status";
 
-
 type Completion = (typeof completionLevel.enumValues)[number];
-
-export type PlayState = { ok: boolean; message: string } | null;
 
 function isCompletion(value: unknown): value is Completion {
   return (
@@ -106,7 +102,7 @@ export async function setRating(formData: FormData): Promise<void> {
   const user = await requireUser();
   const versionId = String(formData.get("versionId") ?? "");
   const raw = Number(formData.get("rating") ?? 0);
-  // 1..10 half-stars; 0 is the clear button.
+  // 1..10 whole numbers; 0 is the clear button.
   const rating = Number.isInteger(raw) && raw >= 1 && raw <= 10 ? raw : null;
 
   const entryId = await entryIdFor(versionId, user.id);
@@ -153,63 +149,14 @@ export async function toggleFlag(formData: FormData): Promise<void> {
   refresh(versionId);
 }
 
-export async function addPlay(_prev: PlayState, formData: FormData): Promise<PlayState> {
-  const user = await requireUser();
-  const versionId = String(formData.get("versionId") ?? "");
-
-  const startedOn = String(formData.get("startedOn") ?? "").trim() || null;
-  const finishedOn = String(formData.get("finishedOn") ?? "").trim() || null;
-  const hoursRaw = String(formData.get("hours") ?? "").trim();
-  const completion = formData.get("completion");
-  const note = String(formData.get("note") ?? "").trim() || null;
-
-  if (startedOn && finishedOn && finishedOn < startedOn) {
-    return { ok: false, message: "The finish date is before the start date." };
-  }
-
-  let hours: string | null = null;
-  if (hoursRaw !== "") {
-    const parsed = Number(hoursRaw);
-    if (!Number.isFinite(parsed) || parsed < 0 || parsed > 99999) {
-      return { ok: false, message: "Hours must be a number between 0 and 99999." };
-    }
-    hours = parsed.toFixed(1);
-  }
-
-  const entryId = await entryIdFor(versionId, user.id);
-  if (!entryId) return { ok: false, message: "That version no longer exists." };
-
-  await db.insert(plays).values({
-    entryId,
-    startedOn,
-    finishedOn,
-    hours,
-    completion: isCompletion(completion) ? completion : null,
-    note,
-  });
-
-  refresh(versionId);
-  return { ok: true, message: "Play added." };
-}
-
-export async function deletePlay(formData: FormData): Promise<void> {
-  const user = await requireUser();
-  const versionId = String(formData.get("versionId") ?? "");
-  const playId = String(formData.get("playId") ?? "");
-
-  const entryId = await entryIdFor(versionId, user.id);
-  if (!entryId) return;
-
-  // Scoped to the entry, so a play id from someone else's shelf does nothing.
-  await db.delete(plays).where(and(eq(plays.id, playId), eq(plays.entryId, entryId)));
-  refresh(versionId);
-}
-
 /**
- * Shelves are free-form tags, deliberately separate from status: status is a
- * state machine holding one value, while a game can sit on any number of
- * shelves. Typing a name that does not exist yet creates it, the way Goodreads
- * does — there is no "manage shelves" step to get through first.
+ * Tags, deliberately separate from the shelf: the shelf is a state machine
+ * holding one value, while a game can carry any number of tags. Typing a name
+ * that does not exist yet creates it, the way Goodreads does — there is no
+ * "manage tags" step to get through first.
+ *
+ * The table and these functions are still called shelves; only the interface
+ * changed. See CLAUDE.md §2.
  */
 export async function tagWithShelf(formData: FormData): Promise<void> {
   const user = await requireUser();

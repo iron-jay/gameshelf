@@ -81,15 +81,15 @@ Rules:
   here, so you can rate the hack differently from the original. That is the
   point.
 - A **play** is one run through. Replays are new plays, not edits.
-- **Status** (`wishlist`/`backlog`/`playing`/`played`) is a state machine and is
+- **Status** (`wishlist`/`backlog`/`playing`/`played`/`dropped`) is a state machine and is
   separate from the free-form tags an entry can carry.
   - The interface calls the four statuses **shelves** — Goodreads' model, where
     the state you are in is the shelf it sits on — and calls the free-form ones
     **tags**. The column, the enum and the `shelves` table keep their names;
     this is language, not a migration. Decided 2026-09-17.
-  - There is no `dropped` or `shelved`: both meant "I stopped" and neither could
-    say it differently from the other. How far you got is `plays.completion`.
-    Removed in migration `0005`.
+  - `shelved` was removed in `0005`: it and `dropped` both meant "I stopped"
+    and neither said it differently from the other. `dropped` came back in
+    `0006` — it says something `played` does not.
 
 When adding a feature, ask which of these four tables it belongs to. If the
 answer is "a new table", push back on the feature first.
@@ -178,7 +178,9 @@ until it has its own.
 Take the highest-scoring grid from the result set. Filter `nsfw` and `humor`
 out of automatic selection; leave both available in the manual picker.
 
-Surface a **covers needing review** filter on the shelf. Choosing art manually
+Covers needing review get their own page at `/art`, linked from Settings. It was
+a filter on the shelf until 2026-09-18 — it is a job you work through, not a way
+of looking at what you own. Choosing art manually
 clears the flag. Auto-lookup runs once on add and never re-runs on its own —
 refresh is a manual action, so art you have approved is never silently
 replaced.
@@ -213,10 +215,9 @@ form. Used for doujin games, prototypes, unreleased builds.
 2. **Search** — one box, IGDB results and local works interleaved, clearly
    marked. Add to shelf inline.
 3. **Work page** — cover, summary, list of versions. Add version here.
-4. **Version page** — your entry, rating, review, play history.
-5. **Stats** — games finished per year, hours, platform breakdown. One page,
-   no dashboard sprawl.
-6. **Settings** — IGDB credentials check, export.
+4. **Version page** — your entry, shelf, rating out of ten, review.
+5. ~~**Stats**~~ — removed on 2026-09-18 with the plays UI it was built on.
+6. **Settings** — IGDB credentials check, export, import, cover art.
 
 Out of scope for v1: social features, following, public profiles, Steam import,
 achievements, recommendations, mobile app. Note them in `IDEAS.md` and move on.
@@ -424,10 +425,12 @@ runs end to end.
    romhack end to end through Door A, then the same hack through Door B on
    an existing work page. If the two paths need different code, stop and fix
    the form before continuing.
-7. Entry detail: rating, review, plays. Marking done defaults to `credits`
-   with the other levels one click away — never a required dropdown.
+7. Entry detail: rating out of ten, review. Marking done defaults to `credits`
+   with the other levels one click away — never a required dropdown. The plays
+   UI was removed on 2026-09-18; the table stays, and the export still carries
+   what was recorded.
 8. Tags (free-form, on top of the four shelves).
-9. Stats.
+9. ~~Stats~~ — removed on 2026-09-18 along with the plays UI it was built on.
 10. Export.
 
 Ship after 6. Everything past that is refinement on a thing that already works.

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -9,7 +9,6 @@ import {
   entries,
   OFFICIAL_VERSION_KINDS,
   platforms,
-  plays,
   shelfEntries,
   shelves,
   versions,
@@ -19,7 +18,6 @@ import { STATUS_ORDER } from "@/lib/status";
 import { isUuid } from "@/lib/uuid";
 
 import {
-  deletePlay,
   markDone,
   saveReview,
   setRating,
@@ -29,7 +27,6 @@ import {
   toggleFlag,
   untagShelf,
 } from "./actions";
-import { PlayForm } from "./play-form";
 
 export const dynamic = "force-dynamic";
 
@@ -44,11 +41,6 @@ const CHIP_ON = "border border-ink bg-panel px-3 py-1.5 font-narrow font-medium"
 
 function isCommunity(kind: string): boolean {
   return !(OFFICIAL_VERSION_KINDS as readonly string[]).includes(kind);
-}
-
-/** 1..10 half-stars in the database, 0.5..5 on screen. */
-function stars(rating: number): string {
-  return (rating / 2).toFixed(rating % 2 === 0 ? 0 : 1);
 }
 
 export default async function VersionPage({ params }: { params: Promise<{ id: string }> }) {
@@ -86,14 +78,6 @@ export default async function VersionPage({ params }: { params: Promise<{ id: st
     .select()
     .from(entries)
     .where(and(eq(entries.userId, user.id), eq(entries.versionId, version.id)));
-
-  const playRows = entry
-    ? await db
-        .select()
-        .from(plays)
-        .where(eq(plays.entryId, entry.id))
-        .orderBy(desc(plays.finishedOn), asc(plays.createdAt))
-    : [];
 
   const entryShelves = entry
     ? await db
@@ -248,7 +232,7 @@ export default async function VersionPage({ params }: { params: Promise<{ id: st
           <h2 className="mb-2 font-medium">
             Rating
             {entry?.rating ? (
-              <span className="ml-3 font-narrow text-ink-dim">{stars(entry.rating)} / 5</span>
+              <span className="ml-3 font-narrow text-ink-dim">{entry.rating} / 10</span>
             ) : null}
           </h2>
           <form action={setRating} className="flex flex-wrap gap-1">
@@ -261,7 +245,7 @@ export default async function VersionPage({ params }: { params: Promise<{ id: st
                 value={value}
                 className={`${entry?.rating === value ? CHIP_ON : CHIP} font-mono`}
               >
-                {stars(value)}
+                {value}
               </button>
             ))}
             {entry?.rating ? (
@@ -346,49 +330,6 @@ export default async function VersionPage({ params }: { params: Promise<{ id: st
           </form>
         </div>
 
-        <div>
-          <h2 className="font-medium">Plays</h2>
-          <p className="font-narrow text-ink-dim">
-            One run through each. A replay is a new play, not an edit to an old one.
-          </p>
-
-          {playRows.length > 0 ? (
-            <ul className="mt-3 flex max-w-2xl flex-col">
-              {playRows.map((play) => (
-                <li key={play.id} className="flex items-center gap-4 border-b border-line py-2">
-                  <span className="font-narrow">
-                    {[
-                      play.startedOn,
-                      play.finishedOn && play.finishedOn !== play.startedOn
-                        ? `→ ${play.finishedOn}`
-                        : null,
-                    ]
-                      .filter(Boolean)
-                      .join(" ") || "No dates"}
-                  </span>
-                  {play.hours ? <span className="font-mono text-ink-dim">{play.hours}h</span> : null}
-                  {play.completion ? (
-                    <span className="font-narrow text-ink-dim">{play.completion}</span>
-                  ) : null}
-                  {play.note ? <span className="truncate font-narrow">{play.note}</span> : null}
-
-                  <form action={deletePlay} className="ml-auto">
-                    {hidden}
-                    <input type="hidden" name="playId" value={play.id} />
-                    <button
-                      type="submit"
-                      className="font-narrow text-ink-dim underline hover:text-ink"
-                    >
-                      Remove
-                    </button>
-                  </form>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-
-          <PlayForm versionId={version.id} />
-        </div>
       </section>
     </main>
   );

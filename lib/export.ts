@@ -16,7 +16,6 @@ export type ExportEntry = {
   status: string;
   completion: string | null;
   rating: number | null;
-  ratingOutOfFive: number | null;
   review: string | null;
   reviewHasSpoilers: boolean;
   isFavourite: boolean;
@@ -158,9 +157,9 @@ export async function buildExport(userId: string, username: string): Promise<Exp
     entries: rows.map((row) => ({
       status: row.status,
       completion: row.completion,
+      // 1..10, which is also what it says on screen. `ratingOutOfFive` was here
+      // while the interface halved it; nothing halves it now.
       rating: row.rating,
-      // The database stores half-stars as 1..10; this is the number a person reads.
-      ratingOutOfFive: row.rating === null ? null : row.rating / 2,
       review: row.review,
       reviewHasSpoilers: row.reviewHasSpoilers,
       isFavourite: row.isFavourite,
@@ -214,7 +213,7 @@ const COLUMNS = [
   "parent_work",
   "status",
   "completion",
-  "rating_out_of_five",
+  "rating_out_of_ten",
   "favourite",
   "private",
   "shelves",
@@ -252,7 +251,7 @@ export function toCsv(doc: ExportDocument): string {
         entry.work.parentWork,
         entry.status,
         entry.completion,
-        entry.ratingOutOfFive,
+        entry.rating,
         entry.isFavourite,
         entry.isPrivate,
         entry.shelves.join("; "),

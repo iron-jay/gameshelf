@@ -1851,3 +1851,59 @@ all along. Dev rows put back afterwards.
 **Covers get 4px between them** instead of 1px. §5b calls for hairline gaps and
 this is still a dense grid rather than a feed of cards, but the wall reads
 better with the covers not quite touching.
+
+---
+
+## 2026-09-18 — Trimming: no plays, no stats, ten-point ratings
+
+Six changes, one of which needed asking about first.
+
+**"Can plays be removed from pages, as well as stats"** had two readings and
+both were destructive, so it got a question rather than a guess. Answer: the
+plays UI and the whole Stats page, with the `plays` table left in place. So
+nothing recorded is lost, the export still carries every play, and §2's
+four-table model is intact — there is simply no longer a screen that writes to
+it. `addPlay`, `deletePlay`, `PlayForm` and `app/(app)/stats` are gone, along
+with the Stats link in the header.
+
+**Ratings are out of ten, whole numbers.** The column always stored 1..10; the
+interface was halving it to show stars out of five, so this is display only and
+needs no migration. The export's `ratingOutOfFive` becomes `rating`, and the CSV
+column `rating_out_of_five` becomes `rating_out_of_ten`.
+
+**Covers needing review have their own page**, `/art`, linked from Settings, and
+the shelf loses the `review` parameter entirely. It is a job you sit down and
+work through, not a way of looking at what you own, and a permanent line above
+the grid counting unfinished chores is not what a wall of covers is for.
+
+**A search box on the shelf**, submitting to `/search` — searching is the way
+onto a shelf, so it belongs where the shelf is. And a local result now links: to
+the entry when exactly one version of that work is on your shelf, to the work
+page when several are. Guessing between a romhack and the original would be
+worse than asking.
+
+**`dropped` is back** (`0006`). It says something the other four cannot: you
+played it and stopped, which is not the same as having finished it. `shelved` is
+not coming back with it — that was the half of the pair with no distinct
+meaning. Adding a value to an enum needs no type rebuild, so the view was left
+alone this time.
+
+Entries that `0005` folded into `played` stay there. Nothing recorded which of
+them had been dropped, and that is the cost of the round trip.
+
+**The release-date auto-promotion is reverted**, one day old. The add-time
+default stays — an unreleased game still lands on the wishlist — but nothing
+moves it afterwards. `lib/wishlist.ts` deleted, and with it the one place that
+wrote to the database during a page render.
+
+`CLAUDE.md` follows all of it: §2's status list, §4a's review filter, §5's
+screens and §9's build order. A brief that contradicts the app is a trap for the
+next session, and this session has now contradicted it twice.
+
+**Verified** in the browser: `/stats` is a 404 and the nav has four links; the
+version page reads Shelf / Finished it / Rating 9 of 10 / Tags / Review with no
+Plays; rating buttons are 1–10; the shelf row of buttons includes dropped; the
+enum came back as five values in reading order; `/art` lists the one flagged
+cover and links to its picker; the shelf has a search box and no review line;
+searching "destiny 2" links each owned result to its entry while Ocarina of
+Time, with three versions shelved, links to the work. Dev rows left as found.

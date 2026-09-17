@@ -16,9 +16,9 @@ export type ShelfCard = {
   coverNeedsReview: boolean;
 };
 
-/** 1..10 half-stars in the database, 0.5..5 on screen. */
+/** Stored 1..10 and shown 1..10: a ten-point scale with no halves in it. */
 function ratingLabel(rating: number | null): string {
-  return rating === null ? "Unrated" : `${rating / 2} / 5`;
+  return rating === null ? "Unrated" : `${rating} / 10`;
 }
 
 export function ShelfTile({

@@ -1,4 +1,5 @@
 import { count } from "drizzle-orm";
+import Link from "next/link";
 
 import { authDisabled, requireUser } from "@/lib/auth";
 import { listCoverFiles } from "@/lib/covers";
@@ -80,6 +81,12 @@ export default async function SettingsPage() {
               : `${orphans.length} ${orphans.length === 1 ? "file is" : "files are"} no longer referenced by anything.`}
           </p>
           {orphans.length > 0 ? <CoverSweep /> : null}
+
+          <p className="mt-3 font-narrow">
+            <Link href="/art" className="text-ink-dim underline hover:text-ink">
+              Cover art to review
+            </Link>
+          </p>
         </section>
 
         <section>

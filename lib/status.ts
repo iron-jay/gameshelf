@@ -19,6 +19,7 @@ export const STATUS_ORDER = [
   "backlog",
   "playing",
   "played",
+  "dropped",
 ] as const satisfies readonly Status[];
 
 /** Takes `unknown` because most callers are handing it a raw FormData value. */
