@@ -1,20 +1,21 @@
 import { and, asc, count, eq, inArray, sql, type SQL } from "drizzle-orm";
+import { cookies } from "next/headers";
 import Link from "next/link";
 
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { entryCards, logStatus, shelfEntries, shelves, versionKind } from "@/lib/db/schema";
+import { entryCards, shelfEntries, shelves, versionKind } from "@/lib/db/schema";
 
 import { platformsInUse } from "@/lib/platforms";
+import { isStatus, STATUS_ORDER } from "@/lib/status";
 
 import { FilterForm } from "./filter-form";
 import { RememberShelfView } from "./remember-shelf-view";
 import { ShelfGrid, type ShelfSection } from "./shelf-grid";
+import { preferencesFrom, SHELF_VIEW_COOKIE } from "./shelf-view";
 import { type ShelfCard } from "./shelf-tile";
 
 export const dynamic = "force-dynamic";
-
-type Status = (typeof logStatus.enumValues)[number];
 
 // Section 5 names these three. Title sorting would need works.sort_title on the
 // view, which is not worth a column until someone asks for it.
@@ -49,10 +50,6 @@ type Params = {
   shelf?: string;
   groupBy?: string;
 };
-
-function isStatus(value: string | undefined): value is Status {
-  return Boolean(value) && (logStatus.enumValues as readonly string[]).includes(value!);
-}
 
 function isSort(value: string | undefined): value is Sort {
   return Boolean(value) && value! in SORTS;
@@ -113,7 +110,7 @@ function bucketFor(row: Row, groupBy: GroupBy): { label: string; order: number |
     case "status":
       return {
         label: row.status ?? "backlog",
-        order: (logStatus.enumValues as readonly string[]).indexOf(row.status ?? "backlog"),
+        order: (STATUS_ORDER as readonly string[]).indexOf(row.status ?? "backlog"),
       };
     case "kind":
       return {
@@ -127,7 +124,15 @@ function bucketFor(row: Row, groupBy: GroupBy): { label: string; order: number |
 
 export default async function ShelfPage({ searchParams }: { searchParams: Promise<Params> }) {
   const user = await requireUser();
-  const params = await searchParams;
+
+  // A bare "/" is not a reset — it is your own way of looking at the shelf. The
+  // URL still wins wherever it says anything, so a shared or bookmarked link
+  // shows what it says rather than what the reader happens to prefer.
+  const asked = await searchParams;
+  const params: Params = {
+    ...preferencesFrom((await cookies()).get(SHELF_VIEW_COOKIE)?.value),
+    ...asked,
+  };
 
   const status = isStatus(params.status) ? params.status : undefined;
   const sort: Sort = isSort(params.sort) ? params.sort : "added";
@@ -235,7 +240,7 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
         >
           All
         </Link>
-        {logStatus.enumValues.map((value) => (
+        {STATUS_ORDER.map((value) => (
           <Link
             key={value}
             href={hrefWith(params, { status: value })}
@@ -326,7 +331,7 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
           // Bulk changes reach whatever is selected, so the target list is the
           // same one the version form offers rather than only what is on screen.
           platforms={await platformsInUse()}
-          statuses={logStatus.enumValues}
+          statuses={STATUS_ORDER}
         />
       )}
     </main>

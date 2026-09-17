@@ -11,8 +11,35 @@
  * and a layout is not re-rendered as you navigate within it — a value read there
  * would be however stale the last full page load left it.
  */
-const SHELF_VIEW_COOKIE = "shelf-view";
+export const SHELF_VIEW_COOKIE = "shelf-view";
 const A_YEAR = 60 * 60 * 24 * 365;
+
+/**
+ * The parts of a shelf view that are a preference rather than a question.
+ *
+ * How you like to sort, group and treat DLC is how you like to look at your
+ * shelf, and it should survive a bare "/" — a bookmark, a fresh tab, the link
+ * after adding a game. Which status or platform you were filtering to is what
+ * you were looking at a minute ago, and restoring that unasked would leave you
+ * staring at a subset with no memory of why.
+ */
+const PREFERENCE_KEYS = ["sort", "groupBy", "dlc"] as const;
+
+export type ShelfPreferences = Partial<Record<(typeof PREFERENCE_KEYS)[number], string>>;
+
+/** Read on the server, from the same cookie the shelf writes on every render. */
+export function preferencesFrom(raw: string | undefined): ShelfPreferences {
+  if (!raw) return {};
+
+  const stored = new URLSearchParams(raw);
+  const preferences: ShelfPreferences = {};
+  for (const key of PREFERENCE_KEYS) {
+    const value = stored.get(key);
+    if (value) preferences[key] = value;
+  }
+
+  return preferences;
+}
 
 /** Everything the shelf page reads out of the URL. */
 const SHELF_PARAMS = ["status", "platform", "sort", "dlc", "review", "shelf", "groupBy"] as const;

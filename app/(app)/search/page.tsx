@@ -3,8 +3,9 @@ import Image from "next/image";
 
 import { db } from "@/lib/db";
 import { works } from "@/lib/db/schema";
-import { platformNameFor, primaryPlatformFor } from "@/lib/igdb/mapping";
+import { platformNameFor, primaryPlatformFor, releaseDateFor } from "@/lib/igdb/mapping";
 import { searchGames } from "@/lib/igdb/search";
+import { STATUS_ORDER } from "@/lib/status";
 import { igdbImageUrl, IgdbError, IgdbNotConfiguredError, type IgdbGame } from "@/lib/igdb/types";
 
 import { AddButton } from "./add-button";
@@ -23,7 +24,21 @@ type SearchResult =
       /** Every platform IGDB lists, for the picker. Spelled out, as the name will be. */
       platformOptions: { id: number; name: string }[];
       defaultPlatformId: number | null;
+      defaultStatus: string;
     };
+
+/**
+ * Something you cannot have played yet is a wishlist entry; something that is
+ * out is a backlog entry. Both are one click from the other, so the cost of
+ * guessing wrong is nil and the cost of asking every time is not.
+ *
+ * A game with no release date at all counts as out: IGDB not knowing when
+ * something came out is far more common than it being unreleased.
+ */
+function defaultStatusFor(game: IgdbGame): string {
+  const released = releaseDateFor(game);
+  return released && released > new Date().toISOString().slice(0, 10) ? "wishlist" : "backlog";
+}
 
 function yearOf(seconds: number | undefined): number | null {
   return seconds ? new Date(seconds * 1000).getUTCFullYear() : null;
@@ -50,6 +65,7 @@ function toResult(game: IgdbGame): SearchResult {
     // The same call the server makes when nothing is chosen, so what the picker
     // shows is what an untouched Add would produce.
     defaultPlatformId: primaryPlatformFor(game)?.id ?? null,
+    defaultStatus: defaultStatusFor(game),
   };
 }
 
@@ -178,6 +194,8 @@ export default async function SearchPage({
                 igdbId={r.id}
                 platforms={r.platformOptions}
                 defaultPlatformId={r.defaultPlatformId}
+                statuses={STATUS_ORDER}
+                defaultStatus={r.defaultStatus}
               />
             ) : null}
           </li>

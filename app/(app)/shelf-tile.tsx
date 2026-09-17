@@ -114,7 +114,12 @@ export function ShelfTile({
 
       {/* Metadata appears on selection rather than permanently under every
           cover, so the grid stays a wall of art. */}
-      <div className="absolute inset-0 flex flex-col justify-end bg-ground/92 p-2 opacity-0 transition-opacity group-hover:opacity-100 group-focus:opacity-100">
+      {/* z-20 so it sits above the tile's own link, and pointer-events-none so
+          it does not swallow the clicks meant for it — only the controls inside
+          take them back. Without the z-index the fade would decide: an opacity
+          between 0 and 1 makes a stacking context, so a click landing mid-fade
+          would go to the link underneath instead. */}
+      <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-end bg-ground/92 p-2 opacity-0 transition-opacity group-hover:opacity-100 group-focus:opacity-100">
         <p className="font-medium">{title}</p>
         <p className="font-narrow text-ink-dim">{subtitle}</p>
         {detail ? <p className="font-narrow text-ink-dim">{detail}</p> : null}
@@ -124,6 +129,18 @@ export function ShelfTile({
         {card.coverNeedsReview ? (
           <p className="font-narrow text-ink-dim">Cover needs review</p>
         ) : null}
+
+        {/* It goes to the confirmation page rather than deleting on the spot:
+            this is a grid of covers, and a one-click delete on a wall of art is
+            one mis-tap away from losing something. */}
+        {selecting ? null : (
+          <Link
+            href={`/version/${card.versionId}/delete`}
+            className="pointer-events-auto mt-2 self-start border border-line px-2 py-1 font-narrow text-ink-dim hover:border-danger hover:bg-danger hover:text-ink"
+          >
+            Delete
+          </Link>
+        )}
       </div>
     </li>
   );

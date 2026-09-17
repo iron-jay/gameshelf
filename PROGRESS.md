@@ -1719,3 +1719,59 @@ Existing rows therefore self-correct the next time something is added on that
 platform, but only then — the backfill is a statement, and worth checking first
 for a local row that already carries the short name. This database has two
 "Linux" rows for exactly that reason: one from IGDB, one typed in.
+
+---
+
+## 2026-09-17 — Status on the way in, preferences that stay, and a delete on the tile
+
+Four requests, one session.
+
+**Status when adding**, defaulted from the release date: something not out yet
+is a wishlist entry, something that is out is a backlog entry. A game with no
+release date counts as out — IGDB not knowing a date is far more common than a
+game being unreleased. The picker is right there when the guess is wrong, and so
+is the shelf afterwards.
+
+Note the word: these are *statuses*, not shelves. Shelves are the free-form tags
+in §2, and wishlist/backlog are the state machine. Mixing them would have put
+the same thing in two places.
+
+**One status order, `lib/status.ts`.** wishlist, backlog, playing, played, then
+dropped and shelved — a game's progress, then the two ways out of it. The enum
+declares them in the order the column was written, which means nothing to anyone
+reading a shelf. Applied to the status tabs as well as the grouping: two orders
+for one set of values is worse than either. Say if the tabs should go back.
+
+**Preferences persist, filters do not.** How you sort, group and treat DLC is
+how you like to look at your shelf, so a bare "/" now restores it — a bookmark,
+a fresh tab, the link after adding a game. Which status or platform you were
+filtering to is what you were looking at a minute ago, and restoring that
+unasked leaves you staring at a subset with no memory of why. The URL still wins
+wherever it says anything, so a shared link shows what it says.
+
+The trap here is the one that bit the first attempt at remembering the view:
+turning grouping *off* produces a bare "/", indistinguishable from arriving
+fresh. So `FilterForm` writes the cookie before it navigates, and what it writes
+is exactly what it is about to put in the URL. Verified both directions — set
+grouping, reload, still grouped; turn it off, reload, still off.
+
+**Delete on the tile.** A link to the existing confirmation page, not a delete:
+this is a grid of covers and a one-click delete on a wall of art is one mis-tap
+from losing something. The page already explains what goes with it.
+
+`--color-danger` is a second chromatic value and a deliberate exception to §5b,
+which reserves colour for community provenance. Destructive actions announce
+themselves on hover and nowhere else — never at rest, never as text.
+
+The fiddly part was hit-testing. The metadata overlay fades with `opacity`, and
+an opacity between 0 and 1 creates a stacking context, so a click landing
+mid-fade went to the tile's link underneath instead of the button. The overlay
+now carries `z-20` and `pointer-events-none`, and the controls inside take the
+events back. Painting and hit-testing no longer depend on how far through the
+fade you are.
+
+**Verified** against the dev database: GTA VI (2026-11-19) added itself to the
+wishlist and appeared in the first group; the tabs and the groups both read
+wishlist, backlog, played; a bare "/" kept sort and DLC while dropping a status
+filter; the delete link resolves `hover:bg-danger` to `rgb(168, 71, 63)` and
+sits above the tile link. Test work, version, entry and cover removed.

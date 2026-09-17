@@ -18,10 +18,15 @@ export function AddButton({
   igdbId,
   platforms,
   defaultPlatformId,
+  statuses,
+  defaultStatus,
 }: {
   igdbId: number;
   platforms: { id: number; name: string }[];
   defaultPlatformId: number | null;
+  statuses: readonly string[];
+  /** wishlist for something not out yet, backlog for something that is. */
+  defaultStatus: string;
 }) {
   const [state, action, pending] = useActionState<AddState, FormData>(addToShelf, null);
 
@@ -49,6 +54,24 @@ export function AddButton({
               </select>
             </label>
           ) : null}
+
+          {/* Defaulted from the release date rather than asked for. It is right
+              most of the time, and wrong is one click to fix either here or on
+              the shelf afterwards. */}
+          <label className="flex items-center gap-2">
+            <span className="sr-only">Status</span>
+            <select
+              name="status"
+              defaultValue={defaultStatus}
+              className="border border-line bg-panel px-2 py-1.5 font-narrow text-ink"
+            >
+              {statuses.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </label>
 
           <button
             type="submit"

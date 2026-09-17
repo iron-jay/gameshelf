@@ -10,6 +10,7 @@ import { entries, platforms, versions, works } from "@/lib/db/schema";
 import { getGameById } from "@/lib/igdb/games";
 import { originalVersionName, releaseDateFor } from "@/lib/igdb/mapping";
 import { igdbImageUrl, IgdbError } from "@/lib/igdb/types";
+import { isStatus, type Status } from "@/lib/status";
 import { ensureWorkFromIgdb, primaryPlatformFor, upsertPlatform } from "@/lib/works/ensure";
 
 export type AddState = { ok: boolean; message: string } | null;
@@ -48,6 +49,13 @@ export async function addToShelf(_prev: AddState, formData: FormData): Promise<A
   const igdbPlatform =
     (game.platforms ?? []).find((platform) => platform.id === chosen) ?? primaryPlatformFor(game);
 
+  // Backlog is the fallback the column already defaults to, so a form that says
+  // nothing about status behaves exactly as it did before there was a picker.
+  const asked = formData.get("status");
+  const status: Status = isStatus(typeof asked === "string" ? asked : undefined)
+    ? (asked as Status)
+    : "backlog";
+
   const outcome = await db.transaction(async (tx) => {
     const platformId = await upsertPlatform(tx, igdbPlatform);
     const work = await ensureWorkFromIgdb(tx, game, user.id);
@@ -81,7 +89,7 @@ export async function addToShelf(_prev: AddState, formData: FormData): Promise<A
 
     const inserted = await tx
       .insert(entries)
-      .values({ userId: user.id, versionId, status: "backlog" })
+      .values({ userId: user.id, versionId, status })
       .onConflictDoNothing()
       .returning({ id: entries.id });
 

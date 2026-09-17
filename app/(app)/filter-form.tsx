@@ -4,6 +4,8 @@ import { useRef, useSyncExternalStore } from "react";
 
 import { useRouter } from "next/navigation";
 
+import { rememberShelfView } from "./shelf-view";
+
 /**
  * False while rendering on the server, true once hydrated. useSyncExternalStore
  * is the sanctioned way to ask that question — the useEffect-plus-setState
@@ -53,6 +55,13 @@ export function FilterForm({
     }
 
     const qs = query.toString();
+
+    // Written here, before the navigation, rather than left to the render that
+    // follows it. Turning grouping back off produces a bare "/", and the server
+    // reads this cookie to decide what a bare "/" means — so if the old value
+    // were still in it, the choice to turn something off would undo itself.
+    rememberShelfView(qs);
+
     router.push(qs ? `/?${qs}` : "/");
   }
 

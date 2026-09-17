@@ -19,6 +19,13 @@
      stopped carrying meaning. */
   --color-label: #c08a3e;
 
+  /* The second chromatic value, and a deliberate exception to the rule above:
+     destructive actions announce themselves on hover and nowhere else. Never a
+     resting state, never text, never a border on something that only navigates.
+     Muted rather than a signal red, so it reads as a warning on a mid ground
+     rather than an alert. */
+  --color-danger: #a8473f;
+
   --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
   --font-narrow: var(--font-archivo-narrow), var(--font-archivo), ui-sans-serif,
     system-ui, sans-serif;
