@@ -260,3 +260,16 @@ the reverse proxy runs on another host.
 `CLAUDE.md` suggests 2 vCPU / 2 GB, which is comfortable now that the server only
 ever pulls. 32 GB of disk leaves room for the images, Postgres and a cover
 library — the art runs a few hundred KB per game.
+
+**Check the guest actually has that disk**, because a Debian cloud image does not
+grow into it on its own:
+
+```bash
+df -h /        # should be most of the disk, not 2.9G
+```
+
+A hypervisor reporting 32 GB says nothing about the filesystem inside. Left at
+the image's default, root fills in an afternoon — every `docker compose pull`
+leaves the previous image behind — and Postgres goes down with it, which
+presents as the whole app 500ing for no visible reason. Growing it is
+`growpart /dev/sda 1 && resize2fs /dev/sda1`, online, no reboot.

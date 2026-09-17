@@ -1658,3 +1658,35 @@ everything breaking at once. Both services now cap at 10 MB × 3 files.
 That is prevention, not diagnosis: the 32 GB that went is almost certainly old
 images, one left behind by every `docker compose pull`, and today saw six of
 them. `docker system df` says where it went.
+
+---
+
+## 2026-09-17 — The 32 GB disk was 2.9 GB
+
+The database failure was the disk. `df -h /` said `/dev/sda1  2.8G  2.8G  0  100%`
+on a VM Proxmox reports as 32 GB.
+
+A Debian cloud image ships a ~3 GB root and does not grow into the disk it is
+given; nothing in the deploy steps said to check, and a hypervisor reporting
+32 GB says nothing about the filesystem inside. Root then filled in an
+afternoon — six image pulls in one day, each leaving the previous image behind,
+plus an unbounded container log while the app retried against a database that
+could no longer write. Postgres went into recovery, every page 500ed, and the
+visible symptom was "adding a game is broken".
+
+The layout was the standard cloud-image one: partitions 14 (BIOS boot) and 15
+(EFI) at the front, root as partition 1 and last, with 29 GB unallocated after
+it. `growpart /dev/sda 1 && resize2fs /dev/sda1`, online, no reboot. 31 GB now.
+
+Three things came out of it, in the order they matter:
+
+1. `README` now says to check `df -h /` on the guest, because that is the step
+   whose absence caused this.
+2. Both services cap their logs at 10 MB × 3, so a crash loop cannot do it again.
+3. `app/error.tsx` means the next outage says "gameshelf cannot reach its
+   database" rather than presenting as a broken feature. That one cost an
+   afternoon of looking for a bug in the add flow that was never there.
+
+The lesson is the same one the rehearsal-versus-clone entry already records:
+the thing under test has to be the thing that runs. Three environments said the
+add flow was fine, and all three were right.
