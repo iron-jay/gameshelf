@@ -1586,3 +1586,43 @@ the shelf is byte-for-byte the six rows it started as.
 server, and the container image itself against the same database — Add works in
 all three, with and without the picker, for a new game and for one already on
 the shelf. Whatever it is needs the error out of `docker compose logs app`.
+
+---
+
+## 2026-09-17 — A database outage should not read as a 500
+
+The "adding a game throws a 500" report turned out to be Postgres, not the add
+flow: `57P03`, the database system is in recovery mode, on the session lookup
+that runs before every page. Which is why it could not be reproduced in `next
+dev`, in the standalone build, or in the container image — there was nothing
+wrong with the code. The only thing that said so was `docker compose logs`.
+
+So the failure now has a face.
+
+`app/error.tsx` sits at the root, which is where it has to be: the session
+lookup runs in the app layout, and a boundary inside that layout cannot catch
+its own layout throwing.
+
+**It cannot read the error, so it asks.** Next strips a server error's message
+before it reaches the browser — correctly — so the component has no way to see
+`57P03`. `app/health` is a `select 1` and nothing else, and its answer separates
+"the database is down" from "gameshelf is broken", two problems with nothing in
+common but a status code. It is unauthenticated because it cannot be anything
+else: sessions live in the database, so a check requiring one would fail for the
+exact reason it exists to report. It returns up or down and no detail.
+
+**`reset()` alone does not recover.** Found by testing the thing rather than
+trusting it: stop the database, load the page, start the database, press Try
+again — and it failed again. `reset()` re-renders the boundary against the
+payload it already has, which is the failed one. `router.refresh()` inside the
+same transition is what asks the server a second time.
+
+**Verified** against a genuinely stopped container, not a mock. `docker compose
+stop db` gives "gameshelf cannot reach its database" and `/health` 503s;
+`/version/not-a-uuid` with the database up gives "Something went wrong" and the
+digest; starting the database and pressing Try again brings the shelf back
+without a reload.
+
+Noticed on the way: `/version/<not a uuid>` reaches Postgres and fails on
+invalid input syntax where it should be a 404. Left alone — it is a different
+change.
