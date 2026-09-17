@@ -21,7 +21,20 @@ function ratingLabel(rating: number | null): string {
   return rating === null ? "Unrated" : `${rating / 2} / 5`;
 }
 
-export function ShelfTile({ card, index }: { card: ShelfCard; index: number }) {
+export function ShelfTile({
+  card,
+  index,
+  selecting = false,
+  checked = false,
+  onToggle,
+}: {
+  card: ShelfCard;
+  index: number;
+  /** In select mode the whole tile toggles instead of opening the version. */
+  selecting?: boolean;
+  checked?: boolean;
+  onToggle?: (entryId: string) => void;
+}) {
   // A romhack or port is the thing you played, so it leads and the game it is
   // built on is the qualifier. For an official release the work is the thing and
   // the version is the qualifier — same two lines, opposite order.
@@ -41,12 +54,37 @@ export function ShelfTile({ card, index }: { card: ShelfCard; index: number }) {
 
   return (
     <li
-      className="shelf-tile group relative aspect-[3/4] bg-panel"
+      className={`shelf-tile group relative aspect-[3/4] bg-panel${
+        checked ? " outline outline-2 -outline-offset-2 outline-ink" : ""
+      }`}
       style={{ "--tile-index": index } as React.CSSProperties}
     >
-      <Link href={`/version/${card.versionId}`} className="absolute inset-0 z-10">
-        <span className="sr-only">{title}</span>
-      </Link>
+      {/* The whole tile is the target in select mode. A checkbox small enough
+          not to sit on the art would be too small to hit on a phone, and the
+          tile is already the thing you are pointing at.
+
+          Drawn rather than a real <input>: React resets a form's fields once its
+          action resolves, which would wipe every tick while the selection state
+          beside it still said otherwise. What is submitted comes from that state
+          instead, so there is only one answer to what is selected. */}
+      {selecting ? (
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={checked}
+          aria-label={title}
+          onClick={() => onToggle?.(card.entryId)}
+          className="absolute inset-0 z-10 flex items-start p-2"
+        >
+          <span
+            className={`size-5 border ${checked ? "border-ink bg-ink" : "border-ink bg-ground/80"}`}
+          />
+        </button>
+      ) : (
+        <Link href={`/version/${card.versionId}`} className="absolute inset-0 z-10">
+          <span className="sr-only">{title}</span>
+        </Link>
+      )}
       {card.coverUrl ? (
         <Image
           src={card.coverUrl}

@@ -1,12 +1,12 @@
 "use server";
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { requireUser } from "@/lib/auth";
 import { downloadCover } from "@/lib/covers";
 import { db } from "@/lib/db";
-import { entries, platforms, versionKind, versions, works } from "@/lib/db/schema";
+import { entries, versionKind, versions, works } from "@/lib/db/schema";
 import { getGameById } from "@/lib/igdb/games";
 import { slugify } from "@/lib/igdb/mapping";
 import { searchGames } from "@/lib/igdb/search";
@@ -16,6 +16,7 @@ import type {
   BaseGameOption,
   CreateVersionState,
 } from "@/lib/versions/types";
+import { resolvePlatform } from "@/lib/platforms";
 import { isCommunityKind, isFormKind, OTHER_PLATFORM } from "@/lib/versions/types";
 
 function isVersionKind(value: string): value is (typeof versionKind.enumValues)[number] {
@@ -220,31 +221,6 @@ export async function createVersion(
   revalidatePath(`/work/${outcome.workSlug}`);
 
   return { ok: true, message: "Added to your shelf", workSlug: outcome.workSlug };
-}
-
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
-
-/**
- * Matched case-insensitively by name, because the alternative is two rows
- * differing only by a capital letter. A platform IGDB has never heard of
- * becomes a local row, which the schema allows for exactly this.
- */
-async function resolvePlatform(tx: Tx, name: string | null): Promise<number | null> {
-  if (!name) return null;
-
-  const [existing] = await tx
-    .select({ id: platforms.id })
-    .from(platforms)
-    .where(sql`lower(${platforms.name}) = lower(${name})`);
-
-  if (existing) return existing.id;
-
-  const [created] = await tx
-    .insert(platforms)
-    .values({ name, source: "local" })
-    .returning({ id: platforms.id });
-
-  return created.id;
 }
 
 /**

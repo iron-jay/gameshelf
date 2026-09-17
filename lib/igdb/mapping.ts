@@ -72,8 +72,10 @@ export function primaryPlatformFor(game: IgdbGame): IgdbPlatform | undefined {
  * because "Nintendo 64" reads as a name and "N64" reads as a code. Anything
  * with a name of its own comes in through the version form instead.
  */
+export const UNPLACED_ORIGINAL = "Original release";
+
 export function originalVersionName(platform: IgdbPlatform | undefined): string {
-  return platform?.name ?? "Original release";
+  return platform?.name ?? UNPLACED_ORIGINAL;
 }
 
 /** IGDB dates are unix seconds; works.first_release_date is a plain date. */

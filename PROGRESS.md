@@ -1529,3 +1529,60 @@ reported "Already on your shelf, on Nintendo 64" and changed nothing. Celeste,
 not on the shelf, added on Nintendo Switch rather than the preselected Xbox One,
 and the row reads `Celeste | Nintendo Switch | original | Nintendo Switch`. Test
 work, version, entry, platform row and cover file all removed afterwards.
+
+---
+
+## 2026-09-17 — Bulk platform and status, and a form reset that ate the selection
+
+A hundred games imported onto the wrong platform is a repair job, and doing it
+one version at a time is not a repair job anyone finishes. The shelf now has a
+select mode.
+
+**Selecting is a mode, not a checkbox on every cover.** §5b is explicit that the
+art is the content and the interface is the frame; a permanent checkbox on every
+tile is the frame taking over. "Select" turns it on, the whole tile becomes the
+target — a checkbox small enough not to sit on the art is too small to hit on a
+phone — and a bar appears with the platform field, the status list and the
+counts. Filter the shelf first and "Select all" does the rest, which is the
+actual workflow: platform = 64DD, select all, change platform.
+
+Platform reuses the same `PlatformField` as the version form, so free text is
+there for a platform nothing is on yet, and `resolvePlatform` moved to
+`lib/platforms` rather than being copied.
+
+**The bug worth recording.** The first version used real checkboxes with
+`name="entryId"` and React state alongside them for the count. It worked once.
+The second action on the same selection submitted nothing, while the screen
+still said "2 of 6 selected" and still outlined two tiles — because React resets
+a form's fields once its action resolves, and it does not re-sync a controlled
+checkbox whose prop never changed. Two sources of truth for one answer, and they
+drifted the moment an action completed.
+
+So the tick is drawn (a button with `role="checkbox"`), and what gets submitted
+is hidden inputs rendered from the selection state. Hidden inputs survive the
+reset, because a reset restores exactly the value rendered. One answer to what
+is selected.
+
+**Renaming on a bulk move** follows the same rule as the edit form, but stricter:
+only an `original` whose name is still the one a platform gave it — the platform
+name, its abbreviation, or "Original release" when it had no platform. "Master of
+Time" and "N64 (PAL)" were written by someone and stay. That last case had to be
+added after testing: moving a version off "no platform" left it called "Original
+release" because the name matched neither the old platform nor its abbreviation.
+`UNPLACED_ORIGINAL` is now shared with `originalVersionName` rather than being
+a string in two places.
+
+Platform writes to `versions`, which is shared across users; status writes to
+`entries`, which is not. Both are documented at the top of the actions.
+
+**Verified** against the dev database, watching the rows rather than the screen:
+two entries to `playing` left the other six alone; a free-text "Sega Saturn"
+moved three and renamed the two originals while leaving the romhack's name; a
+move to Nintendo 64 renamed the two that had come from no platform. All test
+works, versions, entries, platform rows and cover files removed afterwards, and
+the shelf is byte-for-byte the six rows it started as.
+
+**Not reproduced: the 500 on Add.** Tried `next dev`, the production standalone
+server, and the container image itself against the same database — Add works in
+all three, with and without the picker, for a new game and for one already on
+the shelf. Whatever it is needs the error out of `docker compose logs app`.

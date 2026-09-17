@@ -30,14 +30,15 @@ export type VersionFieldValues = {
  * Only one control carries the name at a time, so there is never a question of
  * which one the form submits.
  */
-function PlatformField({
+export function PlatformField({
   value,
   platforms,
   onChange,
 }: {
   value: string;
   platforms: string[];
-  onChange: (platform: string) => void;
+  /** Told what was picked, for forms where another field follows it. */
+  onChange?: (platform: string) => void;
 }) {
   const [typing, setTyping] = useState(
     platforms.length === 0 || (value !== "" && !platforms.includes(value)),
@@ -58,7 +59,7 @@ function PlatformField({
             value={text}
             onChange={(event) => {
               setText(event.target.value);
-              onChange(event.target.value);
+              onChange?.(event.target.value);
             }}
             className={FIELD}
           />
@@ -85,7 +86,7 @@ function PlatformField({
           defaultValue={value}
           onChange={(event) => {
             if (event.target.value !== OTHER_PLATFORM) {
-              onChange(event.target.value);
+              onChange?.(event.target.value);
               return;
             }
             // The name is left alone until something is actually typed, rather

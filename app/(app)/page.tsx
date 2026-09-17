@@ -5,9 +5,12 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { entryCards, logStatus, shelfEntries, shelves, versionKind } from "@/lib/db/schema";
 
+import { platformsInUse } from "@/lib/platforms";
+
 import { FilterForm } from "./filter-form";
 import { RememberShelfView } from "./remember-shelf-view";
-import { ShelfTile, type ShelfCard } from "./shelf-tile";
+import { ShelfGrid, type ShelfSection } from "./shelf-grid";
+import { type ShelfCard } from "./shelf-tile";
 
 export const dynamic = "force-dynamic";
 
@@ -213,15 +216,13 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
     groups.set(label, group);
   }
 
-  const sections = [...groups.entries()].sort((a, b) =>
-    typeof a[1].order === "number" && typeof b[1].order === "number"
-      ? a[1].order - b[1].order
-      : String(a[1].order).localeCompare(String(b[1].order)),
-  );
-
-  // The load animation staggers across the whole grid rather than per section,
-  // so it still reads as one shelf resolving.
-  let tileIndex = 0;
+  const sections: ShelfSection[] = [...groups.entries()]
+    .sort((a, b) =>
+      typeof a[1].order === "number" && typeof b[1].order === "number"
+        ? a[1].order - b[1].order
+        : String(a[1].order).localeCompare(String(b[1].order)),
+    )
+    .map(([label, group]) => ({ label, cards: group.cards }));
 
   return (
     <main className="flex-1 p-6">
@@ -319,21 +320,14 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
           start a shelf.
         </p>
       ) : (
-        sections.map(([label, group]) => (
-          <section key={label || "all"} className="mb-8">
-            {groupBy === "none" ? null : (
-              <h2 className="mb-2 flex items-baseline gap-3 font-medium">
-                {label}
-                <span className="font-narrow text-ink-dim">{group.cards.length}</span>
-              </h2>
-            )}
-            <ul className="grid gap-px [grid-template-columns:repeat(auto-fill,minmax(140px,1fr))]">
-              {group.cards.map((card) => (
-                <ShelfTile key={card.entryId} card={card} index={tileIndex++} />
-              ))}
-            </ul>
-          </section>
-        ))
+        <ShelfGrid
+          sections={sections}
+          grouped={groupBy !== "none"}
+          // Bulk changes reach whatever is selected, so the target list is the
+          // same one the version form offers rather than only what is on screen.
+          platforms={await platformsInUse()}
+          statuses={logStatus.enumValues}
+        />
       )}
     </main>
   );
