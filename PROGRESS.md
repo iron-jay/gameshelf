@@ -1491,3 +1491,41 @@ platforms disappeared from the edit form; typing "Nintendo 64DD" as free text
 and saving put it in the list on reload; moving the version back to Nintendo 64
 took it out again, on the edit form and on both add doors. Test row removed
 afterwards and the version left on Nintendo 64.
+
+---
+
+## 2026-09-17 — Choosing which release you played, on the way in
+
+Adding from search took the platform the server guessed: `primaryPlatformFor`,
+the earliest dated release. Right for Ocarina of Time on N64, wrong for anyone
+who played it on the Wii, and the only fix was to add it and then edit it. The
+search row now carries a picker of every platform IGDB lists for that game.
+
+It only appears when there is something to choose — a single-platform game gets
+no picker — and once it is there, the metadata line stops repeating a truncated
+copy of the same platforms and just reads "IGDB".
+
+**The default has to be the server's answer, or the picker lies.** Untouched, it
+must produce exactly what Add produced before. That meant widening the search
+projection: it fetched `platforms.name` but neither `platforms.id` nor
+`release_dates`, so `primaryPlatformFor` on a search result would have fallen
+back to `platforms[0]` and quietly reintroduced Ocarina of Time on 64DD — IGDB
+does list 64DD for it. Both sides now call the same function on the same data.
+
+The choice is checked against the game IGDB just returned rather than believed,
+so a submitted id that is not one of that game's platforms falls back to the
+guess. With scripting off there is no value at all, and the same fallback
+applies.
+
+**When the original version already exists, the choice is not applied** — this
+flow has always reused it rather than creating a second one, and that is still
+right. But silently ignoring an explicit choice is how a feature gets a
+reputation, so the message names the platform it is actually on: "Already on
+your shelf, on Nintendo 64".
+
+**Verified** against IGDB and the dev database: Ocarina of Time offered 64DD,
+Nintendo 64, Wii and Wii U with Nintendo 64 preselected; adding it on Wii
+reported "Already on your shelf, on Nintendo 64" and changed nothing. Celeste,
+not on the shelf, added on Nintendo Switch rather than the preselected Xbox One,
+and the row reads `Celeste | Nintendo Switch | original | Nintendo Switch`. Test
+work, version, entry, platform row and cover file all removed afterwards.

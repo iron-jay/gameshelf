@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { downloadCover } from "@/lib/covers";
 import { db } from "@/lib/db";
-import { entries, versions, works } from "@/lib/db/schema";
+import { entries, platforms, versions, works } from "@/lib/db/schema";
 import { getGameById } from "@/lib/igdb/games";
 import { originalVersionName, releaseDateFor } from "@/lib/igdb/mapping";
 import { igdbImageUrl, IgdbError } from "@/lib/igdb/types";
@@ -41,20 +41,29 @@ export async function addToShelf(_prev: AddState, formData: FormData): Promise<A
     return { ok: false, message: "IGDB no longer has that game." };
   }
 
+  // Whichever release the picker was on, checked against the game IGDB just
+  // returned rather than believed. Untouched, or absent with scripting off, it
+  // falls back to the same earliest-release guess as before.
+  const chosen = Number(formData.get("platformId"));
+  const igdbPlatform =
+    (game.platforms ?? []).find((platform) => platform.id === chosen) ?? primaryPlatformFor(game);
+
   const outcome = await db.transaction(async (tx) => {
-    const igdbPlatform = primaryPlatformFor(game);
     const platformId = await upsertPlatform(tx, igdbPlatform);
     const work = await ensureWorkFromIgdb(tx, game, user.id);
 
     // One 'original' version per work from this flow. Ports, romhacks and the
     // rest arrive through the version form, which is a different door.
-    let [version] = await tx
-      .select({ id: versions.id })
+    const [existing] = await tx
+      .select({ id: versions.id, platformName: platforms.name })
       .from(versions)
+      .leftJoin(platforms, eq(platforms.id, versions.platformId))
       .where(and(eq(versions.workId, work.id), eq(versions.kind, "original")));
 
-    if (!version) {
-      [version] = await tx
+    let versionId = existing?.id;
+
+    if (!versionId) {
+      const [created] = await tx
         .insert(versions)
         .values({
           workId: work.id,
@@ -67,17 +76,23 @@ export async function addToShelf(_prev: AddState, formData: FormData): Promise<A
           createdBy: user.id,
         })
         .returning({ id: versions.id });
+      versionId = created.id;
     }
 
     const inserted = await tx
       .insert(entries)
-      .values({ userId: user.id, versionId: version.id, status: "backlog" })
+      .values({ userId: user.id, versionId, status: "backlog" })
       .onConflictDoNothing()
       .returning({ id: entries.id });
 
     return {
       workId: work.id,
       added: inserted.length > 0,
+      // The original version already existed, so the platform picked was not
+      // applied to it. Saying which one it is beats letting the choice look
+      // like it took.
+      keptOn:
+        existing && existing.platformName !== igdbPlatform?.name ? existing.platformName : null,
       needsCover: !work.coverUrl && Boolean(game.cover),
     };
   });
@@ -100,7 +115,9 @@ export async function addToShelf(_prev: AddState, formData: FormData): Promise<A
 
   revalidatePath("/");
 
+  const where = outcome.keptOn ? `, on ${outcome.keptOn}` : "";
+
   return outcome.added
-    ? { ok: true, message: "Added to shelf" }
-    : { ok: true, message: "Already on your shelf" };
+    ? { ok: true, message: `Added to shelf${where}` }
+    : { ok: true, message: `Already on your shelf${where}` };
 }

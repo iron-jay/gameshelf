@@ -8,8 +8,14 @@ const FIELDS = [
   "summary",
   "first_release_date",
   "cover.image_id",
+  "platforms.id",
   "platforms.name",
   "platforms.abbreviation",
+  // Wider than a search result needs to render, but the platform picker has to
+  // default to the same release primaryPlatformFor would pick on the server,
+  // and that answer is only as good as the release dates it is given.
+  "release_dates.date",
+  "release_dates.platform",
   "game_type.id",
   "parent_game",
 ].join(",");

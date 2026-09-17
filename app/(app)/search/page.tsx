@@ -3,6 +3,7 @@ import Image from "next/image";
 
 import { db } from "@/lib/db";
 import { works } from "@/lib/db/schema";
+import { primaryPlatformFor } from "@/lib/igdb/mapping";
 import { searchGames } from "@/lib/igdb/search";
 import { igdbImageUrl, IgdbError, IgdbNotConfiguredError, type IgdbGame } from "@/lib/igdb/types";
 
@@ -12,23 +13,41 @@ export const dynamic = "force-dynamic";
 
 type SearchResult =
   | { kind: "local"; id: string; title: string; year: number | null; coverUrl: string | null }
-  | { kind: "igdb"; id: number; title: string; year: number | null; coverUrl: string | null; platforms: string };
+  | {
+      kind: "igdb";
+      id: number;
+      title: string;
+      year: number | null;
+      coverUrl: string | null;
+      platforms: string;
+      /** Every platform IGDB lists, for the picker. Spelled out, as the name will be. */
+      platformOptions: { id: number; name: string }[];
+      defaultPlatformId: number | null;
+    };
 
 function yearOf(seconds: number | undefined): number | null {
   return seconds ? new Date(seconds * 1000).getUTCFullYear() : null;
 }
 
 function toResult(game: IgdbGame): SearchResult {
+  const available = game.platforms ?? [];
+
   return {
     kind: "igdb",
     id: game.id,
     title: game.name,
     year: yearOf(game.first_release_date),
     coverUrl: game.cover ? igdbImageUrl(game.cover.image_id, "cover_small") : null,
-    platforms: (game.platforms ?? [])
+    platforms: available
       .map((p) => p.abbreviation ?? p.name)
       .slice(0, 4)
       .join(" · "),
+    platformOptions: [...available]
+      .map((p) => ({ id: p.id, name: p.name }))
+      .sort((a, b) => a.name.localeCompare(b.name)),
+    // The same call the server makes when nothing is chosen, so what the picker
+    // shows is what an untouched Add would produce.
+    defaultPlatformId: primaryPlatformFor(game)?.id ?? null,
   };
 }
 
@@ -141,12 +160,24 @@ export default async function SearchPage({
                 {r.title}
                 {r.year ? <span className="ml-2 text-ink-dim">{r.year}</span> : null}
               </p>
+              {/* Once the picker is listing the platforms, repeating a
+                  truncated copy of them here is just noise. */}
               <p className="font-narrow text-ink-dim">
-                {r.kind === "local" ? "On your server" : (r.platforms || "IGDB")}
+                {r.kind === "local"
+                  ? "On your server"
+                  : r.platformOptions.length > 1
+                    ? "IGDB"
+                    : r.platforms || "IGDB"}
               </p>
             </div>
 
-            {r.kind === "igdb" ? <AddButton igdbId={r.id} /> : null}
+            {r.kind === "igdb" ? (
+              <AddButton
+                igdbId={r.id}
+                platforms={r.platformOptions}
+                defaultPlatformId={r.defaultPlatformId}
+              />
+            ) : null}
           </li>
         ))}
       </ul>
