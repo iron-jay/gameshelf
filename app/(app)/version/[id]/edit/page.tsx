@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { platforms, versionKind, versions, works } from "@/lib/db/schema";
 import { platformsInUse } from "@/lib/platforms";
+import { isUuid } from "@/lib/uuid";
 
 import { EditVersionForm } from "./edit-form";
 
@@ -14,6 +15,9 @@ export const dynamic = "force-dynamic";
 export default async function EditVersionPage({ params }: { params: Promise<{ id: string }> }) {
   await requireUser();
   const { id } = await params;
+  // Anything can be typed into a URL, and Postgres answers a malformed uuid
+  // with an error rather than an empty row.
+  if (!isUuid(id)) notFound();
 
   const [row] = await db
     .select({

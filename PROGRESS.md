@@ -1626,3 +1626,35 @@ without a reload.
 Noticed on the way: `/version/<not a uuid>` reaches Postgres and fails on
 invalid input syntax where it should be a 404. Left alone — it is a different
 change.
+
+---
+
+## 2026-09-17 — A typo in a URL is a 404, and logs that cannot eat the disk
+
+**The uuid guard.** A route id comes from the address bar, so anything at all
+can land in one, and Postgres answers a malformed uuid with `invalid input
+syntax` — which reached the browser as a 500, reporting a typo as the server
+having broken. `isUuid` in `lib/uuid` now runs before the query on all three
+version routes.
+
+The art page is the exception and deliberately so: `?version=` junk falls back
+to the work's own art rather than 404ing, because the work in the path does
+exist and the query string is only the qualifier.
+
+Verified with real requests: `/version/not-a-uuid`, `/edit` and `/delete` all
+404, a well-formed id that matches nothing still 404s, `art?version=nope` is
+200, and the real routes are untouched at 200.
+
+Server actions that take an id from a form are not guarded. They are reachable
+only by a crafted POST, and a 500 there is already the honest answer to a
+request nobody's browser would send.
+
+**Log rotation.** The VM ran out of disk and took Postgres down with it, which
+is the outage the error boundary was written for. Docker's json-file driver has
+no size limit by default, so a container failing in a loop writes until the disk
+is gone — and Postgres cannot write either, which is the part that looks like
+everything breaking at once. Both services now cap at 10 MB × 3 files.
+
+That is prevention, not diagnosis: the 32 GB that went is almost certainly old
+images, one left behind by every `docker compose pull`, and today saw six of
+them. `docker system df` says where it went.

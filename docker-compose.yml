@@ -12,10 +12,21 @@
 # without asking. On the server the reverse proxy reaches the app over loopback;
 # set APP_BIND if it lives on another host.
 
+# Docker's default json-file log has no size limit, and a container that fails
+# in a loop writes until the disk is gone. Postgres then cannot write either,
+# which is the failure that looks like everything breaking at once.
+x-logging: &logging
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
 services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    <<: *logging
     environment:
       POSTGRES_USER: gameshelf
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
@@ -37,6 +48,7 @@ services:
   app:
     image: ${GAMESHELF_IMAGE:-ghcr.io/iron-jay/gameshelf}:${GAMESHELF_TAG:-latest}
     restart: unless-stopped
+    <<: *logging
     depends_on:
       db:
         condition: service_healthy

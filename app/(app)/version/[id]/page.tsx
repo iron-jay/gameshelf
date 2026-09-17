@@ -15,6 +15,7 @@ import {
   versions,
   works,
 } from "@/lib/db/schema";
+import { isUuid } from "@/lib/uuid";
 
 import {
   deletePlay,
@@ -54,6 +55,9 @@ function stars(rating: number): string {
 export default async function VersionPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id } = await params;
+  // Anything can be typed into a URL, and Postgres answers a malformed uuid
+  // with an error rather than an empty row.
+  if (!isUuid(id)) notFound();
 
   const [row] = await db
     .select({

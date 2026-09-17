@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { OFFICIAL_VERSION_KINDS, versions, works } from "@/lib/db/schema";
 import type { ArtCandidate } from "@/lib/sgdb";
 import { lookupArt } from "@/lib/sgdb";
+import { isUuid } from "@/lib/uuid";
 
 import { ArtPicker } from "./art-picker";
 
@@ -34,7 +35,9 @@ export default async function ArtPage({
 
   if (!work) notFound();
 
-  const version = versionId
+  // A junk ?version= falls back to the work's own art rather than 404ing: the
+  // work in the path does exist, and the query string is the qualifier.
+  const version = versionId && isUuid(versionId)
     ? (
         await db
           .select({

@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { versions, works } from "@/lib/db/schema";
+import { isUuid } from "@/lib/uuid";
 import { inspectVersionRemoval } from "@/lib/works/removal";
 
 import { deleteVersion } from "../../../removal-actions";
@@ -15,6 +16,9 @@ export const dynamic = "force-dynamic";
 export default async function DeleteVersionPage({ params }: { params: Promise<{ id: string }> }) {
   await requireUser();
   const { id } = await params;
+  // Anything can be typed into a URL, and Postgres answers a malformed uuid
+  // with an error rather than an empty row.
+  if (!isUuid(id)) notFound();
 
   const [row] = await db
     .select({ name: versions.name, kind: versions.kind, workSlug: works.slug, workTitle: works.title })
