@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { platforms, works } from "@/lib/db/schema";
 import type { IgdbGame, IgdbPlatform } from "@/lib/igdb/types";
-import { primaryPlatformFor, releaseDateFor, slugify, sortTitleFor, workKindFor } from "@/lib/igdb/mapping";
+import { platformNameFor, primaryPlatformFor, releaseDateFor, slugify, sortTitleFor, workKindFor } from "@/lib/igdb/mapping";
 
 export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -17,17 +17,21 @@ export type EnsuredWork = {
 export async function upsertPlatform(tx: Tx, platform: IgdbPlatform | undefined): Promise<number | null> {
   if (!platform) return null;
 
+  // Named through platformNameFor on both paths, or the conflict branch would
+  // put IGDB's own spelling back the next time a game on it is added.
+  const name = platformNameFor(platform);
+
   const [row] = await tx
     .insert(platforms)
     .values({
       igdbId: platform.id,
-      name: platform.name,
+      name,
       abbreviation: platform.abbreviation ?? null,
       source: "igdb",
     })
     .onConflictDoUpdate({
       target: platforms.igdbId,
-      set: { name: platform.name, abbreviation: platform.abbreviation ?? null },
+      set: { name, abbreviation: platform.abbreviation ?? null },
     })
     .returning({ id: platforms.id });
 

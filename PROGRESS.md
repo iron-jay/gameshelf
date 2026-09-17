@@ -1690,3 +1690,32 @@ Three things came out of it, in the order they matter:
 The lesson is the same one the rehearsal-versus-clone entry already records:
 the thing under test has to be the thing that runs. Three environments said the
 add flow was fine, and all three were right.
+
+---
+
+## 2026-09-17 — "PC (Microsoft Windows)" is just PC
+
+IGDB's name for it, and a mouthful in two places at once: the platform column
+and the name of every original release filed under it.
+
+Renaming the row would not have held. `upsertPlatform` writes
+`onConflictDoUpdate({ set: { name } })`, so IGDB's own spelling goes back the
+next time a game on that platform is added — a fix that works until it quietly
+does not. The rename belongs on the way in, so `PLATFORM_ALIASES` sits in
+`lib/igdb/mapping` and `platformNameFor` is what both the insert and the
+conflict branch use. `originalVersionName` goes through it too, and so does the
+search picker, so what is offered is what gets stored.
+
+The abbreviation was not the answer. "PC" is IGDB's abbreviation here, but "N64"
+is too, and §5b keeps codes for things that are codes. An explicit map says
+which names are being shortened and stops there.
+
+**Verified** through the conflict branch specifically, which is the one that
+would have undone a plain rename: adding Half-Life 2 on PC renamed the existing
+`igdb_id = 6` row from "PC (Microsoft Windows)" to "PC" and named the version
+"PC". Test work, version, entry and cover removed afterwards.
+
+Existing rows therefore self-correct the next time something is added on that
+platform, but only then — the backfill is a statement, and worth checking first
+for a local row that already carries the short name. This database has two
+"Linux" rows for exactly that reason: one from IGDB, one typed in.

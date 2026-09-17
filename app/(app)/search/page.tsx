@@ -3,7 +3,7 @@ import Image from "next/image";
 
 import { db } from "@/lib/db";
 import { works } from "@/lib/db/schema";
-import { primaryPlatformFor } from "@/lib/igdb/mapping";
+import { platformNameFor, primaryPlatformFor } from "@/lib/igdb/mapping";
 import { searchGames } from "@/lib/igdb/search";
 import { igdbImageUrl, IgdbError, IgdbNotConfiguredError, type IgdbGame } from "@/lib/igdb/types";
 
@@ -42,8 +42,10 @@ function toResult(game: IgdbGame): SearchResult {
       .map((p) => p.abbreviation ?? p.name)
       .slice(0, 4)
       .join(" · "),
+    // Named the same way the row will be, so the picker is not offering one
+    // spelling and storing another.
     platformOptions: [...available]
-      .map((p) => ({ id: p.id, name: p.name }))
+      .map((p) => ({ id: p.id, name: platformNameFor(p) }))
       .sort((a, b) => a.name.localeCompare(b.name)),
     // The same call the server makes when nothing is chosen, so what the picker
     // shows is what an untouched Add would produce.

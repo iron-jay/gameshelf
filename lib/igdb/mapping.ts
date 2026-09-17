@@ -74,8 +74,25 @@ export function primaryPlatformFor(game: IgdbGame): IgdbPlatform | undefined {
  */
 export const UNPLACED_ORIGINAL = "Original release";
 
+/**
+ * IGDB's platform names, shortened where the full one is a mouthful.
+ *
+ * Applied on the way in rather than on the way out, because the name is not
+ * only a label: an original release is named after its platform, and a version
+ * called "PC (Microsoft Windows)" is the same mouthful in a second place. The
+ * abbreviation is not the answer either — "N64" is a code, and §5b keeps codes
+ * for things that are codes.
+ */
+const PLATFORM_ALIASES: Readonly<Record<string, string>> = {
+  "PC (Microsoft Windows)": "PC",
+};
+
+export function platformNameFor(platform: IgdbPlatform): string {
+  return PLATFORM_ALIASES[platform.name] ?? platform.name;
+}
+
 export function originalVersionName(platform: IgdbPlatform | undefined): string {
-  return platform?.name ?? UNPLACED_ORIGINAL;
+  return platform ? platformNameFor(platform) : UNPLACED_ORIGINAL;
 }
 
 /** IGDB dates are unix seconds; works.first_release_date is a plain date. */
