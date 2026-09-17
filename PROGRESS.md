@@ -1819,3 +1819,35 @@ them ends up stale.
 grouping offers "Group by shelf"; the filter beside it offers "All tags"; the
 bulk bar says "Change shelf"; the version page has a "Shelf" row of four and a
 separate "Tags" section. Dev entries put back where they started.
+
+---
+
+## 2026-09-17 — A wishlist that empties itself, and 4px
+
+**Released games leave the wishlist.** Waiting for something and owning it
+unplayed are different states, and the first stops being true on its own the day
+it ships. One statement, run when the shelf is read — there is no scheduler
+here and a single-user app does not need a job runner to notice a date has
+passed. It is idempotent and touches nothing once everything is caught up.
+
+**It only promotes what was wishlisted before release.** Wishlisting a game that
+is already out is a real thing to do — you want it, you do not own it — and
+sweeping that onto the backlog the moment you saved it would leave the wishlist
+useful for pre-orders and nothing else. `added_at` earlier than the release date
+is what separates "I was waiting for this" from "I want this". The version's own
+date wins over the work's, so a port is out when the port is out.
+
+Writing during a render is not free of sin, but the alternatives are a cron
+container for one UPDATE or a status that lies on screen until something else
+fixes it. Noting the trade rather than pretending it is not one.
+
+**Verified** with three entries set up to be told apart, which is the only way
+this is worth testing: wishlisted 2016 and released 2017 moved to backlog;
+released 2023 and wishlisted today stayed put; releasing in 2027 stayed put. The
+first attempt failed on my own test data — I had written case one with
+`added_at` *after* its release date, which is case two — and the query was right
+all along. Dev rows put back afterwards.
+
+**Covers get 4px between them** instead of 1px. §5b calls for hairline gaps and
+this is still a dense grid rather than a feed of cards, but the wall reads
+better with the covers not quite touching.

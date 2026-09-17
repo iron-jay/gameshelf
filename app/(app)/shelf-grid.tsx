@@ -160,7 +160,7 @@ export function ShelfGrid({
                 <span className="font-narrow text-ink-dim">{section.cards.length}</span>
               </h2>
             ) : null}
-            <ul className="grid gap-px [grid-template-columns:repeat(auto-fill,minmax(140px,1fr))]">
+            <ul className="grid gap-1 [grid-template-columns:repeat(auto-fill,minmax(140px,1fr))]">
               {section.cards.map((card) => (
                 <ShelfTile
                   key={card.entryId}

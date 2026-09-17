@@ -8,6 +8,7 @@ import { entryCards, shelfEntries, shelves, versionKind } from "@/lib/db/schema"
 
 import { platformsInUse } from "@/lib/platforms";
 import { isStatus, STATUS_ORDER } from "@/lib/status";
+import { promoteReleasedWishlist } from "@/lib/wishlist";
 
 import { FilterForm } from "./filter-form";
 import { RememberShelfView } from "./remember-shelf-view";
@@ -143,6 +144,10 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
   // The DLC toggle and the grouping selector are different axes, so they get
   // separate parameters rather than sharing an ambiguous "group".
   const nestDlc = params.dlc !== "separate";
+
+  // Before anything is read, so a game that came out overnight is on the
+  // backlog by the time the page renders rather than one refresh later.
+  await promoteReleasedWishlist(user.id);
 
   const filters = [eq(entryCards.userId, user.id)];
   if (status) filters.push(eq(entryCards.status, status));
