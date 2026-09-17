@@ -81,8 +81,15 @@ Rules:
   here, so you can rate the hack differently from the original. That is the
   point.
 - A **play** is one run through. Replays are new plays, not edits.
-- **Status** (`backlog`/`playing`/`played`/...) is a state machine and is
-  separate from **shelves**, which are free-form tags.
+- **Status** (`wishlist`/`backlog`/`playing`/`played`) is a state machine and is
+  separate from the free-form tags an entry can carry.
+  - The interface calls the four statuses **shelves** — Goodreads' model, where
+    the state you are in is the shelf it sits on — and calls the free-form ones
+    **tags**. The column, the enum and the `shelves` table keep their names;
+    this is language, not a migration. Decided 2026-09-17.
+  - There is no `dropped` or `shelved`: both meant "I stopped" and neither could
+    say it differently from the other. How far you got is `plays.completion`.
+    Removed in migration `0005`.
 
 When adding a feature, ask which of these four tables it belongs to. If the
 answer is "a new table", push back on the feature first.
@@ -419,7 +426,7 @@ runs end to end.
    the form before continuing.
 7. Entry detail: rating, review, plays. Marking done defaults to `credits`
    with the other levels one click away — never a required dropdown.
-8. Shelves (free-form tags).
+8. Tags (free-form, on top of the four shelves).
 9. Stats.
 10. Export.
 

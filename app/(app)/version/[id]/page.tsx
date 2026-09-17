@@ -15,6 +15,7 @@ import {
   versions,
   works,
 } from "@/lib/db/schema";
+import { STATUS_ORDER } from "@/lib/status";
 import { isUuid } from "@/lib/uuid";
 
 import {
@@ -31,8 +32,6 @@ import {
 import { PlayForm } from "./play-form";
 
 export const dynamic = "force-dynamic";
-
-const STATUSES = ["backlog", "playing", "played", "dropped", "shelved", "wishlist"] as const;
 
 const DONE_LEVELS = [
   { value: "credits", label: "Reached the end" },
@@ -204,10 +203,10 @@ export default async function VersionPage({ params }: { params: Promise<{ id: st
 
       <section className="mt-8 flex flex-col gap-6">
         <div>
-          <h2 className="mb-2 font-medium">Status</h2>
+          <h2 className="mb-2 font-medium">Shelf</h2>
           <form action={setStatus} className="flex flex-wrap gap-2">
             {hidden}
-            {STATUSES.map((value) => (
+            {STATUS_ORDER.map((value) => (
               <button
                 key={value}
                 type="submit"
@@ -294,13 +293,13 @@ export default async function VersionPage({ params }: { params: Promise<{ id: st
         </div>
 
         <div>
-          <h2 className="mb-2 font-medium">Shelves</h2>
+          <h2 className="mb-2 font-medium">Tags</h2>
           <div className="flex flex-wrap items-center gap-2">
             {entryShelves.map((shelf) => (
               <form key={shelf.id} action={untagShelf}>
                 {hidden}
                 <input type="hidden" name="shelfId" value={shelf.id} />
-                <button type="submit" title={`Remove from ${shelf.name}`} className={CHIP_ON}>
+                <button type="submit" title={`Remove the ${shelf.name} tag`} className={CHIP_ON}>
                   {shelf.name} ×
                 </button>
               </form>
@@ -311,7 +310,7 @@ export default async function VersionPage({ params }: { params: Promise<{ id: st
               <input
                 name="shelfName"
                 list="shelf-names"
-                placeholder="Add to a shelf"
+                placeholder="Add a tag"
                 maxLength={60}
                 className="border border-line bg-ground px-3 py-1.5 font-narrow text-ink outline-none focus:border-ink-dim"
               />

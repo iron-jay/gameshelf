@@ -35,11 +35,14 @@ const SHELF_STATUS: Readonly<Record<string, Status>> = {
   backlog: "backlog",
   "wish list": "wishlist",
   wishlist: "wishlist",
-  "did not finish": "dropped",
-  dropped: "dropped",
-  abandoned: "dropped",
-  "on hold": "shelved",
-  shelved: "shelved",
+  // Grouvee distinguishes stopping from finishing; gameshelf has four shelves
+  // and does not. All of these mean you played it, and how far you got is a
+  // play's completion rather than a shelf.
+  "did not finish": "played",
+  dropped: "played",
+  abandoned: "played",
+  "on hold": "played",
+  shelved: "played",
 };
 
 function asRecord(value: unknown): Record<string, unknown> | null {

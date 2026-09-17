@@ -1775,3 +1775,47 @@ wishlist and appeared in the first group; the tabs and the groups both read
 wishlist, backlog, played; a bare "/" kept sort and DLC while dropping a status
 filter; the delete link resolves `hover:bg-danger` to `rgb(168, 71, 63)` and
 sits above the tile link. Test work, version, entry and cover removed.
+
+---
+
+## 2026-09-17 — Four shelves, and the word "shelves" means one thing again
+
+Two requests that turned out to collide, so I asked before touching anything.
+
+**"Change status to shelves"** ran straight into §2, which already had shelves:
+the free-form tags on the version page and the filter beside the grouping
+selector. Relabelling statuses would have put two different features called
+shelves inches apart on the same page.
+
+Settled as the Goodreads model, which is what §1 says the app is: the four
+states **are** your shelves, and the free-form ones are **tags**. Language only
+— the column, the enum and the `shelves` table keep their names, because
+renaming them buys nothing and costs a migration. `CLAUDE.md` §2 now records the
+decision, since a brief that contradicts the interface is a trap for the next
+session.
+
+**`dropped` and `shelved` are gone**, and everything in them became `played`.
+Both meant "I stopped", and neither could say it differently from the other; a
+state machine with two indistinguishable states is one state and a coin flip.
+How far you got was never the shelf's job — that is `plays.completion`, which
+already has four levels.
+
+Migration `0005` does it. Postgres cannot remove a value from an enum, so the
+type is rebuilt, and `entry_cards` selects `e.status` so the view has to be
+dropped and recreated around it — copied verbatim from `0004` rather than
+retyped. Applied to the dev database against seeded `shelved` rows: two moved to
+`played`, the enum came back with exactly four values in reading order, the view
+kept its six rows and the column kept its default.
+
+The Grouvee importer mapped five Grouvee shelves into the two that no longer
+exist. They all map to `played` now — with four shelves, something you started
+and abandoned is something you played.
+
+Also folded the duplicate `isStatus` in `version/[id]/actions.ts` into
+`lib/status.ts`. Two copies of the same guard over the same enum is how one of
+them ends up stale.
+
+**Verified** in the browser: the tabs read wishlist, backlog, playing, played;
+grouping offers "Group by shelf"; the filter beside it offers "All tags"; the
+bulk bar says "Change shelf"; the version page has a "Shelf" row of four and a
+separate "Tags" section. Dev entries put back where they started.

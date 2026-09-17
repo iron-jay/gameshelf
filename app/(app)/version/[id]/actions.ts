@@ -8,22 +8,18 @@ import { db } from "@/lib/db";
 import {
   completionLevel,
   entries,
-  logStatus,
   plays,
   shelfEntries,
   shelves,
   versions,
 } from "@/lib/db/schema";
 import { slugify } from "@/lib/slug";
+import { isStatus } from "@/lib/status";
 
-type Status = (typeof logStatus.enumValues)[number];
+
 type Completion = (typeof completionLevel.enumValues)[number];
 
 export type PlayState = { ok: boolean; message: string } | null;
-
-function isStatus(value: unknown): value is Status {
-  return typeof value === "string" && (logStatus.enumValues as readonly string[]).includes(value);
-}
 
 function isCompletion(value: unknown): value is Completion {
   return (

@@ -36,7 +36,7 @@ const GROUPINGS = {
   none: "No grouping",
   platform: "Platform",
   year: "Year released",
-  status: "Status",
+  status: "Shelf",
   kind: "Kind",
 } as const;
 type GroupBy = keyof typeof GROUPINGS;
@@ -282,7 +282,7 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
 
         {shelfOptions.length > 0 ? (
           <select name="shelf" defaultValue={shelfSlug ?? ""} className={SELECT}>
-            <option value="">All shelves</option>
+            <option value="">All tags</option>
             {shelfOptions.map((shelf) => (
               <option key={shelf.slug} value={shelf.slug}>
                 {shelf.name}

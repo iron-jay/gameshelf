@@ -60,13 +60,12 @@ export const workKind = pgEnum("work_kind", [
 
 export const artSource = pgEnum("art_source", ["igdb", "steamgriddb", "upload"]);
 
+/** Declared in the order a shelf reads in, which is also lib/status.ts's order. */
 export const logStatus = pgEnum("log_status", [
+  "wishlist",
   "backlog",
   "playing",
   "played",
-  "dropped",
-  "shelved",
-  "wishlist",
 ]);
 
 export const completionLevel = pgEnum("completion_level", [

@@ -128,7 +128,7 @@ export function ShelfGrid({
             </button>
 
             <label className="flex flex-col gap-1.5">
-              <span className="font-narrow text-ink-dim">Status</span>
+              <span className="font-narrow text-ink-dim">Shelf</span>
               <select
                 name="status"
                 defaultValue={statuses[0]}
@@ -147,7 +147,7 @@ export function ShelfGrid({
               disabled={pending || selected.size === 0}
               className={BUTTON}
             >
-              {statusPending ? "Moving…" : "Change status"}
+              {statusPending ? "Moving…" : "Change shelf"}
             </button>
           </div>
         ) : null}

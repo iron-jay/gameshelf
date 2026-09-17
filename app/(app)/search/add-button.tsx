@@ -59,7 +59,7 @@ export function AddButton({
               most of the time, and wrong is one click to fix either here or on
               the shelf afterwards. */}
           <label className="flex items-center gap-2">
-            <span className="sr-only">Status</span>
+            <span className="sr-only">Shelf</span>
             <select
               name="status"
               defaultValue={defaultStatus}
