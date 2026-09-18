@@ -225,23 +225,6 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
     <main className="flex-1 p-6">
       <RememberShelfView query={queryFor(params)} />
 
-      {/* Searching is the way onto a shelf, so it belongs where the shelf is
-          rather than only behind a nav link. It hands off to /search, which
-          already interleaves what you own with what IGDB has. */}
-      <form className="mb-4 flex gap-2" action="/search">
-        <input
-          name="q"
-          type="search"
-          placeholder="Search for a game"
-          className="w-full max-w-md border border-line bg-panel px-3 py-2 text-ink outline-none focus:border-ink-dim"
-        />
-        <button
-          type="submit"
-          className="border border-line bg-panel px-4 py-2 font-medium hover:border-ink-dim"
-        >
-          Search
-        </button>
-      </form>
 
       <nav className="mb-4 flex flex-wrap items-center gap-4 font-narrow">
         <Link

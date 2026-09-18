@@ -41,6 +41,7 @@ export function ShelfGrid({
 }) {
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [query, setQuery] = useState("");
 
   const [platformState, platformAction, platformPending] = useActionState<BulkState, FormData>(
     changeSelectedPlatform,
@@ -51,7 +52,26 @@ export function ShelfGrid({
     null,
   );
 
-  const everything = sections.flatMap((section) => section.cards.map((card) => card.entryId));
+  // Filtered here rather than through the URL: every card is already on the
+  // client, so a keystroke is a re-render and not a round trip. Matching the
+  // two lines the tile actually shows means a romhack is found by its own name
+  // as well as by the game it patches.
+  const needle = query.trim().toLowerCase();
+  const shown = needle
+    ? sections
+        .map((section) => ({
+          ...section,
+          cards: section.cards.filter(
+            (card) =>
+              card.workTitle.toLowerCase().includes(needle) ||
+              card.versionName.toLowerCase().includes(needle),
+          ),
+        }))
+        .filter((section) => section.cards.length > 0)
+    : sections;
+
+  const total = sections.reduce((sum, section) => sum + section.cards.length, 0);
+  const everything = shown.flatMap((section) => section.cards.map((card) => card.entryId));
   const state = platformState ?? statusState;
   const pending = platformPending || statusPending;
 
@@ -70,6 +90,27 @@ export function ShelfGrid({
   return (
     <>
       <div className="mb-4 flex flex-wrap items-center gap-4 font-narrow">
+        {/* Filters what is on screen as you type. The nav's Search is the other
+            thing — that one goes out to IGDB to find what you do not have yet. */}
+        <label className="flex-1 basis-64">
+          <span className="sr-only">Filter this shelf</span>
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Filter by title"
+            className="w-full max-w-md border border-line bg-panel px-3 py-2 text-ink outline-none focus:border-ink-dim"
+          />
+        </label>
+
+        {/* Silent at zero, where the sentence below the controls says it
+            better than a counter can. */}
+        {needle && everything.length > 0 ? (
+          <span className="text-ink-dim">
+            {everything.length} of {total} {everything.length === 1 ? "matches" : "match"}
+          </span>
+        ) : null}
+
         <button
           type="button"
           onClick={() => {
@@ -152,7 +193,11 @@ export function ShelfGrid({
           </div>
         ) : null}
 
-        {sections.map((section) => (
+        {needle && shown.length === 0 ? (
+          <p className="font-narrow text-ink-dim">Nothing on your shelf matches “{query.trim()}”.</p>
+        ) : null}
+
+        {shown.map((section) => (
           <section key={section.label || "all"} className="mb-8">
             {grouped ? (
               <h2 className="mb-2 flex items-baseline gap-3 font-medium">

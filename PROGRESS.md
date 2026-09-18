@@ -1907,3 +1907,36 @@ enum came back as five values in reading order; `/art` lists the one flagged
 cover and links to its picker; the shelf has a search box and no review line;
 searching "destiny 2" links each owned result to its entry while Ocarina of
 Time, with three versions shelved, links to the work. Dev rows left as found.
+
+---
+
+## 2026-09-18 — The shelf's search box filters the shelf
+
+Yesterday's search box handed off to `/search`, which is the IGDB door. What was
+wanted was the opposite: type "fable" and the wall of covers becomes the ones
+called Fable.
+
+So it filters on the client, per keystroke, with no round trip and no debounce
+to tune — every card is already in `ShelfGrid`'s props, so a keystroke is a
+re-render of a list of a few hundred. Going through the URL would have meant a
+server render per character for no gain.
+
+It matches the two lines a tile actually shows: the work's title and the
+version's name. A romhack is findable by its own name as well as by the game it
+patches, which is the point of putting its name on the band in the first place.
+
+**It moved down the page.** It was above the status tabs and it is now in the
+row directly above the grid, beside Select. State has to live in the client
+component that holds the cards, and that component starts below the filter row —
+the alternative was a context provider wrapping half the page to keep an input
+20 pixels higher. It also reads better there, next to the other controls that
+change what the grid shows. Say if it should go back up.
+
+The nav's Search is untouched and still goes out to IGDB. Two boxes that both
+say "search" would be a problem, so this one says "Filter by title".
+
+**Verified** by typing into it: "d" → 4 of 4, "de" → Destiny 2 alone,
+"harkinian" → the decomp port by its own name, "zelda" → all three Ocarina
+entries, "fable" → "Nothing on your shelf matches". Focus survives every
+keystroke — the input is the same DOM node before and after, so nothing
+remounts and the caret stays put.
