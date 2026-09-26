@@ -17,7 +17,7 @@ cp .env.example .env     # fill in IGDB and SteamGridDB credentials
 docker compose up -d db  # Postgres only; the app runs on the host
 npm install
 npm run db:migrate
-npm run db:seed          # creates ADMIN_USERNAME from .env
+npm run db:seed          # first user from .env, if there is nobody yet
 npm run dev              # http://localhost:3000
 ```
 
@@ -49,7 +49,7 @@ anchor the bundler catches on.
 | `npm run db:generate` | Generate a migration from `lib/db/schema.ts` |
 | `npm run db:migrate` | Apply pending migrations |
 | `npm run db:push` | Push schema straight to the dev database |
-| `npm run db:seed` | Create the single user from `.env` |
+| `npm run db:seed` | Create the first user from `.env`; does nothing once anyone exists |
 | `npm run db:studio` | Drizzle Studio |
 | `npm run probe:sgdb` | Check SteamGridDB matching against the live API |
 | `npm run probe:grouvee -- <file>` | Report what a Grouvee export would import, without writing |

@@ -13,8 +13,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 
-import { hashPassword } from "../lib/auth/password";
-import { users } from "../lib/db/schema";
+import { describeFirstUser, ensureFirstUser } from "../lib/auth/first-user";
 
 const url = process.env.DATABASE_URL;
 if (!url) {
@@ -33,34 +32,12 @@ try {
   await migrate(db, { migrationsFolder: "drizzle" });
   console.log("[migrations] up to date");
 
-  // Deliberately "is there anybody at all", not "is there someone called
-  // ADMIN_USERNAME". Renaming the account in settings must not cause the next
-  // restart to quietly create a second one.
-  const [existing] = await db
-    .select({ id: users.id, username: users.username })
-    .from(users)
-    .limit(1);
-
-  if (existing) {
-    console.log(`[user] ${existing.username} already exists, left alone`);
-  } else {
-    const username = process.env.ADMIN_USERNAME?.trim() || "admin";
-    const password = process.env.ADMIN_PASSWORD;
-
-    if (!password) {
-      console.error("[user] ADMIN_PASSWORD must be set to create the first user");
-      process.exit(1);
-    }
-
-    await db.insert(users).values({
-      username,
-      displayName: username,
-      passwordHash: await hashPassword(password),
-      isAdmin: true,
-    });
-
-    console.log(`[user] created ${username}`);
+  const result = await ensureFirstUser(db);
+  if (result.kind === "missing-password") {
+    console.error(describeFirstUser(result));
+    process.exit(1);
   }
+  console.log(describeFirstUser(result));
 } catch (error) {
   console.error(error);
   process.exit(1);

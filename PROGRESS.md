@@ -1940,3 +1940,99 @@ say "search" would be a problem, so this one says "Filter by title".
 entries, "fable" → "Nothing on your shelf matches". Focus survives every
 keystroke — the input is the same DOM node before and after, so nothing
 remounts and the caret stays put.
+
+---
+
+## 2026-09-25 — Two auth fixes, found while building bookshelf
+
+**A rename followed by `db:seed` made a second account.** `scripts/seed.ts`
+looked for a user *named* `ADMIN_USERNAME`; `scripts/migrate.ts` looked for
+*anyone*. Renaming `admin` in Settings and seeding again created a fresh
+`admin` beside the renamed one. Both now call `lib/auth/first-user.ts`, which
+does nothing once any user exists — the rule `migrate.ts` already had.
+
+**`AUTH_DISABLED=true` with no user yet looped forever.** The app layout sent
+you to `/login`, which saw sign-in was off and sent you back. The login page
+now counts users before redirecting, and with nobody there shows the "no user
+has been created yet" message instead.
+
+Both reproduced against the old code first, on a throwaway database
+(`gameshelf_fixtest`, dropped afterwards — the real one was not touched): the
+old seed created `admin` next to `renamed`; the old login page hit curl's
+10-redirect limit. With the fix, seed and the bundled `migrate.mjs` both report
+"renamed already exists", and the loop is one redirect to the message.
+`tsc`, eslint and `check:actions` clean. README's seed lines say what it now
+does.
+
+Not in this change: `next dev` run by an AI coding agent appends a
+`nextjs-agent-rules` block to `CLAUDE.md` (Next 16's
+`generate-agent-files.js`, triggered by `CLAUDECODE` / `AI_AGENT` in the
+environment). It did so here during testing and was reverted. Starting
+`next dev` with those unset prevents it.
+
+---
+
+## 2026-09-26 — Back to shelf landed you in the wrong place when it had nowhere to go
+
+Reviewing `824f254`. `ShelfLink` passes `scroll: false` whenever `restoreScroll`
+is set, so Next does not scroll to the top and the shelf is expected to scroll
+itself. But `takeShelfScroll` returned a bare `number | null`, and `null` meant
+two different things: nobody asked for a restore, and somebody asked but there
+is nothing saved. The caller skipped the scroll on both.
+
+So opening a game without having scrolled the shelf first — the ordinary first
+move — then scrolling down that game's page and pressing **Back to shelf** left
+you at the game page's offset. On a four-tile shelf that clamps and looks like a
+glitch; on 324 games it drops you somewhere arbitrary.
+
+`takeShelfScroll` now returns `{ asked, y }`. An ask with no position scrolls to
+the top, because the link has already suppressed the scroll that would have done
+it. And `askToRestoreShelfScroll` reports whether it managed to record the ask,
+so with storage blocked the link stops suppressing and the default takes over —
+previously a blocked write left the suppression in place with nothing on the
+other side to act on it.
+
+**Verified as unit tests rather than in a browser.** The pane this session drives
+runs hidden, `document.hidden` is true, and `requestAnimationFrame` never fires
+there — so no scroll-restoring code can execute in it at all, and an earlier
+in-browser "reproduction" of this bug was really just that. Seven cases against a
+`sessionStorage` stub: no ask; asked with nothing saved; asked with a position
+for this view; asked with a position for a different view; saved but not asked;
+the ask being one-shot; and a blocked store. All pass, and the second is the one
+that was wrong.
+
+Also: two comments said "book" — this code came from bookshelf. Now "game".
+
+### For bookshelf
+
+If its "back to shelf" shares this shape, it has both faults:
+
+1. **The scroll-to-top one.** Same fix: have the take-function report whether a
+   restore was asked for, separately from whether it found a position, and
+   scroll to 0 on an ask with no position. Reproduce it first by opening a book
+   without scrolling the shelf, scrolling that book's page, and pressing back.
+2. **The blocked-storage one.** Only suppress the framework's scroll-to-top when
+   the ask was actually recorded.
+
+Worth checking there too, both unverified here: the scroll listener writes to
+`sessionStorage` once per animation frame while scrolling, which is a synchronous
+write per frame on a long shelf and wants a trailing debounce; and a saved
+position taken from a shelf that has since got shorter will overshoot — browsers
+clamp it, so it is untidy rather than broken.
+
+**Re-verified before committing** (2026-09-26), on a throwaway `gameshelf_authtest`
+dropped afterwards — the real database was only read. `scripts/migrate.ts` has
+top-level await and only ever runs as the esbuild bundle, so it was built and run
+that way rather than through `tsx`:
+
+| | |
+|---|---|
+| Fresh database, bundled migrate | `[user] created admin` |
+| Rename to `renamed`, then `seed` | `renamed already exists`, still one user |
+| Migrate again on a populated database | `renamed already exists` |
+| Empty database, no `ADMIN_PASSWORD` | both exit 1 with the message |
+| `AUTH_DISABLED=true`, zero users | `/` → one 307 to `/login` → 200, "No user has been created yet" |
+
+The loop was the interesting one: one hop, not curl's ten-redirect ceiling.
+`next dev` was started with `CLAUDECODE` and `AI_AGENT` unset, and `CLAUDE.md`
+came through clean.

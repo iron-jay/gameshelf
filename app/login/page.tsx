@@ -10,15 +10,19 @@ import { LoginForm } from "./login-form";
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage() {
-  // Both cases land in the same place: with sign-in off there is no form
-  // worth showing, and signed in there is nothing to sign in to.
-  if (authDisabled() || (await getCurrentUser())) {
-    redirect("/");
-  }
-
   // A self-hosted app where you forgot to seed would otherwise answer every
   // correct password with "incorrect" and give no hint why.
+  //
+  // Counted before the redirect below, not after. With sign-in off and nobody
+  // to be, the app layout sends you here and the redirect sent you straight
+  // back — a loop until the first user existed.
   const [row] = await db.select({ n: count() }).from(users);
+
+  // Both cases land in the same place: with sign-in off there is no form
+  // worth showing, and signed in there is nothing to sign in to.
+  if (row.n > 0 && (authDisabled() || (await getCurrentUser()))) {
+    redirect("/");
+  }
 
   return (
     <main className="flex flex-1 items-center justify-center p-8">
