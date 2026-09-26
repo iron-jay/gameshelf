@@ -2036,3 +2036,14 @@ that way rather than through `tsx`:
 The loop was the interesting one: one hop, not curl's ten-redirect ceiling.
 `next dev` was started with `CLAUDECODE` and `AI_AGENT` unset, and `CLAUDE.md`
 came through clean.
+
+## 2026-09-26 — The shelf fade-in plays once, not on every return
+
+Found in bookshelf, same code here. Covers looked like they reloaded on every return to the shelf. They did
+not — the covers route sends `immutable` and the browser had them — but the
+fade-in replayed on each visit, holding tile n back 18 ms × n: seconds on a
+long shelf. The fade-in now plays once per tab (module state in
+`shelf-grid.tsx`, set after mount, so server and hydration agree; a full
+reload plays it again), and the stagger stops at the 24th tile. Same change
+in both apps. Checked: the shelf renders with the class on first load; the
+replay on client navigation is not something curl can see.

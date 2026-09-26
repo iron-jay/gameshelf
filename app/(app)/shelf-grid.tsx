@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 
 import {
   changeSelectedPlatform,
@@ -14,6 +14,16 @@ export type ShelfSection = { label: string; cards: ShelfCard[] };
 
 const BUTTON =
   "border border-line bg-panel px-3 py-1.5 font-narrow hover:border-ink-dim disabled:text-ink-dim";
+
+/**
+ * Whether the shelf has already resolved in this tab. The grid's fade-in is
+ * the app's one orchestrated moment (§5b): it plays on arrival, not on every
+ * return from a book, where the covers are already cached and a replayed
+ * stagger — 18 ms a tile, seconds on a long shelf — reads as them reloading.
+ * Module state outlives client navigations and resets on a full page load;
+ * it is only set after mount, so the server and hydration always agree.
+ */
+let resolvedOnce = false;
 
 /**
  * The shelf grid, plus the select mode that lets a filtered view be changed in
@@ -87,8 +97,13 @@ export function ShelfGrid({
   // so it still reads as one shelf resolving.
   let tileIndex = 0;
 
+  const [resolving] = useState(() => !resolvedOnce);
+  useEffect(() => {
+    resolvedOnce = true;
+  }, []);
+
   return (
-    <>
+    <div className={resolving ? "shelf-resolving" : undefined}>
       <div className="mb-4 flex flex-wrap items-center gap-4 font-narrow">
         {/* Filters what is on screen as you type. The nav's Search is the other
             thing — that one goes out to IGDB to find what you do not have yet. */}
@@ -220,6 +235,6 @@ export function ShelfGrid({
           </section>
         ))}
       </form>
-    </>
+    </div>
   );
 }
