@@ -15,10 +15,13 @@ export function RememberShelfView({ query }: { query: string }) {
   useEffect(() => {
     rememberShelfView(query);
 
-    const y = takeShelfScroll(query);
+    // Asked with nowhere to go still scrolls, to the top: the link suppressed
+    // Next's scroll-to-top on the way here, so doing nothing would leave you at
+    // whatever offset the game's page happened to have.
+    const { asked, y } = takeShelfScroll(query);
     // The shelf is server-rendered and its cells have a fixed ratio, so the
     // page is its full height by now; the frame lets layout settle first.
-    if (y !== null) requestAnimationFrame(() => window.scrollTo(0, y));
+    if (asked) requestAnimationFrame(() => window.scrollTo(0, y ?? 0));
 
     let pending = false;
     const onScroll = () => {
@@ -26,8 +29,8 @@ export function RememberShelfView({ query }: { query: string }) {
       pending = true;
       requestAnimationFrame(() => {
         pending = false;
-        // Opening a book scrolls the new page to the top before this listener
-        // is gone; by then the address is the book's, so that scroll is not
+        // Opening a game scrolls the new page to the top before this listener
+        // is gone; by then the address is the game's, so that scroll is not
         // the shelf's and must not overwrite where you were.
         if (window.location.pathname === "/") rememberShelfScroll(query, window.scrollY);
       });
