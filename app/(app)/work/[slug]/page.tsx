@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { platforms, versions, works } from "@/lib/db/schema";
 import { OFFICIAL_VERSION_KINDS } from "@/lib/db/schema";
+import { BackToShelf } from "../../back-to-shelf";
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +50,7 @@ export default async function WorkPage({ params }: { params: Promise<{ slug: str
 
   return (
     <main className="flex-1 p-6">
+      <BackToShelf />
       <div className="flex flex-wrap gap-6">
         <div className="relative h-64 w-48 shrink-0 bg-panel">
           {work.coverUrl ? (

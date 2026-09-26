@@ -27,6 +27,7 @@ import {
   toggleFlag,
   untagShelf,
 } from "./actions";
+import { BackToShelf } from "../../back-to-shelf";
 
 export const dynamic = "force-dynamic";
 
@@ -103,6 +104,7 @@ export default async function VersionPage({ params }: { params: Promise<{ id: st
 
   return (
     <main className="flex-1 p-6">
+      <BackToShelf />
       <p className="mb-1 font-narrow text-ink-dim">
         <Link href={`/work/${row.workSlug}`} className="underline">
           {row.workTitle}
