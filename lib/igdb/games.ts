@@ -21,6 +21,8 @@ const FIELDS = [
   "game_type.id",
   "game_type.type",
   "parent_game",
+  "franchises.name",
+  "collections.name",
   "genres.name",
   "involved_companies.company.name",
   "involved_companies.developer",

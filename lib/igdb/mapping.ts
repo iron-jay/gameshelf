@@ -95,6 +95,35 @@ export function originalVersionName(platform: IgdbPlatform | undefined): string 
   return platform ? platformNameFor(platform) : UNPLACED_ORIGINAL;
 }
 
+/**
+ * The series a game belongs to, or null if IGDB does not say.
+ *
+ * **Franchises first, and usually last.** `collections` looks like the obvious
+ * field and is not: Ocarina of Time comes back in two of them, "The Legend of
+ * Zelda" and "The Legend of Zelda: Ocarina of Time" — the second is a grouping
+ * of that one game's re-releases — and the order they arrive in is not stable.
+ * Taking the first would have filed Ocarina under a series of one, which looks
+ * right in a list and is wrong. `franchises` gave "The Legend of Zelda" for both
+ * Ocarina and Breath of the Wild, "Destiny" for Destiny 2, and "Grand Theft
+ * Auto" for GTA V.
+ *
+ * A collection is only consulted when there is no franchise, and one named
+ * after the game itself is skipped for the reason above. Shortest wins, since
+ * the broader series has the shorter name.
+ */
+export function seriesFor(game: IgdbGame): string | null {
+  const franchise = game.franchises?.find((f) => f.name?.trim());
+  if (franchise) return franchise.name.trim();
+
+  const title = game.name.trim().toLowerCase();
+  const collections = (game.collections ?? [])
+    .map((c) => c.name?.trim())
+    .filter((name): name is string => Boolean(name) && name.toLowerCase() !== title)
+    .sort((a, b) => a.length - b.length);
+
+  return collections[0] ?? null;
+}
+
 /** IGDB dates are unix seconds; works.first_release_date is a plain date. */
 export function releaseDateFor(game: IgdbGame): string | null {
   if (!game.first_release_date) return null;

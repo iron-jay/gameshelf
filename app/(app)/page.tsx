@@ -43,6 +43,7 @@ const GROUPINGS = {
   year: "Year released",
   status: "Shelf",
   kind: "Kind",
+  series: "Series",
 } as const;
 type GroupBy = keyof typeof GROUPINGS;
 
@@ -95,6 +96,7 @@ type Row = {
   isCommunityVersion: boolean | null;
   coverNeedsReview: boolean | null;
   releaseYear: number | null;
+  series: string | null;
 };
 
 /**
@@ -111,6 +113,10 @@ function bucketFor(row: Row, groupBy: GroupBy): { label: string; order: number |
         // Negated so the newest year sorts first.
         order: row.releaseYear ? -row.releaseYear : Number.POSITIVE_INFINITY,
       };
+    case "series":
+      // Same "unknowns last" rule as platform: U+FFFF sorts after any real
+      // name, so the games in no series end up at the bottom.
+      return { label: row.series ?? "No series", order: row.series ?? "￿" };
     case "status":
       return {
         label: row.status ?? "backlog",

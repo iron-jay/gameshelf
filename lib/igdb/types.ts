@@ -36,7 +36,13 @@ export type IgdbGame = {
   /** IGDB's game category. Maps onto work_kind. */
   category?: number;
   parent_game?: number;
+  /** "The Legend of Zelda". The dependable answer for a series. */
+  franchises?: IgdbNamed[];
+  /** Mixed: the series, but also per-game re-release groupings. See seriesFor. */
+  collections?: IgdbNamed[];
 };
+
+export type IgdbNamed = { id: number; name: string };
 
 export class IgdbError extends Error {
   constructor(

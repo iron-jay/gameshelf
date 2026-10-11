@@ -2099,3 +2099,48 @@ Not done, and worth saying: there is no "group by series" on the shelf, only the
 sort. The grouping machinery would take one line, but the ask was sorting.
 IGDB's `collections` could fill this in automatically on add; nothing here reads
 that field yet.
+
+---
+
+## 2026-10-11 — Grouping by series, and IGDB filling it in
+
+**Group by series** is one entry in `GROUPINGS` and one case in `bucketFor`,
+with the same "unknowns last" rule platform already uses, so the games in no
+series collect at the bottom under "No series" rather than leading the page.
+
+**IGDB fills it in on add**, and the interesting part is which field.
+`collections` is the one that looks right and is not: Ocarina of Time comes back
+in two of them — "The Legend of Zelda" and "The Legend of Zelda: Ocarina of
+Time", the second being a grouping of that one game's re-releases — and the
+order is not stable between games. Breath of the Wild returns the same pair the
+other way round. Taking the first would have filed Ocarina in a series of one,
+which looks correct in a list and is wrong, which is §4a's whole complaint about
+guessing.
+
+`franchises` is the dependable field: "The Legend of Zelda" for both Zelda games,
+"Destiny" for Destiny 2, "Grand Theft Auto" for GTA V. So `seriesFor` takes the
+franchise, and only falls back to a collection when there is no franchise —
+skipping any collection named after the game itself, shortest first, since the
+broader series has the shorter name. That was learned by asking IGDB rather than
+by assuming: the probe is in this entry's commit message.
+
+What IGDB returns is matched against the series already in the database, so its
+"Destiny" joins a hand-typed "destiny" instead of standing next to it in the
+grouping. The read goes through the transaction, so a second game added in the
+same import batch sees the first one's series.
+
+**Verified.** Eleven unit cases over `seriesFor` and `canonicalSeries` built from
+the live response shapes — franchise beating a same-named collection in both
+collection orders, franchise-only, collection-only, collection named after the
+game, nothing at all, blank names, and the case-insensitive join. Then end to
+end: adding Breath of the Wild from search stored `The Legend of Zelda` with
+nobody typing it, and "Breath of the Wild Multiplayer" — a mod IGDB files under
+no franchise — correctly stored nothing. The shelf then grouped Destiny 3, The
+Legend of Zelda 4, No series 1. Both test works and their covers removed
+afterwards.
+
+**This only fills in works added from now on.** The 324 already on the shelf
+keep whatever they have, because `igdb_payload` was stored before `franchises`
+was in the field list — so the answer is not in the cached payload and a
+backfill means refetching each game from IGDB at four a second. That is a
+Settings action with progress, like the Grouvee import, and it is not built.

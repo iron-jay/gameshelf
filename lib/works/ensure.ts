@@ -1,9 +1,10 @@
-import { eq } from "drizzle-orm";
+import { eq, isNotNull } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { platforms, works } from "@/lib/db/schema";
 import type { IgdbGame, IgdbPlatform } from "@/lib/igdb/types";
-import { platformNameFor, primaryPlatformFor, releaseDateFor, slugify, sortTitleFor, workKindFor } from "@/lib/igdb/mapping";
+import { platformNameFor, primaryPlatformFor, releaseDateFor, seriesFor, slugify, sortTitleFor, workKindFor } from "@/lib/igdb/mapping";
+import { canonicalSeries } from "@/lib/series";
 
 export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -70,6 +71,19 @@ export async function ensureWorkFromIgdb(tx: Tx, game: IgdbGame, userId: string)
     parentWorkId = parent?.id ?? null;
   }
 
+  // Matched against the series already here, so IGDB's "Destiny" joins a
+  // hand-typed "destiny" rather than standing beside it in the grouping. Read
+  // through the transaction so a second game added in the same batch sees the
+  // first one's series.
+  const known = await tx
+    .selectDistinct({ series: works.series })
+    .from(works)
+    .where(isNotNull(works.series));
+  const series = canonicalSeries(
+    seriesFor(game) ?? "",
+    known.map((row) => row.series).filter((name): name is string => Boolean(name)),
+  );
+
   const [created] = await tx
     .insert(works)
     .values({
@@ -78,6 +92,9 @@ export async function ensureWorkFromIgdb(tx: Tx, game: IgdbGame, userId: string)
       // one. The IGDB id is the tiebreak that cannot collide.
       slug: clash ? `${base}-${game.id}` : base,
       title: game.name,
+      // Matched against the series already here, so IGDB's "Destiny" joins a
+      // hand-typed "destiny" rather than standing beside it in the grouping.
+      series: series || null,
       sortTitle: sortTitleFor(game.name),
       summary: game.summary ?? null,
       firstReleaseDate: releaseDateFor(game),
