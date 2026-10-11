@@ -23,6 +23,7 @@ const SORTS = {
   added: "Recently added",
   rated: "Rating",
   finished: "Recently finished",
+  series: "Series",
 } as const;
 type Sort = keyof typeof SORTS;
 
@@ -30,6 +31,10 @@ const ORDER_BY: Readonly<Record<Sort, SQL>> = {
   added: sql`added_at desc`,
   rated: sql`rating desc nulls last, added_at desc`,
   finished: sql`last_finished_on desc nulls last, added_at desc`,
+  // Within a series, the order a series is played in is the order it came out
+  // in, which release_year already knows. Anything with no series sorts last
+  // rather than leading the page under a blank heading.
+  series: sql`series asc nulls last, release_year asc nulls last, work_title asc`,
 };
 
 const GROUPINGS = {

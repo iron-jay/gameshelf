@@ -2047,3 +2047,55 @@ long shelf. The fade-in now plays once per tab (module state in
 reload plays it again), and the stagger stops at the 24th tile. Same change
 in both apps. Checked: the shelf renders with the class on first load; the
 replay on client navigation is not something curl can see.
+
+---
+
+## 2026-10-11 — Series
+
+"Add the ability to add, and sort by series." §2 says to ask which of the four
+tables a feature belongs to and to push back if the answer is a new one — and
+here it isn't. A series is a fact about the **work**: Ocarina of Time is a Zelda
+game whoever owns it and whichever version they played. So `works.series`, a
+nullable text column, indexed.
+
+Not a tag, which is per-entry and per-user, and which you cannot sort by. Not a
+table either: a series has nothing but a name, and a table of names exists only
+to be joined. Platforms earned their table by carrying IGDB ids and
+abbreviations; this carries neither. `lib/series.ts` says so, so the next person
+to wonder has an answer.
+
+**Migration `0007`** adds the column and puts it on `entry_cards`, because the
+shelf sorts on the view. Appended at the end of the select list, not inserted
+where it reads best: `CREATE OR REPLACE VIEW` may only add columns after the
+existing ones. My first attempt put `w.series` next to `work_title` and Postgres
+would have refused it — `0004` already learned this and said so in its header,
+which I did not read closely enough.
+
+**Sorting** is `series asc nulls last, release_year asc nulls last, work_title`.
+Within a series the order you play it in is the order it came out in, which the
+view already knows, so no position column. Anything with no series sorts last
+rather than leading the page under a blank heading.
+
+**Adding** is an inline field on the work page — one field, and the work page is
+the only screen that represents the work itself, so a whole edit page for it
+would be ceremony. The box suggests series already in use, and what you type is
+matched against them case-insensitively: typing "destiny" when "Destiny" exists
+joins that series rather than starting a rival spelling. Emptying the box and
+saving clears it.
+
+**Verified** against the dev database: saving "The Legend of Zelda" on Ocarina
+put it in the datalist for every other work; typing `  destiny  ` on Lightfall
+stored `Destiny`; and `?sort=series` ordered Destiny 2 (2017), Shadowkeep
+(2019), Lightfall (2023), then Ocarina (1998), Master of Time (2021), Ship of
+Harkinian (2022) — series alphabetically, release order inside each, and before
+Shadowkeep was given a series it sorted last on its own, which is the nulls-last
+rule doing its job.
+
+Dev works now carry real series values rather than being put back as they were:
+they are correct, and clearing them is
+`update works set series = null;` if they are not wanted.
+
+Not done, and worth saying: there is no "group by series" on the shelf, only the
+sort. The grouping machinery would take one line, but the ask was sorting.
+IGDB's `collections` could fill this in automatically on add; nothing here reads
+that field yet.

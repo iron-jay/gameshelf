@@ -50,6 +50,13 @@
       "when": 1789682329926,
       "tag": "0006_dropped_returns",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791710196755,
+      "tag": "0007_work_series",
+      "breakpoints": true
     }
   ]
 }

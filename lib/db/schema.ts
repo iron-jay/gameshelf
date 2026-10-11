@@ -156,6 +156,8 @@ export const works = pgTable(
       onDelete: "cascade",
     }),
 
+    /** Free text, e.g. "The Legend of Zelda". A fact about the work, not the shelf. */
+    series: text("series"),
     sortTitle: text("sort_title"),
     summary: text("summary"),
     firstReleaseDate: date("first_release_date"),
@@ -350,4 +352,6 @@ export const entryCards = pgView("entry_cards", {
   coverNeedsReview: boolean("cover_needs_review"),
   /** The version's own release year where it has one, else the work's. */
   releaseYear: integer("release_year"),
+  /** Appended in 0007: CREATE OR REPLACE can add columns, never reorder them. */
+  series: text("series"),
 }).existing();

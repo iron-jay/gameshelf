@@ -116,6 +116,9 @@ CREATE TABLE works (
   work_kind           work_kind NOT NULL DEFAULT 'main_game',
   parent_work_id      uuid REFERENCES works(id) ON DELETE CASCADE,
 
+  -- Free text, e.g. "The Legend of Zelda". A fact about the work, not about
+  -- anyone's shelf, so it is a column here rather than a table or a tag.
+  series              text,
   sort_title          text,              -- "Legend of Zelda, The"
   summary             text,
   first_release_date  date,
@@ -328,7 +331,8 @@ SELECT
   END                 AS cover_needs_review,
   -- The version's own date when it has one, so a romhack groups under the year
   -- the hack came out rather than the year the original did.
-  extract(year FROM COALESCE(v.release_date, w.first_release_date))::int AS release_year
+  extract(year FROM COALESCE(v.release_date, w.first_release_date))::int AS release_year,
+  w.series
 FROM entries e
 JOIN versions v  ON v.id = e.version_id
 JOIN works w     ON w.id = v.work_id
