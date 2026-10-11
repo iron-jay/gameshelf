@@ -1,10 +1,10 @@
-import { count } from "drizzle-orm";
+import { and, count, isNotNull, isNull } from "drizzle-orm";
 import Link from "next/link";
 
 import { authDisabled, requireUser } from "@/lib/auth";
 import { listCoverFiles } from "@/lib/covers";
 import { db } from "@/lib/db";
-import { entries, igdbTokens } from "@/lib/db/schema";
+import { entries, igdbTokens, works } from "@/lib/db/schema";
 
 import { orphanedCoverFiles } from "@/lib/works/removal";
 
@@ -12,6 +12,7 @@ import { AccountForm } from "./account-form";
 import { ConnectionCheck } from "./connection-check";
 import { GrouveeImport } from "./grouvee-import";
 import { PasswordForm } from "./password-form";
+import { SeriesBackfill } from "./series-backfill";
 import { CoverSweep } from "./cover-sweep";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +30,17 @@ export default async function SettingsPage() {
 
   const coverFiles = await listCoverFiles();
   const orphans = await orphanedCoverFiles(coverFiles);
+
+  const [fromIgdbRow] = await db
+    .select({ total: count() })
+    .from(works)
+    .where(isNotNull(works.igdbId));
+  const [seriesLessRow] = await db
+    .select({ total: count() })
+    .from(works)
+    .where(and(isNotNull(works.igdbId), isNull(works.series)));
+  const fromIgdb = fromIgdbRow.total;
+  const seriesless = seriesLessRow.total;
 
 
   return (
@@ -87,6 +99,16 @@ export default async function SettingsPage() {
               Cover art to review
             </Link>
           </p>
+        </section>
+
+        <section>
+          <h2 className="mb-2 font-medium">Series</h2>
+          <p className="mb-3 font-narrow text-ink-dim">
+            {seriesless} of {fromIgdb} {fromIgdb === 1 ? "game" : "games"} from IGDB have no series
+            yet. New additions get one automatically; this is for everything added before that
+            existed. It only fills in blanks — a series you typed is never overwritten.
+          </p>
+          <SeriesBackfill />
         </section>
 
         <section>

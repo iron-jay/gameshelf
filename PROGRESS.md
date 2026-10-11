@@ -2144,3 +2144,45 @@ keep whatever they have, because `igdb_payload` was stored before `franchises`
 was in the field list — so the answer is not in the cached payload and a
 backfill means refetching each game from IGDB at four a second. That is a
 Settings action with progress, like the Grouvee import, and it is not built.
+
+---
+
+## 2026-10-11 — Backfilling series from IGDB
+
+The series feature only filled in works added after it existed, which left a
+shelf of 324 games blank. `igdb_payload` cannot answer it — those payloads were
+cached before `franchises` was in the field list — so the only way is to ask
+IGDB again.
+
+A Settings section, driven a chunk at a time from the browser the way the
+Grouvee import is: fifty works per round trip, one IGDB request each, progress
+after every chunk. A few hundred works is around a minute, and a single server
+action running that long with nothing on screen is indistinguishable from one
+that has hung.
+
+**It only ever writes where the series is null**, twice over: the listing
+selects on `series IS NULL`, and the update repeats the condition, so a series
+typed between listing and chunk still wins. Overwriting a name someone chose
+with IGDB's opinion is not undoable and is the opposite of helpful.
+
+What IGDB returns is matched against the series already stored, so a backfill of
+a shelf that already has a hand-typed "destiny" does not add "Destiny" beside
+it. Names learned within a chunk join the list as they go.
+
+**"Clear every series" sits next to it**, because the button writes a few
+hundred rows at once and undoing that one work page at a time is not an undo.
+
+**Verified** against live IGDB on the dev database:
+
+| | |
+|---|---|
+| Three blanks, one set by hand | `3 of 3 · 3 filled in`, Zelda and Destiny correct |
+| `Destiny 2` set to "Bungie things I like", one blank | `1 of 1`, the typed name **untouched** |
+| Clear every series | `Cleared 4 series`, count back to zero |
+| Run again from empty | `4 of 4 · 4 filled in` |
+
+The second row is the one that matters: the backfill saw a game whose series
+disagreed with IGDB and left it alone.
+
+The production build failed once on this, fetching Google Fonts — `next/font/google`
+wants the network at build time. Nothing to do with the change; the retry was clean.
