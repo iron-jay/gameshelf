@@ -92,6 +92,13 @@ curl -H "authorization: Bearer $TOKEN" http://localhost:3000/api/v1/me
 | `POST /api/v1/auth/token` | Username and password in, `{ token, user }` out |
 | `DELETE /api/v1/auth/token` | Signs the calling device out |
 | `GET /api/v1/me` | The signed-in user |
+| `GET /api/v1/shelf` | Shelf cards. `shelf`, `tag` (slug), `platform`, `sort` (`added`, `rated`, `finished`, `series`), `limit` (1–500, default 100), `offset`. Returns `{ total, limit, offset, items }` |
+| `GET /api/v1/entries/{id}` | One entry: its card plus review, spoilers flag, private flag and tags |
+| `GET /api/v1/versions/{id}` | A version, its work, its base version and your entry id if shelved |
+| `GET /api/v1/works/{slug}` | A work, its versions (with your entry ids) and its DLC |
+| `GET /api/v1/search?q=` | `{ local, igdb, igdbError }`; local results come back even when IGDB cannot be reached |
+| `GET /api/v1/tags` | Your tags with how many entries carry each |
+| `GET /api/v1/platforms` | Platforms on your shelf |
 
 Errors are `{ "error": { "code", "message" } }` with a matching status; a
 missing or expired token is a 401. Device tokens last 180 days from last use
