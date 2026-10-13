@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, eq, inArray, sql, type SQL } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { entryCards, shelfEntries, shelves } from "@/lib/db/schema";
@@ -86,5 +86,18 @@ export async function userTags(userId: string): Promise<{ slug: string; name: st
     .select({ slug: shelves.slug, name: shelves.name })
     .from(shelves)
     .where(eq(shelves.userId, userId))
+    .orderBy(asc(shelves.name));
+}
+
+/** Your tags with how many entries carry each, for a filter that shows its own sizes. */
+export async function tagsWithCounts(
+  userId: string,
+): Promise<{ id: string; slug: string; name: string; count: number }[]> {
+  return db
+    .select({ id: shelves.id, slug: shelves.slug, name: shelves.name, count: count(shelfEntries.entryId) })
+    .from(shelves)
+    .leftJoin(shelfEntries, eq(shelfEntries.shelfId, shelves.id))
+    .where(eq(shelves.userId, userId))
+    .groupBy(shelves.id)
     .orderBy(asc(shelves.name));
 }

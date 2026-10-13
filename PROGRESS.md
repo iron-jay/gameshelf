@@ -2272,3 +2272,35 @@ unchanged.
 **Next:** the read endpoints, `/api/v1/shelf`, `/entries/{id}`, `/works/{slug}`,
 `/search`, `/tags`.
 
+## 2026-10-13 — Read endpoints for the phone
+
+Step 3 of the API work: everything the phone needs to look at a shelf.
+
+| Route | Built on |
+|---|---|
+| `GET /api/v1/shelf` | `lib/shelf.ts` `shelfRows`, the same query as the web shelf, paged after it |
+| `GET /api/v1/entries/{id}` | `lib/entries/read.ts` |
+| `GET /api/v1/versions/{id}`, `/works/{slug}` | `lib/works/read.ts` |
+| `GET /api/v1/search` | `lib/search.ts`, now shared with the search page |
+| `GET /api/v1/tags`, `/platforms` | `lib/shelf.ts` |
+
+**One card shape** (`lib/api/cards.ts`) for every shelf item, built so that
+bookshelf can return the same thing: id, title, subtitle, creator, cover,
+shelf, rating, year, dates, series, with what only games have (platform, kind,
+community, DLC parent) under `extra`. The shelf is not DLC-nested; each card
+carries `extra.parentWorkId` so the phone can group it.
+
+**The search page now reads through `lib/search.ts`**, the local-works query
+and the IGDB result shaping that used to be inline in it. Its HTML is
+byte-identical before and after for four searches.
+
+Validation: unknown `shelf` or `sort`, or an out-of-range `limit`, is a 422
+naming the field; a malformed or unknown id is a 404, as on the web.
+
+**Verified** against the seeded shelf on Postgres 16 with the production
+build: every route above with a device token, each filter and the paging,
+each 422 and 404, and a 401 with no token. The IGDB half of search could only
+be checked for its "not configured" answer.
+
+**Next:** write endpoints: `POST`, `PATCH` and `DELETE /api/v1/entries`, and tags.
+
