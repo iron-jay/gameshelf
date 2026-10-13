@@ -2387,3 +2387,19 @@ build`, lint and `check:actions` pass.
   themselves only run in Actions.
 - Catalogue adds through the API are still untested: the cloud environment's
   network policy blocks the catalogue hosts.
+
+## 2026-10-13 — SteamGridDB art when IGDB has no cover
+
+- Tested the API's IGDB adds live: search, add on a chosen platform, the same
+  game again on another platform (`keptOn`), an unknown id (404), a decomp
+  port with its IGDB cover.
+- **Fixed**: brief §4a says SteamGridDB is asked when IGDB returned no cover,
+  but `addFromIgdb` never did, on the web or the API. It now looks up the
+  work's title once, when the add creates the work: exact matches applied,
+  fuzzy ones applied and flagged for `/art`, nothing below that. Checked on
+  five coverless IGDB games: three got flagged art, two stayed placeholders.
+- Seen, not changed: SteamGridDB's top hit for "Untitled Goop Game" is a game
+  called "UNTITLED", which the substring rule counts as fuzzy, so it gets art
+  flagged for review. That is the brief's tier working as written.
+- Seen, not changed: IGDB's search order puts the 1998 Ocarina of Time fourth
+  for "ocarina of time", behind fan projects.

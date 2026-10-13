@@ -6,6 +6,7 @@ import { entries, platforms, versions, works } from "@/lib/db/schema";
 import { getGameById } from "@/lib/igdb/games";
 import { originalVersionName, releaseDateFor } from "@/lib/igdb/mapping";
 import { IgdbError, igdbImageUrl } from "@/lib/igdb/types";
+import { lookupArt, SgdbError } from "@/lib/sgdb";
 import type { Status } from "@/lib/status";
 import { ensureWorkFromIgdb, primaryPlatformFor, upsertPlatform } from "@/lib/works/ensure";
 
@@ -96,6 +97,9 @@ export async function addFromIgdb(
       keptOn:
         existing && existing.platformName !== igdbPlatform?.name ? existing.platformName : null,
       needsCover: !work.coverUrl && Boolean(game.cover),
+      // Only a work this add created: the lookup runs once, on add (§4a), and
+      // never again because someone else shelves a game that still has none.
+      needsArt: work.created && !work.coverUrl && !game.cover,
     };
   });
 
@@ -115,10 +119,42 @@ export async function addFromIgdb(
     }
   }
 
+  if (outcome.needsArt) await applySgdbArt(outcome.workId, game.name);
+
   return {
     kind: outcome.added ? "added" : "already",
     workId: outcome.workId,
     versionId: outcome.versionId,
     keptOn: outcome.keptOn,
   };
+}
+
+/**
+ * IGDB had no cover, so SteamGridDB is asked on the work's own title (§4a,
+ * case 1). An exact match is applied as is, a fuzzy one flagged for review on
+ * /art, and anything weaker leaves the placeholder. Art is a nicety here: no
+ * key, no answer or a failed download all leave the game added without it.
+ */
+async function applySgdbArt(workId: string, title: string): Promise<void> {
+  let lookup;
+  try {
+    lookup = await lookupArt(title);
+  } catch (err) {
+    if (err instanceof SgdbError) return;
+    throw err;
+  }
+  const best = lookup.candidates[0];
+  if (lookup.confidence === "none" || !best) return;
+
+  const filename = await downloadCover(best.imageUrl, workId);
+  if (!filename) return;
+  await db
+    .update(works)
+    .set({
+      coverUrl: `/covers/${filename}`,
+      coverSource: "steamgriddb",
+      coverNeedsReview: lookup.confidence === "fuzzy",
+      sgdbGameId: best.sgdbGameId,
+    })
+    .where(eq(works.id, workId));
 }
