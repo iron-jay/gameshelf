@@ -220,7 +220,11 @@ form. Used for doujin games, prototypes, unreleased builds.
 6. **Settings** — IGDB credentials check, export, import, cover art.
 
 Out of scope for v1: social features, following, public profiles, Steam import,
-achievements, recommendations, mobile app. Note them in `IDEAS.md` and move on.
+achievements, recommendations. Note them in `IDEAS.md` and move on.
+
+A companion phone app is in scope as of 2026-10-13. It talks to a JSON API
+under `app/api/v1` (README, "JSON API"), which calls the same `lib/` code the
+server actions do and adds no rules of its own.
 
 ### Add flows
 
