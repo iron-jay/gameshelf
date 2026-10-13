@@ -73,19 +73,20 @@ export default async function SearchPage({
   ];
 
   return (
-    <main className="flex-1 p-6">
-      <form className="mb-6 flex gap-2" action="/search">
+    <main className="flex-1 px-4 py-6 sm:px-10">
+      <h1 className="mb-4 font-display text-3xl sm:text-4xl">Find a game</h1>
+      <form className="mb-6 flex max-w-xl gap-2" action="/search">
         <input
           name="q"
           type="search"
           defaultValue={term}
           placeholder="Search for a game"
           autoFocus
-          className="w-full max-w-md border border-line bg-panel px-3 py-2 text-ink outline-none focus:border-ink-dim"
+          className="field rounded-full px-4"
         />
         <button
           type="submit"
-          className="border border-line bg-panel px-4 py-2 font-medium hover:border-ink-dim"
+          className="btn btn-primary"
         >
           Search
         </button>
@@ -105,7 +106,7 @@ export default async function SearchPage({
         {results.map((r) => (
           <li
             key={`${r.kind}-${r.id}`}
-            className="flex items-center gap-4 border-b border-line py-3"
+            className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line py-3"
           >
             <div className="h-16 w-12 shrink-0 bg-panel">
               {r.coverUrl ? (
@@ -124,8 +125,8 @@ export default async function SearchPage({
               ) : null}
             </div>
 
-            <div className="min-w-0">
-              <p className="truncate">
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-semibold">
                 {r.kind === "local" ? (
                   <Link href={r.href} className="underline hover:text-ink">
                     {r.title}

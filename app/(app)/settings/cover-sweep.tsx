@@ -17,7 +17,7 @@ export function CoverSweep() {
       <button
         type="submit"
         disabled={pending}
-        className="border border-line bg-panel px-3 py-2 font-narrow hover:border-ink-dim disabled:text-ink-dim"
+        className="btn"
       >
         {pending ? "Removing…" : "Remove unreferenced files"}
       </button>

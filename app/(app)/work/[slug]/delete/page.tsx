@@ -27,13 +27,13 @@ export default async function DeleteWorkPage({ params }: { params: Promise<{ slu
   if (!removal) notFound();
 
   return (
-    <main className="flex-1 p-6">
+    <main className="flex-1 px-4 py-6 sm:px-10">
       <p className="mb-1 font-narrow text-ink-dim">
         <Link href={`/work/${slug}`} className="underline">
           {work.title}
         </Link>
       </p>
-      <h1 className="mb-4 text-xl font-medium">Delete {work.title}?</h1>
+      <h1 className="mb-4 font-display text-3xl">Delete {work.title}?</h1>
 
       <RemovalSummary removal={removal} />
 
@@ -41,7 +41,7 @@ export default async function DeleteWorkPage({ params }: { params: Promise<{ slu
         <input type="hidden" name="workId" value={work.id} />
         <button
           type="submit"
-          className="border border-line bg-panel px-4 py-2 font-medium hover:border-ink"
+          className="btn btn-danger"
         >
           Delete this game and everything on it
         </button>

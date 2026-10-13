@@ -85,7 +85,7 @@ export function VersionForm({
 
   if (state?.ok) {
     return (
-      <div className="border border-line bg-panel p-6">
+      <div className="card">
         <p className="font-medium">{state.message}</p>
         <p className="mt-3 font-narrow">
           <Link href={`/work/${state.workSlug}`} className="underline">
@@ -128,7 +128,7 @@ export function VersionForm({
           something else. There is no base game to choose.
         </p>
       ) : (
-        <fieldset className="flex flex-col gap-2 border border-line p-4">
+        <fieldset className="card flex flex-col gap-2">
           <legend className="px-1 font-narrow text-ink-dim">Base game</legend>
 
           {work ? (
@@ -166,7 +166,7 @@ export function VersionForm({
                     const input = event.currentTarget.previousElementSibling;
                     if (input instanceof HTMLInputElement) void onBaseSearch(input.value);
                   }}
-                  className="shrink-0 border border-line bg-panel px-3 py-2 font-narrow hover:border-ink-dim"
+                  className="shrink-0 btn"
                 >
                   {baseSearching ? "Searching…" : "Search"}
                 </button>
@@ -217,7 +217,7 @@ export function VersionForm({
         </fieldset>
       )}
 
-      <section className="border border-line p-4">
+      <section className="card">
         <h2 className="font-narrow text-ink-dim">Cover art</h2>
 
         {artPending ? (
@@ -275,7 +275,7 @@ export function VersionForm({
       <button
         type="submit"
         disabled={pending}
-        className="self-start border border-line bg-panel px-4 py-2 font-medium hover:border-ink-dim disabled:text-ink-dim"
+        className="self-start btn btn-primary"
       >
         {pending ? "Saving…" : "Add to shelf"}
       </button>

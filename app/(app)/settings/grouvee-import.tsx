@@ -86,7 +86,7 @@ export function GrouveeImport() {
         <button
           type="submit"
           disabled={parsing}
-          className="border border-line bg-panel px-3 py-2 font-narrow hover:border-ink-dim disabled:text-ink-dim"
+          className="btn"
         >
           {parsing ? "Reading…" : "Read the file"}
         </button>
@@ -99,7 +99,7 @@ export function GrouveeImport() {
       ) : null}
 
       {parse ? (
-        <div className="border border-line p-4">
+        <div className="card">
           <p className="font-narrow">
             {parse.items.length} games
             {parse.account ? ` from ${parse.account}` : ""}
@@ -124,7 +124,7 @@ export function GrouveeImport() {
             type="button"
             onClick={() => void run()}
             disabled={running || progress?.finished}
-            className="mt-3 border border-line bg-panel px-3 py-2 font-narrow hover:border-ink-dim disabled:text-ink-dim"
+            className="mt-3 btn"
           >
             {running ? "Importing…" : progress?.finished ? "Done" : "Import"}
           </button>
@@ -132,7 +132,7 @@ export function GrouveeImport() {
       ) : null}
 
       {progress ? (
-        <div className="border border-line p-4 tabular-nums">
+        <div className="card tabular-nums">
           <p className="font-narrow">
             {progress.done} of {progress.total} · {progress.added} added ·{" "}
             {progress.alreadyThere} already here

@@ -26,8 +26,8 @@ export default async function LoginPage() {
 
   return (
     <main className="flex flex-1 items-center justify-center p-8">
-      <div className="w-full max-w-xs border border-line bg-panel p-6">
-        <h1 className="mb-6 text-xl font-medium">gameshelf</h1>
+      <div className="card w-full max-w-xs">
+        <h1 className="mb-6 font-display text-3xl">gameshelf</h1>
 
         {row.n === 0 ? (
           <p className="font-narrow text-ink-dim">

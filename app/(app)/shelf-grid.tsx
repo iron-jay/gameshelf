@@ -12,8 +12,7 @@ import { PlatformField } from "./version-fields";
 
 export type ShelfSection = { label: string; cards: ShelfCard[] };
 
-const BUTTON =
-  "border border-line bg-panel px-3 py-1.5 font-narrow hover:border-ink-dim disabled:text-ink-dim";
+const BUTTON = "btn";
 
 /**
  * Whether the shelf has already resolved in this tab. The grid's fade-in is
@@ -104,7 +103,7 @@ export function ShelfGrid({
 
   return (
     <div className={resolving ? "shelf-resolving" : undefined}>
-      <div className="mb-4 flex flex-wrap items-center gap-4 font-narrow">
+      <div className="mb-6 flex flex-wrap items-center gap-3 font-narrow">
         {/* Filters what is on screen as you type. The nav's Search is the other
             thing — that one goes out to IGDB to find what you do not have yet. */}
         <label className="flex-1 basis-64">
@@ -114,7 +113,7 @@ export function ShelfGrid({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Filter by title"
-            className="w-full max-w-md border border-line bg-panel px-3 py-2 text-ink outline-none focus:border-ink-dim"
+            className="field max-w-md rounded-full px-4"
           />
         </label>
 
@@ -172,7 +171,7 @@ export function ShelfGrid({
           : null}
 
         {selecting ? (
-          <div className="mb-6 flex flex-wrap items-end gap-3 border border-line p-3">
+          <div className="card mb-6 flex flex-wrap items-end gap-3">
             <PlatformField value="" platforms={platforms} />
             <button
               type="submit"
@@ -188,7 +187,7 @@ export function ShelfGrid({
               <select
                 name="status"
                 defaultValue={statuses[0]}
-                className="w-full border border-line bg-ground px-3 py-2 text-ink outline-none focus:border-ink-dim"
+                className="field"
               >
                 {statuses.map((status) => (
                   <option key={status} value={status}>
@@ -213,14 +212,14 @@ export function ShelfGrid({
         ) : null}
 
         {shown.map((section) => (
-          <section key={section.label || "all"} className="mb-8">
+          <section key={section.label || "all"} className="shelf-wall mb-10">
             {grouped ? (
-              <h2 className="mb-2 flex items-baseline gap-3 font-medium">
-                {section.label}
-                <span className="font-narrow text-ink-dim">{section.cards.length}</span>
+              <h2 className="mb-1 flex items-baseline gap-3">
+                <span className="font-display text-2xl">{section.label}</span>
+                <span className="text-ink-dim">{section.cards.length}</span>
               </h2>
             ) : null}
-            <ul className="grid gap-1 [grid-template-columns:repeat(auto-fill,minmax(140px,1fr))]">
+            <ul className="shelf-rows">
               {section.cards.map((card) => (
                 <ShelfTile
                   key={card.entryId}

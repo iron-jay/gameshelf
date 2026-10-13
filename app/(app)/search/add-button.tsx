@@ -31,7 +31,7 @@ export function AddButton({
   const [state, action, pending] = useActionState<AddState, FormData>(addToShelf, null);
 
   return (
-    <form action={action} className="ml-auto flex shrink-0 items-center gap-2">
+    <form action={action} className="flex w-full flex-wrap items-center gap-2 pl-16 sm:ml-auto sm:w-auto sm:pl-0">
       <input type="hidden" name="igdbId" value={igdbId} />
 
       {state?.ok ? (
@@ -44,7 +44,7 @@ export function AddButton({
               <select
                 name="platformId"
                 defaultValue={defaultPlatformId ?? platforms[0].id}
-                className="max-w-52 border border-line bg-panel px-2 py-1.5 font-narrow text-ink"
+                className="max-w-52 field"
               >
                 {platforms.map((platform) => (
                   <option key={platform.id} value={platform.id}>
@@ -63,7 +63,7 @@ export function AddButton({
             <select
               name="status"
               defaultValue={defaultStatus}
-              className="border border-line bg-panel px-2 py-1.5 font-narrow text-ink"
+              className="field"
             >
               {statuses.map((status) => (
                 <option key={status} value={status}>
@@ -76,7 +76,7 @@ export function AddButton({
           <button
             type="submit"
             disabled={pending}
-            className="border border-line bg-panel px-3 py-1.5 font-narrow hover:border-ink-dim disabled:text-ink-dim"
+            className="btn btn-primary"
           >
             {pending ? "Adding…" : "Add"}
           </button>

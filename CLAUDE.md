@@ -283,81 +283,79 @@ stakes and it is much easier to build now than to retrofit.
 
 ## 5b. Visual design
 
-The shelf is a wall of cover art. The art is the content; the interface is the
-frame around it. Personality lives in how provenance is expressed, not in
-decorated chrome.
+"Living room", chosen 2026-10-13 to replace the original flat-slate look, which
+read as too blank. The collection as actual shelves: a dark room, covers
+standing on wooden planks, chunky type for anything that is a name. The art
+is still the content; the room is what makes it feel like a collection rather
+than a database. bookshelf uses the same system with sage for amber, so the
+two apps read as a pair. The one firm rule is that it must never look like a
+generic AI product.
 
-### Tokens
+### Tokens (`app/globals.css`)
 
 ```
---ground    #2E3439   mid-slate page. Not near-black, not cream.
---panel     #373E44   raised surfaces, form fields
---line      #464E55   hairlines
---ink       #E8E6E1   primary text
---ink-dim   #98A1A8   metadata, secondary
---label     #C08A3E   muted ochre. Community provenance only.
+--ground        #263034   the room
+--band          #2F3B40   a step up: the "Now playing" band, page headers
+--well          #1E272A   a step down: inside text boxes, segmented tracks
+--panel         #33424A   cover placeholders
+--line          #3B474C   hairlines
+--line-strong   #55636A   secondary button outlines
+--ink           #F1ECE2   text
+--ink-dim       #A3ADB1   metadata
+--accent        #E3A548   amber. Primary buttons, the current shelf, the active nav item
+--label         #E3A548   the community band (same amber, on purpose)
+--plank         #3B474C   with --plank-edge #5A6970 and --plank-shadow #1C2427
+--sticker       #F1ECE2   the rating sticker
+--danger        #C0564B   delete confirmations and the Delete link's hover
 ```
-
-A mid-tone ground rather than a dark one: cover art from four decades sits on
-it without the 8-bit palettes glowing or the modern art disappearing. Galleries
-hang work on mid greys for the same reason.
-
-`--label` is the only chromatic value in the app and it means exactly one
-thing: this release is unofficial. Never use it for buttons, links, focus, or
-emphasis. If it starts appearing on things that are not community releases, it
-has stopped carrying meaning.
 
 ### Type
 
-- **Archivo** throughout. Archivo Narrow for dense metadata rows and version
-  tables — same superfamily, so it reads as one voice at two densities.
-- **A mono face for literal codes only**: version labels, region codes, patch
-  checksums. These are genuinely fixed-width data. Mono anywhere else — field
-  labels, nav, buttons — is the tell, not the technique.
-- Two weights, 400 and 500. No 600, no 700.
-- Sentence case everywhere. No all-caps labels, no tracked-out eyebrows above
-  headings, no em-dash-joined meta strings.
+- **Archivo**, one variable family across its width axis. `font-display`
+  (125% wide, 800) for names and headings; `font-narrow` (87.5%) for dense
+  metadata; regular width for everything else. Weights 400–800 are in use.
+- **Plex Mono** for literal codes and the number on a rating sticker. Nowhere
+  else.
+- Sentence case everywhere. No all-caps, no tracked eyebrows.
+
+### Components
+
+- `.btn` pills (40px tall; `.btn-primary` amber, `.btn-danger` only on a
+  delete confirmation; `aria-pressed="true"` marks one that is on),
+  `.segmented` for one-of-many (the shelf a game is on), `.field` for inputs,
+  `.card` for a raised box, `.plank` for a board under a row.
+- **Covers are always whole**, 3:4, `object-fit: cover`, at every screen size.
+  No spines, no cropped hero banners: a game's page shows its whole cover
+  standing on a plank with the title beside it.
+- **Rating sticker**: a small cream tag, rotated, on a rated cover. The rating
+  control is ten bars climbing left to right, filled up to the rating.
+- **The label band**: community versions still carry a solid band across the
+  lower cover with the version name and author. Official releases get nothing.
 
 ### Layout
 
-Covers sit flush in a dense grid with hairline gaps — a shelf, not a feed of
-cards. No border radius, no shadows, no hover lift on every tile. Metadata
-appears on selection, not permanently under each cover.
-
-```
-┌────┬────┬────┐
-│    │    │    │   covers flush, 1px gaps
-│    │▓▓▓▓│    │   ▓ = label band on a community release
-├────┼────┼────┤
-│    │    │    │
-└────┴────┴────┘
-```
-
-### The label band
-
-The one bold element. Community versions (`romhack`, `translation`,
-`decomp_port`, `recomp`, `mod`) render a solid `--label` band across the lower
-portion of the cover, carrying the version name and author in Archivo Narrow.
-It reads as a cartridge label applied over the boxart.
-
-Official releases get no band, no badge, no marker. The absence is the signal.
-
-Do not extend this into a system — no second band colour for DLC, no icon set
-for version kinds. Spend the boldness here and keep everything else silent.
+- **Shelves** (`/`): the "Now playing" band (cover, title, Finished it, Drop),
+  then one sideways-scrolling strip per shelf, each on a plank, with "See all".
+- **The wall** (`/?view=all`, or any shelf, platform or tag filter): every
+  cover in a grid whose columns come from its own width, a plank under every
+  row. Filters sit in one row that scrolls sideways on a phone.
+- No Delete on a cover. It lives on the version and work pages.
+- On hover-capable screens the tile shows its name and shelf on hover; on a
+  phone a cover is a plain tap.
+- **Phones**: the header keeps only the name (and the link across to
+  bookshelf, `BOOKSHELF_URL`); Shelves, Search, Add and More (Settings) move to
+  a tab bar at the bottom. Words, not icons.
 
 ### Motion
 
-One orchestrated moment: the shelf grid resolving as covers load. Beyond that,
-motion only answers an action — a panel opening, art being applied, an entry
-saving. No fade-and-slide on section entry, no transitions on card hover.
+One orchestrated moment: the shelf resolving as covers load, on arrival only.
+Beyond that, motion only answers an action.
 
 ### Deliberately not doing
 
 Cream backgrounds with terracotta accents; near-black with one acid accent;
-identical rounded cards with soft grey shadows; all-caps eyebrow labels;
-arrows appended to button text; numbered step markers on things that are not
-sequences. These are defaults rather than decisions, and they show up
-regardless of subject.
+gradient washes; identical rounded cards with soft grey shadows; emoji or an
+icon set; all-caps eyebrow labels; arrows appended to button text.
 
 ## 6. Development
 
@@ -397,7 +395,8 @@ docker compose up -d      # app + db
 - `pg_dump` nightly via cron to the same path.
 - Reverse proxy terminates TLS; the app listens on plain HTTP internally.
 - Env vars: `DATABASE_URL`, `IGDB_CLIENT_ID`, `IGDB_CLIENT_SECRET`,
-  `SESSION_SECRET`, `ORIGIN`.
+  `SESSION_SECRET`, `ORIGIN`, optional `BOOKSHELF_URL` (the header's link
+  across to the sibling app).
 
 ---
 

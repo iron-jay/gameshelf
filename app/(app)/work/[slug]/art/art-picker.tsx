@@ -10,8 +10,8 @@ import { FilePicker } from "../../../file-picker";
 import { applyArt, applyArtFromReference, searchArt, uploadArt } from "./actions";
 
 const FIELD =
-  "w-full border border-line bg-ground px-3 py-2 text-ink outline-none focus:border-ink-dim";
-const BUTTON = "border border-line bg-panel px-3 py-2 font-narrow hover:border-ink-dim";
+  "field";
+const BUTTON = "btn";
 
 function Result({ state }: { state: ArtActionState }) {
   if (!state) return null;
@@ -95,7 +95,7 @@ export function ArtPicker({
       ) : null}
 
       <section>
-        <h2 className="mb-2 font-medium">Search SteamGridDB</h2>
+        <h2 className="mb-2 font-display text-xl">Search SteamGridDB</h2>
 
         <div className="flex flex-wrap items-center gap-2">
           <input
@@ -171,7 +171,7 @@ export function ArtPicker({
       </section>
 
       <section>
-        <h2 className="mb-2 font-medium">Paste a SteamGridDB link or id</h2>
+        <h2 className="mb-2 font-display text-xl">Paste a SteamGridDB link or id</h2>
         <p className="mb-2 font-narrow text-ink-dim">
           The reliable path when the search cannot find an obscure hack.
         </p>
@@ -191,7 +191,7 @@ export function ArtPicker({
       </section>
 
       <section>
-        <h2 className="mb-2 font-medium">Upload a file</h2>
+        <h2 className="mb-2 font-display text-xl">Upload a file</h2>
         <form action={uploadAction} className="flex flex-wrap items-center gap-2">
           {hidden}
           <FilePicker

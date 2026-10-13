@@ -27,6 +27,8 @@ export function ShelfTile({
   selecting = false,
   checked = false,
   onToggle,
+  className = "",
+  sizes = "160px",
 }: {
   card: ShelfCard;
   index: number;
@@ -34,6 +36,9 @@ export function ShelfTile({
   selecting?: boolean;
   checked?: boolean;
   onToggle?: (entryId: string) => void;
+  /** The wall sizes tiles by its columns; a strip gives them a fixed width. */
+  className?: string;
+  sizes?: string;
 }) {
   // A romhack or port is the thing you played, so it leads and the game it is
   // built on is the qualifier. For an official release the work is the thing and
@@ -54,93 +59,96 @@ export function ShelfTile({
 
   return (
     <li
-      className={`shelf-tile group relative aspect-[3/4] bg-panel${
-        checked ? " outline outline-2 -outline-offset-2 outline-ink" : ""
-      }`}
+      className={`shelf-tile group relative ${className}`}
       style={{ "--tile-index": index } as React.CSSProperties}
     >
-      {/* The whole tile is the target in select mode. A checkbox small enough
-          not to sit on the art would be too small to hit on a phone, and the
-          tile is already the thing you are pointing at.
+      <div
+        className={`relative aspect-[3/4] bg-panel${
+          checked ? " outline outline-3 outline-offset-2 outline-accent" : ""
+        }`}
+      >
+        {/* The whole tile is the target in select mode. A checkbox small enough
+            not to sit on the art would be too small to hit on a phone, and the
+            tile is already the thing you are pointing at.
 
-          Drawn rather than a real <input>: React resets a form's fields once its
-          action resolves, which would wipe every tick while the selection state
-          beside it still said otherwise. What is submitted comes from that state
-          instead, so there is only one answer to what is selected. */}
-      {selecting ? (
-        <button
-          type="button"
-          role="checkbox"
-          aria-checked={checked}
-          aria-label={title}
-          onClick={() => onToggle?.(card.entryId)}
-          className="absolute inset-0 z-10 flex items-start p-2"
-        >
-          <span
-            className={`size-5 border ${checked ? "border-ink bg-ink" : "border-ink bg-ground/80"}`}
-          />
-        </button>
-      ) : (
-        <Link href={`/version/${card.versionId}`} className="absolute inset-0 z-10">
-          <span className="sr-only">{title}</span>
-        </Link>
-      )}
-      {card.coverUrl ? (
-        <Image
-          src={card.coverUrl}
-          alt=""
-          fill
-          sizes="160px"
-          className="object-cover"
-          // Covers sit behind the session-checked /covers route, which Next's
-          // optimiser cannot fetch because it carries no cookie.
-          unoptimized
-        />
-      ) : (
-        <p className="p-2 font-narrow text-ink-dim">{title}</p>
-      )}
-
-      {/* The one bold element in the app. A solid band across the lower part of
-          the cover, reading as a cartridge label applied over the boxart.
-          Official releases get nothing at all — the absence is the signal. */}
-      {card.isCommunityVersion ? (
-        <div className="absolute inset-x-0 bottom-0 bg-label px-2 py-1.5">
-          <p className="truncate font-narrow font-medium text-ground">{card.versionName}</p>
-          {card.versionAuthor ? (
-            <p className="truncate font-narrow text-ground">{card.versionAuthor}</p>
-          ) : null}
-        </div>
-      ) : null}
-
-      {/* Metadata appears on selection rather than permanently under every
-          cover, so the grid stays a wall of art. */}
-      {/* z-20 so it sits above the tile's own link, and pointer-events-none so
-          it does not swallow the clicks meant for it — only the controls inside
-          take them back. Without the z-index the fade would decide: an opacity
-          between 0 and 1 makes a stacking context, so a click landing mid-fade
-          would go to the link underneath instead. */}
-      <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-end bg-ground/92 p-2 opacity-0 transition-opacity group-hover:opacity-100 group-focus:opacity-100">
-        <p className="font-medium">{title}</p>
-        <p className="font-narrow text-ink-dim">{subtitle}</p>
-        {detail ? <p className="font-narrow text-ink-dim">{detail}</p> : null}
-        <p className="mt-1 font-narrow text-ink-dim">
-          {card.status} · {ratingLabel(card.rating)}
-        </p>
-        {card.coverNeedsReview ? (
-          <p className="font-narrow text-ink-dim">Cover needs review</p>
-        ) : null}
-
-        {/* It goes to the confirmation page rather than deleting on the spot:
-            this is a grid of covers, and a one-click delete on a wall of art is
-            one mis-tap away from losing something. */}
-        {selecting ? null : (
-          <Link
-            href={`/version/${card.versionId}/delete`}
-            className="pointer-events-auto mt-2 self-start border border-line px-2 py-1 font-narrow text-ink-dim hover:border-danger hover:bg-danger hover:text-ink"
+            Drawn rather than a real <input>: React resets a form's fields once its
+            action resolves, which would wipe every tick while the selection state
+            beside it still said otherwise. What is submitted comes from that state
+            instead, so there is only one answer to what is selected. */}
+        {selecting ? (
+          <button
+            type="button"
+            role="checkbox"
+            aria-checked={checked}
+            aria-label={title}
+            onClick={() => onToggle?.(card.entryId)}
+            className="absolute inset-0 z-30 flex items-start p-2"
           >
-            Delete
+            <span
+              className={`size-6 rounded-full border-2 ${checked ? "border-accent bg-accent" : "border-ink bg-ground/70"}`}
+            />
+          </button>
+        ) : (
+          <Link href={`/version/${card.versionId}`} className="absolute inset-0 z-10">
+            <span className="sr-only">{title}</span>
           </Link>
         )}
+
+        {card.coverUrl ? (
+          <Image
+            src={card.coverUrl}
+            alt=""
+            fill
+            sizes={sizes}
+            className="object-cover"
+            // Covers sit behind the session-checked /covers route, which Next's
+            // optimiser cannot fetch because it carries no cookie.
+            unoptimized
+          />
+        ) : (
+          // No art yet: the name, set like a box's spine label, so a shelf of
+          // things nobody has art for still reads as a shelf.
+          <div className="flex h-full flex-col justify-between p-2.5">
+            <p className="font-display text-[15px] leading-tight break-words">{title}</p>
+            <p className="font-narrow text-sm text-ink-dim">{subtitle}</p>
+          </div>
+        )}
+
+        {/* A solid band across the lower part of the cover, reading as a
+            cartridge label applied over the boxart. Official releases get
+            nothing at all — the absence is the signal. */}
+        {card.isCommunityVersion ? (
+          <div className="absolute inset-x-0 bottom-0 bg-label px-2 py-1">
+            <p className="truncate font-narrow text-sm font-bold text-accent-ink">{card.versionName}</p>
+            {card.versionAuthor ? (
+              <p className="truncate font-narrow text-xs text-accent-ink">{card.versionAuthor}</p>
+            ) : null}
+          </div>
+        ) : null}
+
+        {card.rating !== null ? (
+          <span className="sticker" aria-label={`Rated ${card.rating} out of 10`}>
+            {card.rating}
+          </span>
+        ) : null}
+
+        {/* The name and shelf, on hover only, and only where hovering exists:
+            on a phone the cover is a plain tap through to the game.
+
+            There is no Delete here any more. It was invisible on a touch
+            screen and still took the tap, so the lower corner of every cover
+            opened a delete page. Deleting lives on the game's own page. */}
+        <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-end bg-ground/92 p-2.5 opacity-0 transition-opacity [@media(hover:hover)]:group-hover:opacity-100 group-has-[:focus-visible]:opacity-100">
+          <p className="font-semibold leading-tight">{title}</p>
+          <p className="font-narrow text-sm text-ink-dim">{subtitle}</p>
+          {detail ? <p className="font-narrow text-sm text-ink-dim">{detail}</p> : null}
+          <p className="mt-1 font-narrow text-sm text-ink-dim">
+            {card.status.charAt(0).toUpperCase() + card.status.slice(1)} · {ratingLabel(card.rating)}
+          </p>
+          {card.coverNeedsReview ? (
+            <p className="font-narrow text-sm text-ink-dim">Cover needs review</p>
+          ) : null}
+        </div>
       </div>
     </li>
   );

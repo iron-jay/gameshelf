@@ -47,12 +47,12 @@ export default async function SettingsPage() {
 
 
   return (
-    <main className="flex-1 p-6">
-      <h1 className="mb-6 text-xl font-medium">Settings</h1>
+    <main className="flex-1 px-4 py-6 sm:px-10">
+      <h1 className="mb-6 font-display text-3xl">Settings</h1>
 
       <div className="flex max-w-2xl flex-col gap-10">
         <section>
-          <h2 className="mb-2 font-medium">Account</h2>
+          <h2 className="mb-2 font-display text-xl">Account</h2>
           <p className="font-narrow text-ink-dim">
             Signed in as {user.username}
             {user.isAdmin ? " · admin" : ""}
@@ -72,7 +72,7 @@ export default async function SettingsPage() {
         </section>
 
         <section>
-          <h2 className="mb-2 font-medium">Signed-in devices</h2>
+          <h2 className="mb-2 font-display text-xl">Signed-in devices</h2>
           {devices.length === 0 ? (
             <p className="font-narrow text-ink-dim">
               No phones signed in. A device appears here when the app signs in to this server.
@@ -104,7 +104,7 @@ export default async function SettingsPage() {
         </section>
 
         <section>
-          <h2 className="mb-2 font-medium">Credentials</h2>
+          <h2 className="mb-2 font-display text-xl">Credentials</h2>
           <ul className="mb-3 flex flex-col gap-1 font-narrow text-ink-dim">
             <li>IGDB client id — {configured(process.env.IGDB_CLIENT_ID)}</li>
             <li>IGDB client secret — {configured(process.env.IGDB_CLIENT_SECRET)}</li>
@@ -120,7 +120,7 @@ export default async function SettingsPage() {
         </section>
 
         <section>
-          <h2 className="mb-2 font-medium">Cover art</h2>
+          <h2 className="mb-2 font-display text-xl">Cover art</h2>
           <p className="mb-3 font-narrow text-ink-dim">
             {coverFiles.length} {coverFiles.length === 1 ? "file" : "files"} stored.{" "}
             {orphans.length === 0
@@ -137,7 +137,7 @@ export default async function SettingsPage() {
         </section>
 
         <section>
-          <h2 className="mb-2 font-medium">Series</h2>
+          <h2 className="mb-2 font-display text-xl">Series</h2>
           <p className="mb-3 font-narrow text-ink-dim">
             {seriesless} of {fromIgdb} {fromIgdb === 1 ? "game" : "games"} from IGDB have no series
             yet. New additions get one automatically; this is for everything added before that
@@ -147,7 +147,7 @@ export default async function SettingsPage() {
         </section>
 
         <section>
-          <h2 className="mb-1 font-medium">Import from Grouvee</h2>
+          <h2 className="mb-1 font-display text-xl">Import from Grouvee</h2>
           <p className="mb-1 font-narrow text-ink-dim">
             The JSON export from <span className="font-mono">grouvee.com</span> — Settings
             &rarr; Export. Every game there carries an IGDB id, so matching is exact
@@ -157,7 +157,7 @@ export default async function SettingsPage() {
         </section>
 
         <section>
-          <h2 className="mb-1 font-medium">Export</h2>
+          <h2 className="mb-1 font-display text-xl">Export</h2>
           <p className="mb-3 font-narrow text-ink-dim">
             {entryTotal.total} {entryTotal.total === 1 ? "entry" : "entries"}. No ceremony beyond
             being logged in — both are plain GETs you can curl. Cached IGDB payloads are left out
@@ -169,14 +169,14 @@ export default async function SettingsPage() {
             <a
               href="/export/json"
               download
-              className="border border-line bg-panel px-3 py-2 font-narrow hover:border-ink-dim"
+              className="btn"
             >
               Download JSON
             </a>
             <a
               href="/export/csv"
               download
-              className="border border-line bg-panel px-3 py-2 font-narrow hover:border-ink-dim"
+              className="btn"
             >
               Download CSV
             </a>

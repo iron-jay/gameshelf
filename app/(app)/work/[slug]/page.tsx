@@ -54,154 +54,164 @@ export default async function WorkPage({ params }: { params: Promise<{ slug: str
   const allSeries = await seriesInUse();
 
   return (
-    <main className="flex-1 p-6">
-      <BackToShelf />
-      <div className="flex flex-wrap gap-6">
-        <div className="relative h-64 w-48 shrink-0 bg-panel">
-          {work.coverUrl ? (
-            <Image src={work.coverUrl} alt="" fill sizes="192px" className="object-cover" unoptimized />
-          ) : null}
+    <main className="flex-1 pb-14">
+      <section className="bg-band px-4 pt-2 sm:px-10">
+        <BackToShelf />
+        <div className="flex items-end gap-4 sm:gap-8">
+          <div className="relative aspect-[3/4] w-32 shrink-0 bg-panel sm:w-52">
+            {work.coverUrl ? (
+              <Image src={work.coverUrl} alt="" fill sizes="208px" className="object-cover" unoptimized />
+            ) : (
+              <p className="p-3 font-display text-lg">{work.title}</p>
+            )}
+          </div>
+          <div className="min-w-0 pb-4">
+            <h1 className="font-display text-[26px] break-words sm:text-5xl">{work.title}</h1>
+            <p className="mt-2 font-narrow text-ink-dim">
+              {[
+                work.workKind.replace(/_/g, " "),
+                work.firstReleaseDate?.slice(0, 4),
+                work.series,
+                work.source === "local" ? "local" : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          </div>
         </div>
-
-        <div className="min-w-0 max-w-2xl">
-          <h1 className="text-2xl font-medium">{work.title}</h1>
-          <p className="mt-1 font-narrow text-ink-dim">
-            {work.workKind.replace(/_/g, " ")}
-            {work.firstReleaseDate ? ` · ${work.firstReleaseDate.slice(0, 4)}` : ""}
-            {work.source === "local" ? " · local" : ""}
-          </p>
-          {work.summary ? <p className="mt-4">{work.summary}</p> : null}
-
-          {/* Inline rather than behind an edit page: it is one field, and the
-              work page is the only place that represents the work itself. */}
-          <form action={setSeries} className="mt-4 flex flex-wrap items-end gap-2">
-            <input type="hidden" name="slug" value={work.slug} />
-            <label className="flex flex-col gap-1.5">
-              <span className="font-narrow text-ink-dim">Series</span>
-              <input
-                name="series"
-                type="text"
-                list="series-names"
-                maxLength={120}
-                placeholder="The Legend of Zelda"
-                defaultValue={work.series ?? ""}
-                className="w-64 border border-line bg-ground px-3 py-2 text-ink outline-none focus:border-ink-dim"
-              />
-            </label>
-            <datalist id="series-names">
-              {allSeries.map((name) => (
-                <option key={name} value={name} />
-              ))}
-            </datalist>
-            <button
-              type="submit"
-              className="border border-line bg-panel px-3 py-2 font-narrow hover:border-ink-dim"
-            >
-              Save
-            </button>
-            {work.series ? (
-              <span className="font-narrow text-ink-dim">
-                Empty the box and save to remove it.
-              </span>
-            ) : null}
-          </form>
-
-          <p className="mt-4 font-narrow">
-            <Link href={`/work/${work.slug}/art`} className="text-ink-dim underline hover:text-ink">
-              Change art
-            </Link>
-            {" · "}
-            <Link
-              href={`/work/${work.slug}/delete`}
-              className="text-ink-dim underline hover:text-ink"
-            >
-              Delete
-            </Link>
-          </p>
-        </div>
-      </div>
-
-      <section className="mt-8">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-medium">Versions</h2>
-          <Link
-            href={`/work/${work.slug}/add-version`}
-            className="border border-line bg-panel px-3 py-1.5 font-narrow hover:border-ink-dim"
-          >
-            Add version
-          </Link>
-        </div>
-
-        <ul className="flex flex-col">
-          {versionRows.map((version) => (
-            <li key={version.id} className="flex items-center gap-4 border-b border-line py-3">
-              <div className="h-16 w-12 shrink-0 bg-panel">
-                {version.coverUrl ? (
-                  <Image
-                    src={version.coverUrl}
-                    alt=""
-                    width={48}
-                    height={64}
-                    className="h-16 w-12 object-cover"
-                    unoptimized
-                  />
-                ) : null}
-              </div>
-
-              <div className="min-w-0">
-                <p className="truncate">
-                  <Link href={`/version/${version.id}`} className="hover:underline">
-                    {version.name}
-                  </Link>
-                  {version.versionLabel ? (
-                    <span className="ml-2 font-mono text-ink-dim">{version.versionLabel}</span>
-                  ) : null}
-                </p>
-                <p className="font-narrow text-ink-dim">
-                  {[
-                    version.kind.replace(/_/g, " "),
-                    version.platformName,
-                    version.author,
-                    version.releaseDate?.slice(0, 4),
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </p>
-              </div>
-
-              <Link
-                href={`/work/${work.slug}/art?version=${version.id}`}
-                className="ml-auto shrink-0 font-narrow text-ink-dim underline hover:text-ink"
-              >
-                {version.coverNeedsReview ? "Review art" : "Change art"}
-              </Link>
-
-              {/* The only chromatic value in the app, and only ever this. */}
-              {isCommunity(version.kind) ? (
-                <span className="shrink-0 bg-label px-2 py-0.5 font-narrow text-ground">
-                  community
-                </span>
-              ) : null}
-            </li>
-          ))}
-        </ul>
       </section>
+      <div className="plank" />
 
-      {children.length > 0 ? (
-        <section className="mt-8">
-          <h2 className="mb-3 font-medium">Also part of this game</h2>
-          <ul className="flex flex-col">
-            {children.map((child) => (
-              <li key={child.id} className="border-b border-line py-3">
-                <Link href={`/work/${child.slug}`} className="hover:underline">
-                  {child.title}
+      <div className="flex max-w-3xl flex-col gap-8 px-4 pt-6 sm:px-10">
+        {work.summary ? <p className="leading-relaxed">{work.summary}</p> : null}
+
+        <section>
+          <div className="flex items-baseline gap-3">
+            <h2 className="font-display text-xl">Ways to play</h2>
+            <span className="text-ink-dim">{versionRows.length}</span>
+            <div className="flex-1" />
+            <Link href={`/work/${work.slug}/add-version`} className="btn btn-sm">
+              Add version
+            </Link>
+          </div>
+
+          {/* A community version never borrows the work's boxart (§4a). */}
+          <ul className="shelf-strip">
+            {versionRows.map((version) => {
+              const community = isCommunity(version.kind);
+              const art = community ? version.coverUrl : (version.coverUrl ?? work.coverUrl);
+              return (
+                <li key={version.id} className="w-32">
+                  <Link href={`/version/${version.id}`} className="relative block aspect-[3/4] bg-panel">
+                    <span className="sr-only">{version.name}</span>
+                    {art ? (
+                      <Image src={art} alt="" fill sizes="128px" className="object-cover" unoptimized />
+                    ) : (
+                      <span className="block p-2 font-display text-sm">{version.name}</span>
+                    )}
+                    {community ? (
+                      <span className="absolute inset-x-0 bottom-0 truncate bg-label px-1.5 py-1 font-narrow text-xs font-bold text-accent-ink">
+                        {version.author ?? version.name}
+                      </span>
+                    ) : null}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="plank" />
+
+          <ul className="mt-4 flex flex-col">
+            {versionRows.map((version) => (
+              <li key={version.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-line py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate">
+                    <Link href={`/version/${version.id}`} className="font-semibold hover:underline">
+                      {version.name}
+                    </Link>
+                    {version.versionLabel ? (
+                      <span className="ml-2 font-mono text-sm text-ink-dim">{version.versionLabel}</span>
+                    ) : null}
+                  </p>
+                  <p className="font-narrow text-ink-dim">
+                    {[
+                      version.kind.replace(/_/g, " "),
+                      version.platformName,
+                      version.author,
+                      version.releaseDate?.slice(0, 4),
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                </div>
+                <Link
+                  href={`/work/${work.slug}/art?version=${version.id}`}
+                  className="shrink-0 font-narrow text-ink-dim underline underline-offset-4 hover:text-ink"
+                >
+                  {version.coverNeedsReview ? "Review art" : "Change art"}
                 </Link>
-                <p className="font-narrow text-ink-dim">{child.workKind.replace(/_/g, " ")}</p>
               </li>
             ))}
           </ul>
         </section>
-      ) : null}
+
+        {children.length > 0 ? (
+          <section>
+            <h2 className="mb-2 font-display text-xl">Also part of this game</h2>
+            <ul className="flex flex-col">
+              {children.map((child) => (
+                <li key={child.id} className="border-b border-line py-3">
+                  <Link href={`/work/${child.slug}`} className="font-semibold hover:underline">
+                    {child.title}
+                  </Link>
+                  <p className="font-narrow text-ink-dim">{child.workKind.replace(/_/g, " ")}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        {/* Inline rather than behind an edit page: it is one field, and the
+            work page is the only place that represents the work itself. */}
+        <form action={setSeries} className="flex flex-wrap items-end gap-2">
+          <input type="hidden" name="slug" value={work.slug} />
+          <label className="flex flex-col gap-1.5">
+            <span className="font-narrow text-ink-dim">Series</span>
+            <input
+              name="series"
+              type="text"
+              list="series-names"
+              maxLength={120}
+              placeholder="The Legend of Zelda"
+              defaultValue={work.series ?? ""}
+              className="field w-64"
+            />
+          </label>
+          <datalist id="series-names">
+            {allSeries.map((name) => (
+              <option key={name} value={name} />
+            ))}
+          </datalist>
+          <button type="submit" className="btn">
+            Save
+          </button>
+          {work.series ? (
+            <span className="font-narrow text-ink-dim">Empty the box and save to remove it.</span>
+          ) : null}
+        </form>
+
+        <p className="flex flex-wrap gap-x-5 gap-y-2 font-narrow">
+          <Link href={`/work/${work.slug}/art`} className="text-ink-dim underline underline-offset-4 hover:text-ink">
+            Change art
+          </Link>
+          <Link
+            href={`/work/${work.slug}/delete`}
+            className="text-ink-dim underline underline-offset-4 hover:text-danger"
+          >
+            Delete
+          </Link>
+        </p>
+      </div>
     </main>
   );
 }
