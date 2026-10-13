@@ -2186,3 +2186,52 @@ disagreed with IGDB and left it alone.
 
 The production build failed once on this, fetching Google Fonts — `next/font/google`
 wants the network at build time. Nothing to do with the change; the retry was clean.
+
+## 2026-10-13 — Device tokens, the first slice of a JSON API
+
+A companion phone app is now in scope, and it needs an API: until now
+everything was server components and server actions, which a phone cannot
+call. This is the first of several steps, and only covers signing in.
+
+**A device token is a session row.** `sessions` gains `kind` (`cookie` or
+`device`), `label`, `created_at` and `last_used_at` (`0008`). The token is
+32 random bytes stored as its sha256, exactly like the cookie, so revoking,
+expiry and "a new password signs everything else out" already work for it.
+`kind` keeps the two apart: a cookie value sent as a bearer token is refused,
+and the reverse. Devices last 180 days from last use against a browser's 30,
+because a phone opened once a month should not need signing in again.
+
+**`getCurrentUser()` reads `Authorization: Bearer` after the cookie.** That one
+change is why `/covers` and `/export` work for the phone without edits.
+
+**Routes:** `GET /api/v1/meta` (public: app name, shelves and labels, whether
+sign-in is on), `POST` and `DELETE /api/v1/auth/token`, `GET /api/v1/me`.
+Every route goes through `withUser()` or `publicRoute()` in `lib/api`, because
+the `(app)` layout's guard does not reach `app/api`. Errors are
+`{ error: { code, message } }`; signed out is 401 rather than the web's 404,
+so the phone can tell an expired token from a missing game.
+
+**Sign-in is throttled**, which it never was: ten failures per username or per
+client address in fifteen minutes, in memory, for the web form and the token
+endpoint alike. The address is the last `X-Forwarded-For` entry, the one the
+proxy itself added.
+
+**Settings lists signed-in devices** with a sign-out button each.
+
+**Verified** against Postgres 16 and the production build:
+
+| | |
+|---|---|
+| `0008` applied twice | second run a no-op |
+| Token with right password | 201, row is `device`, labelled, 180-day expiry |
+| `/api/v1/me`, `/covers/…`, `/export/json` with the token | 200 |
+| Same requests with no token | 401, 404, 404 |
+| Device token sent as the cookie | 401 |
+| `DELETE /api/v1/auth/token`, then `/me` | 204, then 401 |
+| Ten bad passwords, then the right one | 401 ×10, then 429 with `Retry-After: 900` |
+| A different username from the same address | 429; from another address, 401 |
+| `AUTH_DISABLED=true`, `/me` with no token | 200, `meta` says `authRequired: false` |
+
+**Next:** move the shelf query and the entry actions into `lib/`, then the read
+endpoints.
+

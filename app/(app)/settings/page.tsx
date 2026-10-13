@@ -2,12 +2,14 @@ import { and, count, isNotNull, isNull } from "drizzle-orm";
 import Link from "next/link";
 
 import { authDisabled, requireUser } from "@/lib/auth";
+import { listDeviceSessions } from "@/lib/auth/session";
 import { listCoverFiles } from "@/lib/covers";
 import { db } from "@/lib/db";
 import { entries, igdbTokens, works } from "@/lib/db/schema";
 
 import { orphanedCoverFiles } from "@/lib/works/removal";
 
+import { revokeDevice } from "./actions";
 import { AccountForm } from "./account-form";
 import { ConnectionCheck } from "./connection-check";
 import { GrouveeImport } from "./grouvee-import";
@@ -24,6 +26,7 @@ function configured(value: string | undefined): string {
 
 export default async function SettingsPage() {
   const user = await requireUser();
+  const devices = await listDeviceSessions(user.id);
 
   const [token] = await db.select().from(igdbTokens).limit(1);
   const [entryTotal] = await db.select({ total: count() }).from(entries);
@@ -66,6 +69,38 @@ export default async function SettingsPage() {
               anywhere else.
             </p>
           ) : null}
+        </section>
+
+        <section>
+          <h2 className="mb-2 font-medium">Signed-in devices</h2>
+          {devices.length === 0 ? (
+            <p className="font-narrow text-ink-dim">
+              No phones signed in. A device appears here when the app signs in to this server.
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-2 font-narrow">
+              {devices.map((device) => (
+                <li key={device.id} className="flex items-center justify-between gap-4">
+                  <span>
+                    {device.label ?? "Unnamed device"}
+                    <span className="text-ink-dim">
+                      {" "}
+                      · signed in {device.createdAt.toISOString().slice(0, 10)}
+                      {device.lastUsedAt
+                        ? `, last used ${device.lastUsedAt.toISOString().slice(0, 10)}`
+                        : ""}
+                    </span>
+                  </span>
+                  <form action={revokeDevice}>
+                    <input type="hidden" name="id" value={device.id} />
+                    <button type="submit" className="text-ink-dim hover:text-danger">
+                      Sign out
+                    </button>
+                  </form>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         <section>

@@ -22,6 +22,15 @@ export const STATUS_ORDER = [
   "dropped",
 ] as const satisfies readonly Status[];
 
+/** How each shelf is named to a person, for clients that do not ship their own copy. */
+export const STATUS_LABELS: Readonly<Record<Status, string>> = {
+  wishlist: "Wishlist",
+  backlog: "Backlog",
+  playing: "Playing",
+  played: "Played",
+  dropped: "Dropped",
+};
+
 /** Takes `unknown` because most callers are handing it a raw FormData value. */
 export function isStatus(value: unknown): value is Status {
   return typeof value === "string" && (logStatus.enumValues as readonly string[]).includes(value);
