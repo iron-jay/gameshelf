@@ -165,17 +165,91 @@ export async function untagEntry(userId: string, versionId: string, shelfId: str
     .delete(shelfEntries)
     .where(and(eq(shelfEntries.shelfId, shelfId), eq(shelfEntries.entryId, entryId)));
 
-  // A free-form tag with nothing on it is nothing. Dropping the empty shelf
-  // keeps the filter list honest and means a mistyped name does not need a
-  // whole management screen to get rid of.
-  const [remaining] = await db
-    .select({ total: count() })
-    .from(shelfEntries)
-    .where(eq(shelfEntries.shelfId, shelfId));
+  await dropTagsIfEmpty(userId, [shelfId]);
+  return true;
+}
 
-  if (remaining.total === 0) {
-    await db.delete(shelves).where(and(eq(shelves.id, shelfId), eq(shelves.userId, userId)));
+/**
+ * A free-form tag with nothing on it is nothing. Dropping the empty shelf
+ * keeps the filter list honest and means a mistyped name does not need a
+ * whole management screen to get rid of.
+ */
+async function dropTagsIfEmpty(userId: string, shelfIds: string[]): Promise<void> {
+  for (const shelfId of shelfIds) {
+    const [remaining] = await db
+      .select({ total: count() })
+      .from(shelfEntries)
+      .where(eq(shelfEntries.shelfId, shelfId));
+
+    if (remaining.total === 0) {
+      await db.delete(shelves).where(and(eq(shelves.id, shelfId), eq(shelves.userId, userId)));
+    }
   }
+}
 
+/**
+ * One of this user's tags by its name as typed, matched the way tagEntry
+ * matches: by slug, so "Couch co-op" and "couch co-op" are the same tag.
+ */
+export async function tagIdByName(userId: string, rawName: string): Promise<string | null> {
+  const slug = slugify(rawName.trim().slice(0, TAG_NAME_MAX));
+  if (!slug) return null;
+
+  const [shelf] = await db
+    .select({ id: shelves.id })
+    .from(shelves)
+    .where(and(eq(shelves.userId, userId), eq(shelves.slug, slug)));
+  return shelf?.id ?? null;
+}
+
+/**
+ * Puts a version on this user's shelf at the given status. An entry that is
+ * already there keeps its status, the way adding from search does: adding
+ * twice is not a way to move something. Null when the version does not exist.
+ */
+export async function shelveVersion(
+  userId: string,
+  versionId: string,
+  status: Status,
+): Promise<{ entryId: string; created: boolean } | null> {
+  const [version] = await db.select({ id: versions.id }).from(versions).where(eq(versions.id, versionId));
+  if (!version) return null;
+
+  const [created] = await db
+    .insert(entries)
+    .values({ userId, versionId, status })
+    .onConflictDoNothing()
+    .returning({ id: entries.id });
+  if (created) return { entryId: created.id, created: true };
+
+  const [existing] = await db
+    .select({ id: entries.id })
+    .from(entries)
+    .where(and(eq(entries.userId, userId), eq(entries.versionId, versionId)));
+  return existing ? { entryId: existing.id, created: false } : null;
+}
+
+/**
+ * Takes a version off this user's shelf: the entry, its rating and review, its
+ * tags and any plays recorded against it. The version and work stay, since
+ * they are the catalogue rather than your shelf. False when the entry is not
+ * this user's.
+ */
+export async function removeEntry(userId: string, entryId: string): Promise<boolean> {
+  const tagIds = (
+    await db
+      .select({ id: shelfEntries.shelfId })
+      .from(shelfEntries)
+      .innerJoin(entries, eq(entries.id, shelfEntries.entryId))
+      .where(and(eq(shelfEntries.entryId, entryId), eq(entries.userId, userId)))
+  ).map((row) => row.id);
+
+  const removed = await db
+    .delete(entries)
+    .where(and(eq(entries.id, entryId), eq(entries.userId, userId)))
+    .returning({ id: entries.id });
+  if (removed.length === 0) return false;
+
+  await dropTagsIfEmpty(userId, tagIds);
   return true;
 }

@@ -2304,3 +2304,42 @@ be checked for its "not configured" answer.
 
 **Next:** write endpoints: `POST`, `PATCH` and `DELETE /api/v1/entries`, and tags.
 
+
+## 2026-10-13 (API step 4)
+
+Step 4 of the API work: the phone can change the shelf, not just read it.
+
+| Route | Built on |
+|---|---|
+| `POST /api/v1/entries` | `lib/entries/add.ts` `addFromIgdb` for an IGDB id, new `shelveVersion` for a version already on the server |
+| `PATCH /api/v1/entries/{id}` | `updateEntry`, the function the version page's buttons call |
+| `DELETE /api/v1/entries/{id}` | new `removeEntry` |
+| `PUT`/`DELETE /api/v1/entries/{id}/tags/{name}` | `tagEntry`, `untagEntry` and new `tagIdByName` |
+
+**Removing an entry is new.** The web never had it; a version or a work could
+be deleted, which takes the catalogue rows with it. `removeEntry` takes only
+your shelf row, which cascades its plays and tag links, then drops any tag
+left on nothing, the same rule untagging already followed. That rule moved
+into one function both use.
+
+**Adding twice keeps the shelf.** A second `POST` for the same version answers
+200 with the entry as it is, the way adding from search says "already on your
+shelf" rather than moving it.
+
+**A PATCH is all or nothing.** Any bad or unknown field is a 422 naming every
+problem and nothing is saved, so the phone never shows a value the server did
+not take.
+
+**Tags by name**, URL-encoded: `couch%20co-op` finds "Couch co-op" by slug, as
+the web's box does.
+
+**Verified** with the production build on Postgres 16 using a device token:
+each PATCH field and its clearing, each 422 together and alone, 404 for an
+unknown or malformed id, 401 without a token; tagging with a new name, an
+existing one in different case, a name with a slash and accents, and a blank
+one; untagging, including a tag nobody has; removing an entry with a play and
+a tag on it, then adding it back by version (201, then 200). Untagging from
+the version page still drops an empty tag. Adding by IGDB id could only be
+checked for its "no credentials" 502.
+
+**Next:** port steps 1 to 4 to bookshelf.

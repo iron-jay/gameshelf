@@ -1,3 +1,4 @@
+import type { EntryDetail } from "@/lib/entries/read";
 import type { ShelfRow } from "@/lib/shelf";
 
 /**
@@ -66,5 +67,16 @@ export function cardFrom(row: ShelfRow): Card {
       parentWorkTitle: row.parentWorkTitle,
       coverNeedsReview: row.coverNeedsReview ?? false,
     },
+  };
+}
+
+/** One entry in full: its card, plus what the shelf leaves out. */
+export function entryJson(detail: EntryDetail) {
+  return {
+    ...cardFrom(detail.row),
+    review: detail.review,
+    reviewHasSpoilers: detail.reviewHasSpoilers,
+    isPrivate: detail.isPrivate,
+    tags: detail.tags,
   };
 }
