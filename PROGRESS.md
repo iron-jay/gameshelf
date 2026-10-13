@@ -2272,3 +2272,33 @@ unchanged.
 **Next:** the read endpoints, `/api/v1/shelf`, `/entries/{id}`, `/works/{slug}`,
 `/search`, `/tags`.
 
+
+## 2026-10-13 — "Living room" redesign
+
+Jay picked direction A from the redesign mockups: a dark room, covers standing
+on planks, chunky Archivo, amber for games (sage for bookshelf). CLAUDE.md §5b
+is rewritten to match.
+
+- **System** (`app/globals.css`): new tokens, Archivo as one variable family
+  across its width axis (`font-display`, `font-narrow`), and `.btn`,
+  `.segmented`, `.field`, `.card`, `.plank`, `.sticker`. Every page's ad hoc
+  button and input classes now use them.
+- **Shelves** (`/`): "Now playing" band with Finished it and Drop, then a
+  sideways strip per shelf with "See all". The full wall moved to
+  `/?view=all` (and any shelf/platform/tag filter), a plank under every row,
+  columns from a container query.
+- **Version and work pages**: the whole cover standing on a plank beside the
+  title; the shelf as a segmented control; rating as ten climbing bars;
+  "Ways to play" strip of the work's versions; Delete moved here.
+- **Phones**: bottom tab bar (Shelves, Search, Add, More), filters in one
+  sideways-scrolling row, search results wrap the add controls under the title.
+- **Fixed**: the shelf tile's Delete link was invisible on touch but took the
+  tap, so the lower corner of a cover opened its delete page. Tiles no longer
+  carry Delete.
+- `BOOKSHELF_URL` (optional) puts a link across to bookshelf in the header.
+
+Checked in Chromium at 1280 and 390 wide against a seeded local database:
+shelves, wall grouped by shelf, version, work, search, add, settings. `next
+build`, lint and `check:actions` pass.
+
+**Next:** port to bookshelf.

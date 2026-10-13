@@ -44,7 +44,7 @@ export default async function EditVersionPage({ params }: { params: Promise<{ id
   const platformNames = await platformsInUse();
 
   return (
-    <main className="flex-1 p-6">
+    <main className="flex-1 px-4 py-6 sm:px-10">
       <p className="mb-1 font-narrow text-ink-dim">
         <Link href={`/work/${row.workSlug}`} className="underline">
           {row.workTitle}
@@ -54,7 +54,7 @@ export default async function EditVersionPage({ params }: { params: Promise<{ id
           {row.version.name}
         </Link>
       </p>
-      <h1 className="mb-2 text-xl font-medium">Edit version</h1>
+      <h1 className="mb-2 font-display text-3xl">Edit version</h1>
       <p className="mb-6 max-w-2xl font-narrow text-ink-dim">
         The version&rsquo;s own details. Your rating, review and plays live on the version page, and
         the cover has its own picker.

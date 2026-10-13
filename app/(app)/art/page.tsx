@@ -25,8 +25,8 @@ export default async function ArtReviewPage() {
     .where(and(eq(entryCards.userId, user.id), eq(entryCards.coverNeedsReview, true)));
 
   return (
-    <main className="flex-1 p-6">
-      <h1 className="mb-2 text-xl font-medium">Cover art to review</h1>
+    <main className="flex-1 px-4 py-6 sm:px-10">
+      <h1 className="mb-2 font-display text-3xl">Cover art to review</h1>
       <p className="mb-6 max-w-2xl font-narrow text-ink-dim">
         Art that matched on something close rather than exact, so it was applied and flagged.
         Choosing art for one — or keeping what is there — clears the flag.
@@ -66,7 +66,7 @@ export default async function ArtReviewPage() {
 
               <Link
                 href={`/work/${row.workSlug}/art?version=${row.versionId}`}
-                className="ml-auto shrink-0 border border-line bg-panel px-3 py-1.5 font-narrow hover:border-ink-dim"
+                className="ml-auto shrink-0 btn"
               >
                 Review
               </Link>

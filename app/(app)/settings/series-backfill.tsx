@@ -82,7 +82,7 @@ export function SeriesBackfill() {
           type="button"
           onClick={() => void run()}
           disabled={running}
-          className="border border-line bg-panel px-3 py-2 font-narrow hover:border-ink-dim disabled:text-ink-dim"
+          className="btn"
         >
           {running ? "Asking IGDB…" : "Fill in series from IGDB"}
         </button>
@@ -113,7 +113,7 @@ export function SeriesBackfill() {
       ) : null}
 
       {progress ? (
-        <div className="border border-line p-4 tabular-nums">
+        <div className="card tabular-nums">
           {progress.total === 0 ? (
             <p className="font-narrow">Every game from IGDB already has a series.</p>
           ) : (

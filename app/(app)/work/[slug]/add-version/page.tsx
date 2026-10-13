@@ -35,13 +35,13 @@ export default async function AddVersionPage({ params }: { params: Promise<{ slu
   const platformNames = await platformsInUse();
 
   return (
-    <main className="flex-1 p-6">
+    <main className="flex-1 px-4 py-6 sm:px-10">
       <p className="mb-1 font-narrow text-ink-dim">
         <Link href={`/work/${work.slug}`} className="underline">
           {work.title}
         </Link>
       </p>
-      <h1 className="mb-6 text-xl font-medium">Add a version</h1>
+      <h1 className="mb-6 font-display text-3xl">Add a version</h1>
 
       <VersionForm
         kind="romhack"

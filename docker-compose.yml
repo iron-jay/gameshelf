@@ -68,6 +68,8 @@ services:
       # The session cookie's Secure flag is derived from this, so it must be the
       # public https:// URL in production.
       ORIGIN: ${ORIGIN:-http://localhost:3000}
+      # Optional: bookshelf's address, for the link across in the header.
+      BOOKSHELF_URL: ${BOOKSHELF_URL:-}
     volumes:
       # Downloaded cover art — keep it out of the image and in backups.
       # The container runs as uid 1001; the host directory must match.

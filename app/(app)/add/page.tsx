@@ -35,21 +35,21 @@ export default async function AddPage({
     const platformNames = await platformsInUse();
 
     return (
-      <main className="flex-1 p-6">
+      <main className="flex-1 px-4 py-6 sm:px-10">
         <p className="mb-1 font-narrow text-ink-dim">
           <Link href="/add" className="underline">
             Add
           </Link>
         </p>
-        <h1 className="mb-6 text-xl font-medium">Add a {KIND_LABELS[kind].toLowerCase()}</h1>
+        <h1 className="mb-6 font-display text-3xl">Add a {KIND_LABELS[kind].toLowerCase()}</h1>
         <VersionForm kind={kind} platforms={platformNames} />
       </main>
     );
   }
 
   return (
-    <main className="flex-1 p-6">
-      <h1 className="mb-6 text-xl font-medium">What are you adding?</h1>
+    <main className="flex-1 px-4 py-6 sm:px-10">
+      <h1 className="mb-6 font-display text-3xl">What are you adding?</h1>
 
       <ul className="flex max-w-xl flex-col">
         {CHOICES.map((choice) => (

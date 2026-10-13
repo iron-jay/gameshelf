@@ -69,13 +69,13 @@ export default async function ArtPage({
   const current = version ? version.coverUrl : work.coverUrl;
 
   return (
-    <main className="flex-1 p-6">
+    <main className="flex-1 px-4 py-6 sm:px-10">
       <p className="mb-1 font-narrow text-ink-dim">
         <Link href={`/work/${work.slug}`} className="underline">
           {work.title}
         </Link>
       </p>
-      <h1 className="mb-6 text-xl font-medium">
+      <h1 className="mb-6 font-display text-3xl">
         Change art{version ? ` — ${version.name}` : ""}
       </h1>
 

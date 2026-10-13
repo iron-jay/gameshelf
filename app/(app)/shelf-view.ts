@@ -42,7 +42,7 @@ export function preferencesFrom(raw: string | undefined): ShelfPreferences {
 }
 
 /** Everything the shelf page reads out of the URL. */
-const SHELF_PARAMS = ["status", "platform", "sort", "dlc", "review", "shelf", "groupBy"] as const;
+const SHELF_PARAMS = ["status", "platform", "sort", "dlc", "review", "shelf", "groupBy", "view"] as const;
 
 /**
  * The value is stored raw: URLSearchParams percent-encodes everything outside

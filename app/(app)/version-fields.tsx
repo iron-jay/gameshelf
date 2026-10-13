@@ -5,7 +5,7 @@ import { useState } from "react";
 import { KIND_LABELS, OTHER_PLATFORM, type FormKind } from "@/lib/versions/types";
 
 export const FIELD =
-  "w-full border border-line bg-ground px-3 py-2 text-ink outline-none focus:border-ink-dim";
+  "field";
 
 export type VersionFieldValues = {
   name?: string | null;
