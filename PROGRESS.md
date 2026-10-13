@@ -2235,3 +2235,40 @@ proxy itself added.
 **Next:** move the shelf query and the entry actions into `lib/`, then the read
 endpoints.
 
+## 2026-10-13 — Shelf and entry logic moved into `lib/`
+
+Step 2 of the API work, and nothing a person would notice. The rules for
+reading a shelf and changing an entry lived inside the home page and the
+version page's server actions, tied to `FormData` and `requireUser()`; the
+phone's API needs to call the same rules with a user id and typed input.
+
+- **`lib/entries`**: `entryIdFor`, `updateEntry` (any of shelf, completion,
+  rating, review, spoilers, favourite, private), `markDone`, `tagEntry`,
+  `untagEntry`, `ratingFrom`, `isCompletion`. Each returns false when the
+  version does not exist, which is what the API will turn into a 404.
+- **`lib/entries/add.ts`**: `addFromIgdb`, the add-from-search transaction and
+  the cover download after it. A network failure reaching IGDB is now reported
+  as an `IgdbError`, so the search page says the same thing as before; any
+  other error is no longer dressed up as "IGDB request failed".
+- **`lib/shelf.ts`**: `shelfRows` with the status, platform, tag and sort
+  filters, plus `shelfPlatforms` and `userTags`. Grouping and DLC nesting stay
+  in the page: they are how the web draws a shelf, not which rows it holds.
+- The server actions are now a few lines each: read the form, call `lib/`,
+  revalidate.
+
+**Verified** against Postgres 16 with a seeded shelf (Ocarina of Time with a
+decomp port, Destiny 2 with an expansion, a tag):
+
+| | |
+|---|---|
+| Shelf page for 8 filter, sort and grouping combinations | byte-identical `<main>` before and after |
+| Version page forms posted as a browser would: shelve, shelf, rating, review with spoilers, favourite, private, credits, clear rating, clear review, a bogus shelf | each row as expected; the bogus value changes nothing |
+| Tag "  Roguelikes  ", then untag | tag created trimmed, then removed with its last entry |
+
+Not exercised: adding from IGDB, which needs IGDB credentials this
+environment does not have. It is typechecked and the transaction is moved
+unchanged.
+
+**Next:** the read endpoints, `/api/v1/shelf`, `/entries/{id}`, `/works/{slug}`,
+`/search`, `/tags`.
+

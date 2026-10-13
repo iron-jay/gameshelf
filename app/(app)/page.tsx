@@ -1,12 +1,18 @@
-import { and, asc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { cookies } from "next/headers";
 import Link from "next/link";
 
 import { requireUser } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { entryCards, shelfEntries, shelves, versionKind } from "@/lib/db/schema";
+import { versionKind } from "@/lib/db/schema";
 
 import { platformsInUse } from "@/lib/platforms";
+import {
+  isShelfSort,
+  SHELF_SORTS,
+  shelfPlatforms,
+  shelfRows,
+  userTags,
+  type ShelfSort,
+} from "@/lib/shelf";
 import { isStatus, STATUS_ORDER } from "@/lib/status";
 
 import { FilterForm } from "./filter-form";
@@ -16,26 +22,6 @@ import { preferencesFrom, SHELF_VIEW_COOKIE } from "./shelf-view";
 import { type ShelfCard } from "./shelf-tile";
 
 export const dynamic = "force-dynamic";
-
-// Section 5 names these three. Title sorting would need works.sort_title on the
-// view, which is not worth a column until someone asks for it.
-const SORTS = {
-  added: "Recently added",
-  rated: "Rating",
-  finished: "Recently finished",
-  series: "Series",
-} as const;
-type Sort = keyof typeof SORTS;
-
-const ORDER_BY: Readonly<Record<Sort, SQL>> = {
-  added: sql`added_at desc`,
-  rated: sql`rating desc nulls last, added_at desc`,
-  finished: sql`last_finished_on desc nulls last, added_at desc`,
-  // Within a series, the order a series is played in is the order it came out
-  // in, which release_year already knows. Anything with no series sorts last
-  // rather than leading the page under a blank heading.
-  series: sql`series asc nulls last, release_year asc nulls last, work_title asc`,
-};
 
 const GROUPINGS = {
   none: "No grouping",
@@ -55,10 +41,6 @@ type Params = {
   shelf?: string;
   groupBy?: string;
 };
-
-function isSort(value: string | undefined): value is Sort {
-  return Boolean(value) && value! in SORTS;
-}
 
 function isGroupBy(value: string | undefined): value is GroupBy {
   return Boolean(value) && value! in GROUPINGS;
@@ -145,7 +127,7 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
   };
 
   const status = isStatus(params.status) ? params.status : undefined;
-  const sort: Sort = isSort(params.sort) ? params.sort : "added";
+  const sort: ShelfSort = isShelfSort(params.sort) ? params.sort : "added";
   const groupBy: GroupBy = isGroupBy(params.groupBy) ? params.groupBy : "none";
   const platform = params.platform?.trim() || undefined;
   const shelfSlug = params.shelf?.trim() || undefined;
@@ -153,44 +135,9 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
   // separate parameters rather than sharing an ambiguous "group".
   const nestDlc = params.dlc !== "separate";
 
-  const filters = [eq(entryCards.userId, user.id)];
-  if (status) filters.push(eq(entryCards.status, status));
-  if (platform) filters.push(eq(entryCards.platformName, platform));
-  if (shelfSlug) {
-    filters.push(
-      inArray(
-        entryCards.entryId,
-        db
-          .select({ id: shelfEntries.entryId })
-          .from(shelfEntries)
-          .innerJoin(shelves, eq(shelves.id, shelfEntries.shelfId))
-          .where(and(eq(shelves.userId, user.id), eq(shelves.slug, shelfSlug))),
-      ),
-    );
-  }
-
-  const rows = await db
-    .select()
-    .from(entryCards)
-    .where(and(...filters))
-    .orderBy(ORDER_BY[sort]);
-
-  // Only the platforms actually on the shelf, so the filter never offers a
-  // choice that returns nothing.
-  const platformRows = await db
-    .selectDistinct({ name: entryCards.platformName })
-    .from(entryCards)
-    .where(eq(entryCards.userId, user.id));
-  const platforms = platformRows
-    .map((row) => row.name)
-    .filter((name): name is string => Boolean(name))
-    .sort();
-
-  const shelfOptions = await db
-    .select({ slug: shelves.slug, name: shelves.name })
-    .from(shelves)
-    .where(eq(shelves.userId, user.id))
-    .orderBy(asc(shelves.name));
+  const rows = await shelfRows(user.id, { status, platform, tag: shelfSlug, sort });
+  const platforms = await shelfPlatforms(user.id);
+  const shelfOptions = await userTags(user.id);
 
   // A Destiny 2 player's shelf is otherwise 90% Destiny 2. A child whose parent
   // is not itself on the shelf still shows, or it would vanish entirely.
@@ -259,7 +206,7 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
         {status ? <input type="hidden" name="status" value={status} /> : null}
 
         <select name="sort" defaultValue={sort} className={SELECT}>
-          {Object.entries(SORTS).map(([value, label]) => (
+          {Object.entries(SHELF_SORTS).map(([value, label]) => (
             <option key={value} value={value}>
               {label}
             </option>
