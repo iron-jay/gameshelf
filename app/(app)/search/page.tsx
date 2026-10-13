@@ -1,14 +1,11 @@
-import { and, eq, ilike, inArray } from "drizzle-orm";
 import Image from "next/image";
 import Link from "next/link";
 
 import { requireUser } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { entries, versions, works } from "@/lib/db/schema";
-import { platformNameFor, primaryPlatformFor, releaseDateFor } from "@/lib/igdb/mapping";
 import { searchGames } from "@/lib/igdb/search";
+import { IgdbError, IgdbNotConfiguredError } from "@/lib/igdb/types";
+import { igdbResultFor, searchLocalWorks, type IgdbResult } from "@/lib/search";
 import { STATUS_ORDER } from "@/lib/status";
-import { igdbImageUrl, IgdbError, IgdbNotConfiguredError, type IgdbGame } from "@/lib/igdb/types";
 
 import { AddButton } from "./add-button";
 
@@ -24,60 +21,7 @@ type SearchResult =
       /** The entry if there is exactly one, otherwise the work. */
       href: string;
     }
-  | {
-      kind: "igdb";
-      id: number;
-      title: string;
-      year: number | null;
-      coverUrl: string | null;
-      platforms: string;
-      /** Every platform IGDB lists, for the picker. Spelled out, as the name will be. */
-      platformOptions: { id: number; name: string }[];
-      defaultPlatformId: number | null;
-      defaultStatus: string;
-    };
-
-/**
- * Something you cannot have played yet is a wishlist entry; something that is
- * out is a backlog entry. Both are one click from the other, so the cost of
- * guessing wrong is nil and the cost of asking every time is not.
- *
- * A game with no release date at all counts as out: IGDB not knowing when
- * something came out is far more common than it being unreleased.
- */
-function defaultStatusFor(game: IgdbGame): string {
-  const released = releaseDateFor(game);
-  return released && released > new Date().toISOString().slice(0, 10) ? "wishlist" : "backlog";
-}
-
-function yearOf(seconds: number | undefined): number | null {
-  return seconds ? new Date(seconds * 1000).getUTCFullYear() : null;
-}
-
-function toResult(game: IgdbGame): SearchResult {
-  const available = game.platforms ?? [];
-
-  return {
-    kind: "igdb",
-    id: game.id,
-    title: game.name,
-    year: yearOf(game.first_release_date),
-    coverUrl: game.cover ? igdbImageUrl(game.cover.image_id, "cover_small") : null,
-    platforms: available
-      .map((p) => p.abbreviation ?? p.name)
-      .slice(0, 4)
-      .join(" · "),
-    // Named the same way the row will be, so the picker is not offering one
-    // spelling and storing another.
-    platformOptions: [...available]
-      .map((p) => ({ id: p.id, name: platformNameFor(p) }))
-      .sort((a, b) => a.name.localeCompare(b.name)),
-    // The same call the server makes when nothing is chosen, so what the picker
-    // shows is what an untouched Add would produce.
-    defaultPlatformId: primaryPlatformFor(game)?.id ?? null,
-    defaultStatus: defaultStatusFor(game),
-  };
-}
+  | ({ kind: "igdb" } & IgdbResult);
 
 export default async function SearchPage({
   searchParams,
@@ -90,51 +34,14 @@ export default async function SearchPage({
 
   // Local works are searched regardless of whether IGDB is reachable, so an
   // offline or unconfigured server still finds what it already knows about.
-  const local = term
-    ? await db
-        .select({
-          id: works.id,
-          slug: works.slug,
-          title: works.title,
-          firstReleaseDate: works.firstReleaseDate,
-          coverUrl: works.coverUrl,
-        })
-        .from(works)
-        .where(ilike(works.title, `%${term}%`))
-        .limit(10)
-    : [];
-
-  // Which of those you already have an entry for, so a result you own opens the
-  // entry instead of making you find it. A work with two versions on your shelf
-  // has no single entry to open, so that one goes to the work page and lets you
-  // pick — guessing between a romhack and the original would be worse.
-  const shelved = local.length
-    ? await db
-        .select({ workId: versions.workId, versionId: versions.id })
-        .from(entries)
-        .innerJoin(versions, eq(versions.id, entries.versionId))
-        .where(
-          and(
-            eq(entries.userId, user.id),
-            inArray(
-              versions.workId,
-              local.map((work) => work.id),
-            ),
-          ),
-        )
-    : [];
-
-  const entriesByWork = new Map<string, string[]>();
-  for (const row of shelved) {
-    entriesByWork.set(row.workId, [...(entriesByWork.get(row.workId) ?? []), row.versionId]);
-  }
+  const local = await searchLocalWorks(user.id, term);
 
   let remote: SearchResult[] = [];
   let notice: string | null = null;
 
   if (term) {
     try {
-      remote = (await searchGames(term)).map(toResult);
+      remote = (await searchGames(term)).map((game) => ({ kind: "igdb", ...igdbResultFor(game) }));
     } catch (err) {
       notice =
         err instanceof IgdbNotConfiguredError
@@ -146,18 +53,22 @@ export default async function SearchPage({
   }
 
   const results: SearchResult[] = [
-    ...local.map((w): SearchResult => {
-      const mine = entriesByWork.get(w.id) ?? [];
-
-      return {
+    ...local.map(
+      (w): SearchResult => ({
         kind: "local",
         id: w.id,
         title: w.title,
-        year: w.firstReleaseDate ? Number(w.firstReleaseDate.slice(0, 4)) : null,
+        year: w.year,
         coverUrl: w.coverUrl,
-        href: mine.length === 1 ? `/version/${mine[0]}` : `/work/${w.slug}`,
-      };
-    }),
+        // A work with two versions on your shelf has no single entry to open,
+        // so that one goes to the work page and lets you pick: guessing
+        // between a romhack and the original would be worse.
+        href:
+          w.shelvedVersionIds.length === 1
+            ? `/version/${w.shelvedVersionIds[0]}`
+            : `/work/${w.slug}`,
+      }),
+    ),
     ...remote,
   ];
 

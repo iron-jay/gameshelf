@@ -2272,6 +2272,77 @@ unchanged.
 **Next:** the read endpoints, `/api/v1/shelf`, `/entries/{id}`, `/works/{slug}`,
 `/search`, `/tags`.
 
+## 2026-10-13 — Read endpoints for the phone
+
+Step 3 of the API work: everything the phone needs to look at a shelf.
+
+| Route | Built on |
+|---|---|
+| `GET /api/v1/shelf` | `lib/shelf.ts` `shelfRows`, the same query as the web shelf, paged after it |
+| `GET /api/v1/entries/{id}` | `lib/entries/read.ts` |
+| `GET /api/v1/versions/{id}`, `/works/{slug}` | `lib/works/read.ts` |
+| `GET /api/v1/search` | `lib/search.ts`, now shared with the search page |
+| `GET /api/v1/tags`, `/platforms` | `lib/shelf.ts` |
+
+**One card shape** (`lib/api/cards.ts`) for every shelf item, built so that
+bookshelf can return the same thing: id, title, subtitle, creator, cover,
+shelf, rating, year, dates, series, with what only games have (platform, kind,
+community, DLC parent) under `extra`. The shelf is not DLC-nested; each card
+carries `extra.parentWorkId` so the phone can group it.
+
+**The search page now reads through `lib/search.ts`**, the local-works query
+and the IGDB result shaping that used to be inline in it. Its HTML is
+byte-identical before and after for four searches.
+
+Validation: unknown `shelf` or `sort`, or an out-of-range `limit`, is a 422
+naming the field; a malformed or unknown id is a 404, as on the web.
+
+**Verified** against the seeded shelf on Postgres 16 with the production
+build: every route above with a device token, each filter and the paging,
+each 422 and 404, and a 401 with no token. The IGDB half of search could only
+be checked for its "not configured" answer.
+
+**Next:** write endpoints: `POST`, `PATCH` and `DELETE /api/v1/entries`, and tags.
+
+
+## 2026-10-13 (API step 4)
+
+Step 4 of the API work: the phone can change the shelf, not just read it.
+
+| Route | Built on |
+|---|---|
+| `POST /api/v1/entries` | `lib/entries/add.ts` `addFromIgdb` for an IGDB id, new `shelveVersion` for a version already on the server |
+| `PATCH /api/v1/entries/{id}` | `updateEntry`, the function the version page's buttons call |
+| `DELETE /api/v1/entries/{id}` | new `removeEntry` |
+| `PUT`/`DELETE /api/v1/entries/{id}/tags/{name}` | `tagEntry`, `untagEntry` and new `tagIdByName` |
+
+**Removing an entry is new.** The web never had it; a version or a work could
+be deleted, which takes the catalogue rows with it. `removeEntry` takes only
+your shelf row, which cascades its plays and tag links, then drops any tag
+left on nothing, the same rule untagging already followed. That rule moved
+into one function both use.
+
+**Adding twice keeps the shelf.** A second `POST` for the same version answers
+200 with the entry as it is, the way adding from search says "already on your
+shelf" rather than moving it.
+
+**A PATCH is all or nothing.** Any bad or unknown field is a 422 naming every
+problem and nothing is saved, so the phone never shows a value the server did
+not take.
+
+**Tags by name**, URL-encoded: `couch%20co-op` finds "Couch co-op" by slug, as
+the web's box does.
+
+**Verified** with the production build on Postgres 16 using a device token:
+each PATCH field and its clearing, each 422 together and alone, 404 for an
+unknown or malformed id, 401 without a token; tagging with a new name, an
+existing one in different case, a name with a slash and accents, and a blank
+one; untagging, including a tag nobody has; removing an entry with a play and
+a tag on it, then adding it back by version (201, then 200). Untagging from
+the version page still drops an empty tag. Adding by IGDB id could only be
+checked for its "no credentials" 502.
+
+**Next:** port steps 1 to 4 to bookshelf.
 
 ## 2026-10-13 — "Living room" redesign
 
