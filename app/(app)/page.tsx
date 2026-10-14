@@ -65,8 +65,8 @@ function hrefWith(current: Params, patch: Params): string {
 
 const SELECT = "field";
 
-/** The overview's rows, in the order you look for things: next, done, wanted, gave up. */
-const ROOM_ORDER = ["backlog", "played", "wishlist", "dropped"] as const;
+/** The overview's rows: wanted, next, done, gave up. Jay asked for the wishlist on top (2026-10-14). */
+const ROOM_ORDER = ["wishlist", "backlog", "played", "dropped"] as const;
 const ROOM_TITLES: Record<(typeof ROOM_ORDER)[number], string> = {
   backlog: "Backlog",
   played: "Recently played",

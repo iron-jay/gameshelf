@@ -2403,3 +2403,10 @@ build`, lint and `check:actions` pass.
   flagged for review. That is the brief's tier working as written.
 - Seen, not changed: IGDB's search order puts the 1998 Ocarina of Time fourth
   for "ocarina of time", behind fan projects.
+
+## 2026-10-14 — Wishlist first on the shelves page
+
+Jay asked for the wishlist above the backlog. The overview's strips now run
+Wishlist, Backlog, Recently played, Dropped (`ROOM_ORDER` in
+`app/(app)/page.tsx`), the same order the shelf nav and the wall already use.
+Checked on a local database: the strips render in that order.
