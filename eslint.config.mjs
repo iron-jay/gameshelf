@@ -13,8 +13,6 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "drizzle/**",
-    // The phone app is its own Expo project with its own lint.
-    "mobile/**",
   ]),
 ]);
 

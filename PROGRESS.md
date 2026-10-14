@@ -2410,20 +2410,3 @@ Jay asked for the wishlist above the backlog. The overview's strips now run
 Wishlist, Backlog, Recently played, Dropped (`ROOM_ORDER` in
 `app/(app)/page.tsx`), the same order the shelf nav and the wall already use.
 Checked on a local database: the strips render in that order.
-
-## 2026-10-14 — The phone app, first version
-
-- New `mobile/`: one Expo (SDK 57) app for both shelves, switched from the
-  header, sage for books and amber for games. Screens: shelves, the wall,
-  search (books, comics, games, ISBN typed or scanned), the add sheet, a book
-  or game (shelf, completion, rating bars, reads, review, tags, flags, remove),
-  a work's editions or versions, a comic volume's issues, and server settings.
-  See `mobile/README.md`.
-- Lives here for now; Jay is choosing between this and its own repository.
-  `tsconfig.json`, `eslint.config.mjs` and `.dockerignore` leave `mobile/` out,
-  so the web app's checks and image are unchanged.
-- Checked at phone size in a browser against both servers run locally (seeded
-  through the API): every screen, adds from Open Library (a chosen edition),
-  Comic Vine and IGDB (a chosen platform), shelf, rating, review, tag,
-  favourite, reads and remove. Not yet run on a real phone, so the camera
-  scan, haptics and the keychain are untested.
