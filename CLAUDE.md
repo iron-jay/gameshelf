@@ -335,7 +335,8 @@ generic AI product.
 ### Layout
 
 - **Shelves** (`/`): the "Now playing" band (cover, title, Finished it, Drop),
-  then one sideways-scrolling strip per shelf, each on a plank, with "See all".
+  then one sideways-scrolling strip per shelf (Wishlist, Backlog, Recently
+  played, Dropped), each on a plank, with "See all".
 - **The wall** (`/?view=all`, or any shelf, platform or tag filter): every
   cover in a grid whose columns come from its own width, a plank under every
   row. Filters sit in one row that scrolls sideways on a phone.
