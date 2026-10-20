@@ -2,12 +2,14 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { markDone, setStatus } from "./version/[id]/actions";
+import { FinishPrompt } from "./finish-prompt";
 import { type ShelfCard } from "./shelf-tile";
 
 /**
  * The band across the top of the shelves: what is on the go, large, with the
  * two things you do to a game you are playing one press away. Finishing is
- * "reached the end" — the other levels are on the game's page, as before.
+ * "reached the end" — the other levels are on the game's page, as before —
+ * and asks for a rating on the way.
  */
 export function NowPlaying({ cards }: { cards: ShelfCard[] }) {
   return (
@@ -57,12 +59,12 @@ export function NowPlaying({ cards }: { cards: ShelfCard[] }) {
                   <span className="font-narrow text-ink-dim">{subtitle}</span>
                   <div className="flex-1" />
                   <div className="flex flex-wrap gap-2">
-                    <form action={markDone}>
-                      <input type="hidden" name="versionId" value={card.versionId} />
-                      <button type="submit" name="completion" value="credits" className="btn btn-primary btn-sm">
-                        Finished it
-                      </button>
-                    </form>
+                    <FinishPrompt
+                      action={markDone}
+                      fields={{ versionId: card.versionId, completion: "credits" }}
+                      title={title}
+                      rating={card.rating}
+                    />
                     <form action={setStatus}>
                       <input type="hidden" name="versionId" value={card.versionId} />
                       <button type="submit" name="status" value="dropped" className="btn btn-sm">

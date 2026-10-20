@@ -346,7 +346,9 @@ generic AI product.
   played, Dropped), each on a plank, with "See all"; then a Series strip, one
   tile per series (its earliest game's cover with two box edges behind it,
   the name above), opening the series page, with "See all by series" for the
-  wall grouped that way (2026-10-20).
+  wall grouped that way (2026-10-20). Finished it asks for a rating out of
+  ten on the way, which can be skipped (Jay, 2026-10-20), and Recently played
+  runs newest finish first.
 - **The wall** (`/?view=all`, or any shelf, platform or tag filter): every
   cover in a grid whose columns come from its own width, a plank under every
   row. Filters sit in one row that scrolls sideways on a phone.
@@ -442,7 +444,9 @@ runs end to end.
 7. Entry detail: rating out of ten, review. Marking done defaults to `credits`
    with the other levels one click away — never a required dropdown. The plays
    UI was removed on 2026-09-18; the table stays, and the export still carries
-   what was recorded.
+   what was recorded. Arriving on `played` records a play finished today
+   (2026-10-20), so Recently played knows what was finished last; choosing
+   `played` again does not.
 8. Tags (free-form, on top of the four shelves).
 9. ~~Stats~~ — removed on 2026-09-18 along with the plays UI it was built on.
 10. Export.
