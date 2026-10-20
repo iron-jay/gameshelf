@@ -9,6 +9,7 @@ import {
   changeSelectedStatus,
   type BulkState,
 } from "./bulk-actions";
+import { SeriesInput } from "./series-input";
 import { ShelfTile, type ShelfCard } from "./shelf-tile";
 import { PlatformField } from "./version-fields";
 
@@ -215,27 +216,12 @@ export function ShelfGrid({
               {statusPending ? "Moving…" : "Change shelf"}
             </button>
 
-            <label className="flex flex-col gap-1.5">
-              <span className="font-narrow text-ink-dim">Series</span>
-              <input
-                name="series"
-                type="text"
-                list="bulk-series-names"
-                maxLength={120}
-                placeholder="The Legend of Zelda"
-                className="field w-56"
-              />
-            </label>
-            <datalist id="bulk-series-names">
-              {seriesNames.map((name) => (
-                <option key={name} value={name} />
-              ))}
-            </datalist>
+            <SeriesInput names={seriesNames} className="w-64" />
             <button
               type="submit"
               formAction={seriesAction}
               disabled={pending || selected.size === 0}
-              className={BUTTON}
+              className={`${BUTTON} mb-7`}
             >
               {seriesPending ? "Saving…" : "Put in series"}
             </button>
