@@ -73,6 +73,17 @@ JSON keeps every play; CSV is one row per shelf entry with plays summarised.
 Cached IGDB payloads are excluded on purpose — they are upstream data that can
 be fetched again, not yours.
 
+### Restoring from an export
+
+Settings → Export and restore takes the JSON download (not the CSV), from this
+server or another: a library lost, or moved to a new server. Titles, series,
+summaries, versions, tags, ratings, reviews and plays come from the file; IGDB
+is asked only for games not here yet (one request per batch), for their payload
+and cover. Art is looked up again as on add, so art you uploaded or picked by
+hand needs picking again — the nightly `pg_dump` and the `covers` folder remain
+the full backup. Games already here are joined rather than doubled and entries
+already on your shelf are left alone, so running it twice changes nothing.
+
 ### JSON API
 
 The companion phone app talks to `/api/v1`. It signs in once and keeps a

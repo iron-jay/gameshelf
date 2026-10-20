@@ -304,6 +304,16 @@ JSON and CSV export of everything, available from day one, no auth ceremony
 beyond being logged in. This is a self-hosted app; data portability is table
 stakes and it is much easier to build now than to retrofit.
 
+**Restore** (Jay, 2026-10-20, with bookshelf): Settings → Export and restore
+reads the JSON export back in (`lib/import/restore.ts`), batched from the page.
+Details come from the file; IGDB is asked once a batch, only for games not here
+yet, and art is looked up again as on add. A game here already (IGDB id, else a
+local game of the same title and kind) is joined, a version matched by name
+and kind, and an entry already on the shelf is left alone. A DLC's game comes
+in without an entry, as an add brings it. The export carries `series`,
+`summary`, `dlcOnShelf`, `sgdbGameId`, `parentIgdbId` and the version's
+`igdbId` for this; older exports restore without them.
+
 ---
 
 ## 5b. Visual design

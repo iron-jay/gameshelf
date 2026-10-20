@@ -16,7 +16,7 @@ export type { ImportChunkResult };
 import type { GrouveeItem } from "./grouvee";
 
 /** Find or create one of this user's shelves, the same way tagging does. */
-async function shelfIdFor(userId: string, name: string): Promise<string | null> {
+export async function shelfIdFor(userId: string, name: string): Promise<string | null> {
   const slug = slugify(name);
 
   const find = async () =>
