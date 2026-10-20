@@ -2,6 +2,7 @@ import { and, asc, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { canHaveDlc, dlcOf, parentIgdbIdOf, type DlcItem } from "@/lib/dlc";
+import { fillDlcOnce } from "@/lib/dlc-fill";
 import {
   entries,
   OFFICIAL_VERSION_KINDS,
@@ -133,6 +134,7 @@ export async function workDetail(userId: string, slug: string): Promise<WorkDeta
         .where(eq(works.id, work.parentWorkId))
     : [];
 
+  if (canHaveDlc(work.workKind)) await fillDlcOnce(userId, work.id);
   const children = canHaveDlc(work.workKind) ? await dlcOf(userId, work.id) : [];
 
   return {

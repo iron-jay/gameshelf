@@ -5,10 +5,10 @@ import { db } from "@/lib/db";
 import { entries, platforms, versions, works } from "@/lib/db/schema";
 import { getGameById } from "@/lib/igdb/games";
 import { originalVersionName, releaseDateFor, workKindFor } from "@/lib/igdb/mapping";
-import { IgdbError, igdbImageUrl } from "@/lib/igdb/types";
+import { IgdbError, igdbImageUrl, type IgdbGame, type IgdbPlatform } from "@/lib/igdb/types";
 import { lookupArt, SgdbError } from "@/lib/sgdb";
 import type { Status } from "@/lib/status";
-import { ensureWorkFromIgdb, primaryPlatformFor, upsertPlatform } from "@/lib/works/ensure";
+import { ensureWorkFromIgdb, primaryPlatformFor, upsertPlatform, type Tx } from "@/lib/works/ensure";
 
 export type AddFromIgdbResult =
   | { kind: "gone" }
@@ -70,73 +70,12 @@ export async function addFromIgdb(
     (game.platforms ?? []).find((platform) => platform.id === input.platformId) ??
     primaryPlatformFor(game);
 
-  const outcome = await db.transaction(async (tx) => {
-    const platformId = await upsertPlatform(tx, igdbPlatform);
-    const work = await ensureWorkFromIgdb(tx, game, userId);
-
-    const [existing] = await tx
-      .select({ id: versions.id, platformName: platforms.name })
-      .from(versions)
-      .leftJoin(platforms, eq(platforms.id, versions.platformId))
-      .where(and(eq(versions.workId, work.id), eq(versions.kind, "original")));
-
-    let versionId = existing?.id;
-
-    if (!versionId) {
-      const [created] = await tx
-        .insert(versions)
-        .values({
-          workId: work.id,
-          name: originalVersionName(igdbPlatform),
-          kind: "original",
-          platformId,
-          releaseDate: releaseDateFor(game),
-          igdbId: game.id,
-          source: "igdb",
-          createdBy: userId,
-        })
-        .returning({ id: versions.id });
-      versionId = created.id;
-    }
-
-    const inserted = input.status
-      ? await tx
-          .insert(entries)
-          .values({ userId, versionId, status: input.status })
-          .onConflictDoNothing()
-          .returning({ id: entries.id })
-      : [];
-
-    return {
-      workId: work.id,
-      versionId,
-      added: inserted.length > 0,
-      keptOn:
-        existing && existing.platformName !== igdbPlatform?.name ? existing.platformName : null,
-      needsCover: !work.coverUrl && Boolean(game.cover),
-      // Only a work this add created: the lookup runs once, on add (§4a), and
-      // never again because someone else shelves a game that still has none.
-      needsArt: work.created && !work.coverUrl && !game.cover,
-    };
-  });
+  const outcome = await db.transaction((tx) => placeIgdbGame(tx, userId, game, igdbPlatform, input.status));
 
   // Outside the transaction on purpose: this is network I/O that should not
   // hold a database transaction open, and a failed download must not roll back
   // an otherwise correct shelf row.
-  if (outcome.needsCover && game.cover) {
-    const filename = await downloadCover(
-      igdbImageUrl(game.cover.image_id, "cover_big"),
-      outcome.workId,
-    );
-    if (filename) {
-      await db
-        .update(works)
-        .set({ coverUrl: `/covers/${filename}`, coverSource: "igdb" })
-        .where(eq(works.id, outcome.workId));
-    }
-  }
-
-  if (outcome.needsArt) await applySgdbArt(outcome.workId, game.name);
+  await artForPlaced(outcome, game);
 
   return {
     kind: outcome.added ? "added" : "already",
@@ -174,4 +113,89 @@ export async function applySgdbArt(workId: string, title: string): Promise<void>
       sgdbGameId: best.sgdbGameId,
     })
     .where(eq(works.id, workId));
+}
+
+export type Placed = {
+  workId: string;
+  versionId: string;
+  /** An entry was made by this call. */
+  added: boolean;
+  keptOn: string | null;
+  needsCover: boolean;
+  needsArt: boolean;
+};
+
+/**
+ * An IGDB game's work, its one 'original' version and, given a shelf, your
+ * entry: the rows every add from IGDB makes, inside the caller's transaction.
+ * Without a shelf it is the game made known here and not shelved, as a DLC's
+ * game, or a game's DLC filled in under it.
+ */
+export async function placeIgdbGame(
+  tx: Tx,
+  userId: string,
+  game: IgdbGame,
+  igdbPlatform: IgdbPlatform | undefined,
+  status: Status | null,
+): Promise<Placed> {
+  const platformId = await upsertPlatform(tx, igdbPlatform);
+  const work = await ensureWorkFromIgdb(tx, game, userId);
+
+  const [existing] = await tx
+    .select({ id: versions.id, platformName: platforms.name })
+    .from(versions)
+    .leftJoin(platforms, eq(platforms.id, versions.platformId))
+    .where(and(eq(versions.workId, work.id), eq(versions.kind, "original")));
+
+  let versionId = existing?.id;
+
+  if (!versionId) {
+    const [created] = await tx
+      .insert(versions)
+      .values({
+        workId: work.id,
+        name: originalVersionName(igdbPlatform),
+        kind: "original",
+        platformId,
+        releaseDate: releaseDateFor(game),
+        igdbId: game.id,
+        source: "igdb",
+        createdBy: userId,
+      })
+      .returning({ id: versions.id });
+    versionId = created.id;
+  }
+
+  const inserted = status
+    ? await tx
+        .insert(entries)
+        .values({ userId, versionId, status })
+        .onConflictDoNothing()
+        .returning({ id: entries.id })
+    : [];
+
+  return {
+    workId: work.id,
+    versionId,
+    added: inserted.length > 0,
+    keptOn: existing && existing.platformName !== igdbPlatform?.name ? existing.platformName : null,
+    needsCover: !work.coverUrl && Boolean(game.cover),
+    // Only a work this add created: the lookup runs once, on add (§4a), and
+    // never again because someone else shelves a game that still has none.
+    needsArt: work.created && !work.coverUrl && !game.cover,
+  };
+}
+
+/** IGDB's cover for a work just placed, else one SteamGridDB lookup (§4a). */
+export async function artForPlaced(placed: Placed, game: IgdbGame): Promise<void> {
+  if (placed.needsCover && game.cover) {
+    const filename = await downloadCover(igdbImageUrl(game.cover.image_id, "cover_big"), placed.workId);
+    if (filename) {
+      await db
+        .update(works)
+        .set({ coverUrl: `/covers/${filename}`, coverSource: "igdb" })
+        .where(eq(works.id, placed.workId));
+    }
+  }
+  if (placed.needsArt) await applySgdbArt(placed.workId, game.name);
 }

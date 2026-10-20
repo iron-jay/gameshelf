@@ -66,8 +66,15 @@ Consequences to honour in the UI:
   point — the base game and the expansion are rated separately.
 - DLC lives under its game (Jay, 2026-10-20). The game's page and each of
   its versions' pages list its DLC beneath the versions, not mixed into them,
-  with your shelf and rating on each, and "Add DLC" (`/work/{slug}/dlc`)
-  lists what IGDB hangs off the game to add, or makes one by hand. A DLC
+  each with its own shelf control, so one press puts it on your shelf (Jay,
+  2026-10-20). They are pre-filled: the first time a game's page (or its API
+  read) is opened, IGDB's DLC, expansions and standalone expansions for it
+  become works and versions here with no entries (`lib/dlc-fill.ts`,
+  `works.dlc_filled_at`, once per game; covers after the response). Seasons
+  and episodes are not pre-filled. "Add DLC" (`/work/{slug}/dlc`) lists
+  everything IGDB hangs off the game, seasons included, or makes one by hand.
+  This is the one place a works row is written without an add: the game was
+  added, and its DLC list is part of what was fetched for it. A DLC
   added before its game brings the game in (no entry); a game added later
   adopts DLC already here by IGDB's `parent_game`.
 - On the shelf a DLC does not stand beside its game when the game is on your

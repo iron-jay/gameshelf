@@ -2588,3 +2588,27 @@ Chromium on desktop and phone width; tsc, lint and `check:actions` pass.
 
 Next: the phone app should ask for `?dlc=fold`, show each DLC's shelf in the
 work screen, and offer the "Under the game / As separate games" switch.
+
+## 2026-10-20 — DLC pre-filled, one press to shelve
+
+Jay: can DLC be pre-filled, so you just press its shelf?
+
+- The first time a game's page is opened (the version page a cover opens, the
+  game page, or `GET /api/v1/works/{slug}`), `fillDlcOnce` (`lib/dlc-fill.ts`)
+  asks IGDB once for the game's DLC, expansions and standalone expansions
+  (full payloads, one request) and places each as a work and original version
+  with no entry, on the game's platform where it came out there. Covers are
+  downloaded in `after()`, so the first view shows placeholders. Claimed with
+  `works.dlc_filled_at` (migration `0010`) so it runs once; reset on failure,
+  so offline just tries again next time. Seasons and episodes stay on Add DLC.
+- The DLC section is now a list: cover, name, kind, year, rating, and the
+  shelf segmented control. A press shelves it or moves it (`setDlcStatus` →
+  `updateEntry`, so arriving on Played records a play).
+- `placeIgdbGame` / `artForPlaced` came out of `addFromIgdb` so the fill
+  reuses the add's rows and art rules.
+- `POST /api/v1/entries` with a versionId and `shelf: "played"` now records a
+  play for a new entry, as the web does, for the phone's one-press shelving.
+
+Checked locally with Destiny 2: 13 DLC appeared on first view (about 8 s,
+once), covers on the next; pressing Played on Shadowkeep shelved it with a
+play, and it stayed off the shelf under its game.

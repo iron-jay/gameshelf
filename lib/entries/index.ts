@@ -246,7 +246,12 @@ export async function shelveVersion(
     .values({ userId, versionId, status })
     .onConflictDoNothing()
     .returning({ id: entries.id });
-  if (created) return { entryId: created.id, created: true };
+  if (created) {
+    // As updateEntry: arriving on played is finishing it, so a DLC pressed
+    // straight to Played from the phone leads Recently played too.
+    if (status === "played") await db.insert(plays).values({ entryId: created.id, finishedOn: today() });
+    return { entryId: created.id, created: true };
+  }
 
   const [existing] = await db
     .select({ id: entries.id })
