@@ -2654,3 +2654,20 @@ but for the romhack, which now has SteamGridDB art it never had. Running it
 again: 4 already here. A bookshelf export is refused with a message. tsc,
 lint and `check:actions` pass. Uploaded art is not in the export, so it is
 looked up again rather than restored.
+
+## 2026-10-20 — standalone expansions are games of their own
+
+Jay: a standalone expansion is not reached through its game, so it is its own
+entry. Uncharted: The Lost Legacy now stands on the shelf beside Uncharted 4
+and is not listed under it.
+
+- `parent_work_id` is kept, so no migration and nothing to undo: the link is
+  still the model's "more content", and the expansion's page reads
+  "Standalone expansion of Uncharted 4". `isStandalone` in `lib/dlc.ts`
+  keeps it out of the fold and out of `dlcOf`.
+- Pre-fill asks IGDB for game types 1 and 2 only, and Add DLC drops type 4.
+  Standalone expansions pre-filled before this stay as catalogue rows with no
+  entry, listed nowhere until added from search.
+- Checked locally: Uncharted 4 on Played and The Lost Legacy on Backlog both
+  show on `GET /shelf?dlc=fold`; Uncharted 4's page lists no DLC. tsc, lint
+  and `check:actions` pass. The phone app's labels follow (shelf-mobile).

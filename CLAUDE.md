@@ -68,10 +68,15 @@ Consequences to honour in the UI:
   its versions' pages list its DLC beneath the versions, not mixed into them,
   each with its own shelf control, so one press puts it on your shelf (Jay,
   2026-10-20). They are pre-filled: the first time a game's page (or its API
-  read) is opened, IGDB's DLC, expansions and standalone expansions for it
+  read) is opened, IGDB's DLC and expansions for it
   become works and versions here with no entries (`lib/dlc-fill.ts`,
   `works.dlc_filled_at`, once per game; covers after the response). Seasons
-  and episodes are not pre-filled. "Add DLC" (`/work/{slug}/dlc`) lists
+  and episodes are not pre-filled.
+- A **standalone expansion** is not DLC on screen (Jay, 2026-10-20): it is
+  launched on its own, not through its game, so it is a game of its own. It
+  keeps `parent_work_id` (the model is unchanged, and its page says
+  "Standalone expansion of …"), but it is never listed under the game,
+  pre-filled, offered by Add DLC, or folded off the shelf. Add it from search. "Add DLC" (`/work/{slug}/dlc`) lists
   everything IGDB hangs off the game, seasons included, or makes one by hand.
   This is the one place a works row is written without an add: the game was
   added, and its DLC list is part of what was fetched for it. A DLC

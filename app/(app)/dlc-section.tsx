@@ -115,21 +115,24 @@ export function DlcSection({
 
 /**
  * The other end: on a DLC's own pages, the game it belongs to — or, for DLC
- * shelved before its game was here, a way to bring the game in.
+ * shelved before its game was here, a way to bring the game in. A standalone
+ * expansion says so, since it is a game of its own that only came from this one.
  */
 export function DlcOf({
   parent,
   parentIgdbId,
   slug,
+  standalone = false,
 }: {
   parent: { slug: string; title: string } | null;
   parentIgdbId: number | null;
   slug: string;
+  standalone?: boolean;
 }) {
   if (parent) {
     return (
       <p className="mb-1 font-narrow text-ink-dim">
-        DLC for{" "}
+        {standalone ? "Standalone expansion of" : "DLC for"}{" "}
         <Link href={`/work/${parent.slug}`} className="underline underline-offset-4 hover:text-ink">
           {parent.title}
         </Link>
