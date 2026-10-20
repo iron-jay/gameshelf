@@ -1,4 +1,4 @@
-import { eq, isNotNull } from "drizzle-orm";
+import { eq, isNotNull, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { platforms, works } from "@/lib/db/schema";
@@ -106,6 +106,17 @@ export async function ensureWorkFromIgdb(tx: Tx, game: IgdbGame, userId: string)
       createdBy: userId,
     })
     .returning({ id: works.id, coverUrl: works.coverUrl });
+
+  // DLC added before its game was left without one. Now the game is here, it
+  // takes them in: IGDB's parent_game is in each one's stored payload.
+  await tx.execute(sql`
+    UPDATE works SET parent_work_id = ${created.id}
+    WHERE parent_work_id IS NULL
+      AND work_kind <> 'main_game'
+      AND id <> ${created.id}
+      AND igdb_payload ? 'parent_game'
+      AND (igdb_payload->>'parent_game')::int = ${game.id}
+  `);
 
   return { id: created.id, coverUrl: created.coverUrl, created: true };
 }

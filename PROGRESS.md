@@ -2547,3 +2547,44 @@ one for the phone app. Jay picked the rating sticker from three directions.
   `public/icons/` (192, 512, maskable 512) are rendered from it; the new
   `app/manifest.ts` lists the PNGs for "Add to home screen".
 - tsc and lint pass.
+
+## 2026-10-20 — DLC under its game
+
+Jay wasn't happy with DLC: it should be added under each game, and each game
+should be able to show its DLC as separate entries on the shelf.
+
+- **Under the game.** The game page and each of its (official) versions'
+  pages have a DLC strip under Ways to play: each DLC's cover on a plank, its
+  name without the game's prefix ("Forsaken", not "Destiny 2: Forsaken"), your
+  shelf and rating sticker. A tap opens it; it is still a work of its own, with
+  its own entry, rating and review. A DLC's own pages say "DLC for Destiny 2".
+- **Add DLC** (`/work/{slug}/dlc`) lists what IGDB hangs off the game
+  (`parent_game`, game types DLC/expansion/standalone/episode/season), the
+  expansions first and seasons after, each with the search page's Add (the
+  platform starts on the game's own). Ones already here link to their page.
+  "Not listed?" makes one by hand: a local work under the game, its version on
+  the game's platform, your entry, and one SteamGridDB lookup.
+- **Parents always found.** Adding DLC whose game is not here brings the game
+  in from IGDB (work and version, no entry). Adding a game adopts DLC already
+  here by its stored `parent_game`; migration `0009` did the same for
+  existing DLC whose game was here. Older DLC whose game is not here shows
+  "Its game is not here yet. Bring it in from IGDB".
+- **The shelf.** The global "Show DLC separately" checkbox (and its `dlc`
+  preference) is gone. A DLC leaves the shelf when its game is on your shelf
+  anywhere within the same platform/tag filters, unless the game is set to
+  "As separate games" (`works.dlc_on_shelf`, a segmented switch under the DLC
+  strip). A DLC you are playing still shows on Playing unless the game is
+  there too, so Now playing never hides what you are playing. The wall's count
+  says "7 games, 5 DLC under their games". `lib/dlc.ts`.
+- **API.** `GET /shelf?dlc=fold` applies the same rule (`dlcUnder` counts what
+  it left out); without it the shelf is unchanged, so the phone app as built
+  still works. `GET /works/{slug}` children carry versionId, entryId, status,
+  rating, cover and year, plus `dlcOnShelf`; `PATCH /works/{slug}` sets it.
+- Search results say "expansion"/"dlc" in front of the platforms.
+
+Checked on a local database with real IGDB data (Witcher 3 and two
+expansions, Destiny 2 and three, Shadow of the Erdtree as an orphan) in
+Chromium on desktop and phone width; tsc, lint and `check:actions` pass.
+
+Next: the phone app should ask for `?dlc=fold`, show each DLC's shelf in the
+work screen, and offer the "Under the game / As separate games" switch.

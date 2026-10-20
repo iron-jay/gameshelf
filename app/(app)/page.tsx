@@ -6,14 +6,8 @@ import { versionKind } from "@/lib/db/schema";
 
 import { platformsInUse } from "@/lib/platforms";
 import { seriesHref, seriesInUse, seriesOnShelf } from "@/lib/series";
-import {
-  isShelfSort,
-  SHELF_SORTS,
-  shelfPlatforms,
-  shelfRows,
-  userTags,
-  type ShelfSort,
-} from "@/lib/shelf";
+import { foldedShelfRows } from "@/lib/dlc";
+import { isShelfSort, SHELF_SORTS, shelfPlatforms, userTags, type ShelfSort } from "@/lib/shelf";
 import { isStatus, STATUS_LABELS, STATUS_ORDER } from "@/lib/status";
 
 import { FilterForm } from "./filter-form";
@@ -41,7 +35,6 @@ type Params = {
   status?: string;
   platform?: string;
   sort?: string;
-  dlc?: string;
   shelf?: string;
   groupBy?: string;
   /** "all" for the whole wall; otherwise a bare "/" is the shelves overview. */
@@ -151,22 +144,13 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
   const groupBy: GroupBy = isGroupBy(params.groupBy) ? params.groupBy : "none";
   const platform = params.platform?.trim() || undefined;
   const shelfSlug = params.shelf?.trim() || undefined;
-  // The DLC toggle and the grouping selector are different axes, so they get
-  // separate parameters rather than sharing an ambiguous "group".
-  const nestDlc = params.dlc !== "separate";
-
-  const rows = await shelfRows(user.id, { status, platform, tag: shelfSlug, sort });
+  // DLC sits under its game rather than beside it, unless the game says
+  // otherwise (lib/dlc.ts); a Destiny 2 player's shelf is otherwise 90% Destiny 2.
+  const { rows: visible, under } = await foldedShelfRows(user.id, { status, platform, tag: shelfSlug, sort });
   const platforms = await shelfPlatforms(user.id);
   const shelfOptions = await userTags(user.id);
 
-  // A Destiny 2 player's shelf is otherwise 90% Destiny 2. A child whose parent
-  // is not itself on the shelf still shows, or it would vanish entirely.
-  const presentWorkIds = new Set(rows.map((row) => row.workId));
-  const visible = nestDlc
-    ? rows.filter((row) => !row.parentWorkId || !presentWorkIds.has(row.parentWorkId))
-    : rows;
-
-  const hiddenCount = rows.length - visible.length;
+  const hiddenCount = [...under.values()].reduce((sum, count) => sum + count, 0);
 
   const toCard = (row: Row): ShelfCard => ({
     entryId: row.entryId ?? "",
@@ -404,14 +388,9 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
           </label>
         ) : null}
 
-        <label className="flex shrink-0 items-center gap-2 text-ink-dim">
-          <input type="checkbox" name="dlc" value="separate" defaultChecked={!nestDlc} />
-          Show DLC separately
-        </label>
-
         <span className="shrink-0 text-ink-dim">
           {visible.length} {visible.length === 1 ? "game" : "games"}
-          {hiddenCount > 0 ? `, ${hiddenCount} more under their parents` : ""}
+          {hiddenCount > 0 ? `, ${hiddenCount} DLC under their games` : ""}
         </span>
       </FilterForm>
 

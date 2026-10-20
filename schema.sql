@@ -123,6 +123,10 @@ CREATE TABLE works (
   -- so "The Final Shape" can be logged separately from "Destiny 2".
   work_kind           work_kind NOT NULL DEFAULT 'main_game',
   parent_work_id      uuid REFERENCES works(id) ON DELETE CASCADE,
+  -- A game's DLC lives under it, on its pages, rather than as tiles of its
+  -- own on the shelf. Set on the game (the parent) to put them back on the
+  -- shelf as games of their own — the Destiny 2 player's choice, per game.
+  dlc_on_shelf        boolean NOT NULL DEFAULT false,
 
   -- Free text, e.g. "The Legend of Zelda". A fact about the work, not about
   -- anyone's shelf, so it is a column here rather than a table or a tag.

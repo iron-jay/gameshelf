@@ -64,9 +64,20 @@ Consequences to honour in the UI:
 
 - DLC gets its own shelf row, its own rating and its own review. That is the
   point — the base game and the expansion are rated separately.
-- Work pages show child works beneath the version list, not mixed into it.
-- Shelf view needs a "group DLC under parent" toggle. Default on, or a
-  Destiny 2 player's shelf is 90% Destiny 2.
+- DLC lives under its game (Jay, 2026-10-20). The game's page and each of
+  its versions' pages list its DLC beneath the versions, not mixed into them,
+  with your shelf and rating on each, and "Add DLC" (`/work/{slug}/dlc`)
+  lists what IGDB hangs off the game to add, or makes one by hand. A DLC
+  added before its game brings the game in (no entry); a game added later
+  adopts DLC already here by IGDB's `parent_game`.
+- On the shelf a DLC does not stand beside its game when the game is on your
+  shelf too (anywhere, within the same platform and tag filters), so a
+  Destiny 2 player's shelf is not 90% Destiny 2. Exception: a DLC you are
+  playing still shows on Playing unless its game is there too. Each game
+  has "On your shelf: Under the game | As separate games" (`works.dlc_on_shelf`),
+  which puts its DLC back on the shelf as games of their own. There is no
+  global toggle. The rule is `lib/dlc.ts`; the API applies it with
+  `GET /shelf?dlc=fold`.
 - Live-service base games are never "finished". Leave Destiny 2 sitting in
   `playing` indefinitely; the expansions carry the completions. No special
   status enum for this.

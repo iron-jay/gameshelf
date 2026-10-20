@@ -64,6 +64,13 @@
       "when": 1791865200000,
       "tag": "0008_device_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792476000000,
+      "tag": "0009_dlc_under_games",
+      "breakpoints": true
     }
   ]
 }

@@ -7,9 +7,11 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { platforms, versions, works } from "@/lib/db/schema";
 import { OFFICIAL_VERSION_KINDS } from "@/lib/db/schema";
+import { canHaveDlc, dlcOf, parentIgdbIdOf } from "@/lib/dlc";
 import { seriesHref, seriesInUse } from "@/lib/series";
 
 import { BackToShelf } from "../../back-to-shelf";
+import { DlcOf, DlcSection } from "../../dlc-section";
 import { SeriesForm } from "../../series-form";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +21,7 @@ function isCommunity(kind: string): boolean {
 }
 
 export default async function WorkPage({ params }: { params: Promise<{ slug: string }> }) {
-  await requireUser();
+  const user = await requireUser();
   const { slug } = await params;
 
   const [work] = await db.select().from(works).where(eq(works.slug, slug));
@@ -45,11 +47,10 @@ export default async function WorkPage({ params }: { params: Promise<{ slug: str
 
   // Child works sit beneath the version list, never mixed into it: an expansion
   // is not a version, it is a work of its own with its own rating and review.
-  const children = await db
-    .select({ id: works.id, slug: works.slug, title: works.title, workKind: works.workKind })
-    .from(works)
-    .where(eq(works.parentWorkId, work.id))
-    .orderBy(asc(works.firstReleaseDate));
+  const dlc = canHaveDlc(work.workKind) ? await dlcOf(user.id, work.id) : null;
+  const [parent] = work.parentWorkId
+    ? await db.select({ slug: works.slug, title: works.title }).from(works).where(eq(works.id, work.parentWorkId))
+    : [];
 
   const allSeries = await seriesInUse();
 
@@ -66,6 +67,11 @@ export default async function WorkPage({ params }: { params: Promise<{ slug: str
             )}
           </div>
           <div className="min-w-0 pb-4">
+            <DlcOf
+              parent={parent ?? null}
+              parentIgdbId={parentIgdbIdOf(work.workKind, work.igdbPayload)}
+              slug={work.slug}
+            />
             <h1 className="font-display text-[26px] break-words sm:text-5xl">{work.title}</h1>
             <p className="mt-2 font-narrow text-ink-dim">
               {[
@@ -162,21 +168,7 @@ export default async function WorkPage({ params }: { params: Promise<{ slug: str
           </ul>
         </section>
 
-        {children.length > 0 ? (
-          <section>
-            <h2 className="mb-2 font-display text-xl">Also part of this game</h2>
-            <ul className="flex flex-col">
-              {children.map((child) => (
-                <li key={child.id} className="border-b border-line py-3">
-                  <Link href={`/work/${child.slug}`} className="font-semibold hover:underline">
-                    {child.title}
-                  </Link>
-                  <p className="font-narrow text-ink-dim">{child.workKind.replace(/_/g, " ")}</p>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
+        {dlc ? <DlcSection game={work} items={dlc} /> : null}
 
         <SeriesForm workSlug={work.slug} current={work.series} names={allSeries} />
 

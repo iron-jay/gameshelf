@@ -2,7 +2,7 @@ import { and, eq, ilike, inArray } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { entries, versions, works } from "@/lib/db/schema";
-import { platformNameFor, primaryPlatformFor, releaseDateFor } from "@/lib/igdb/mapping";
+import { platformNameFor, primaryPlatformFor, releaseDateFor, workKindFor } from "@/lib/igdb/mapping";
 import { igdbImageUrl, type IgdbGame } from "@/lib/igdb/types";
 import type { Status } from "@/lib/status";
 
@@ -33,6 +33,8 @@ export type IgdbResult = {
   platformOptions: { id: number; name: string }[];
   defaultPlatformId: number | null;
   defaultStatus: Status;
+  /** "dlc", "expansion"…: added, it goes under its game rather than on the shelf beside it. */
+  workKind: string;
 };
 
 export async function searchLocalWorks(userId: string, term: string): Promise<LocalResult[]> {
@@ -121,5 +123,6 @@ export function igdbResultFor(game: IgdbGame): IgdbResult {
     // shows is what an untouched Add would produce.
     defaultPlatformId: primaryPlatformFor(game)?.id ?? null,
     defaultStatus: defaultStatusFor(game),
+    workKind: workKindFor(game),
   };
 }

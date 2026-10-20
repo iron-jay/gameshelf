@@ -17,13 +17,13 @@ const A_YEAR = 60 * 60 * 24 * 365;
 /**
  * The parts of a shelf view that are a preference rather than a question.
  *
- * How you like to sort, group and treat DLC is how you like to look at your
+ * How you like to sort and group is how you like to look at your
  * shelf, and it should survive a bare "/" — a bookmark, a fresh tab, the link
  * after adding a game. Which status or platform you were filtering to is what
  * you were looking at a minute ago, and restoring that unasked would leave you
  * staring at a subset with no memory of why.
  */
-const PREFERENCE_KEYS = ["sort", "groupBy", "dlc"] as const;
+const PREFERENCE_KEYS = ["sort", "groupBy"] as const;
 
 export type ShelfPreferences = Partial<Record<(typeof PREFERENCE_KEYS)[number], string>>;
 
@@ -42,7 +42,7 @@ export function preferencesFrom(raw: string | undefined): ShelfPreferences {
 }
 
 /** Everything the shelf page reads out of the URL. */
-const SHELF_PARAMS = ["status", "platform", "sort", "dlc", "review", "shelf", "groupBy", "view"] as const;
+const SHELF_PARAMS = ["status", "platform", "sort", "review", "shelf", "groupBy", "view"] as const;
 
 /**
  * The value is stored raw: URLSearchParams percent-encodes everything outside
