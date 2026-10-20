@@ -281,6 +281,47 @@ Migrations run before the new app starts. Add `git pull` first when
 `docker-compose.yml` or `.env.example` have changed — the compose file lives in
 the repository, the images do not.
 
+### Deploying on push
+
+The workflow's `deploy` job rolls each new image out on the VM by itself,
+through a GitHub Actions runner installed there. The runner dials out to
+GitHub, so nothing on the VM has to be reachable from outside. The job is off
+until the repository variable `DEPLOY_DIR` is set, and it runs only for `main`.
+
+Once, on the VM, as the user that already runs `docker compose` (it needs the
+`docker` group and read access to `.env`):
+
+1. In this repository on GitHub: **Settings → Actions → Runners → New
+   self-hosted runner**, Linux, x64. Run its *Download* commands in a new
+   directory, `~/actions-runner-gameshelf`. A runner belongs to one repository on
+   a personal account, so bookshelf gets its own beside it.
+2. Register it with the token that page shows:
+
+   ```bash
+   ./config.sh --url https://github.com/iron-jay/gameshelf --token <token> \
+     --name gameshelf-vm --labels shelf-vm --unattended
+   ```
+
+3. Run it as a service, so it survives reboots, as that same user:
+
+   ```bash
+   sudo ./svc.sh install "$USER"
+   sudo ./svc.sh start
+   ```
+
+4. **Settings → Secrets and variables → Actions → Variables**: add
+   `DEPLOY_DIR` = `/srv/gameshelf` (the directory holding `.env`).
+
+To try it, run **Publish images** by hand from the Actions tab on `main`.
+
+The job uses the compose file from the commit being deployed, with
+`--project-directory $DEPLOY_DIR`, so `.env`, the project name and
+`../gameshelf-data` stay where they are and the clone on the VM needs no
+`git pull`. It pulls the app, runs `docker compose up -d`, prunes old images,
+and fails unless `/api/v1/meta` answers within three minutes; migrations run
+before that answer, so a failed migration fails the job. A `GAMESHELF_TAG`
+pin in `.env` still holds. To stop deploying, delete `DEPLOY_DIR`.
+
 ### Backups
 
 Both bind mounts sit under `../gameshelf-data`, so a Proxmox VM backup covers

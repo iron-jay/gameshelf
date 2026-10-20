@@ -2588,3 +2588,16 @@ Chromium on desktop and phone width; tsc, lint and `check:actions` pass.
 
 Next: the phone app should ask for `?dlc=fold`, show each DLC's shelf in the
 work screen, and offer the "Under the game / As separate games" switch.
+
+## 2026-10-20 — deploy on push
+
+- `publish.yml` gains a `deploy` job: after the image is published and
+  smoke-tested, a self-hosted runner on the VM (label `shelf-vm`) pulls it,
+  `docker compose up -d`, prunes old images and waits for `/api/v1/meta`.
+  It uses the commit's own compose file with `--project-directory
+  $DEPLOY_DIR`, so the VM's clone needs no credentials or `git pull`.
+- Off until the repository variable `DEPLOY_DIR` is set; README "Deploying on
+  push" has the runner setup. Checked: the workflow parses, and `docker
+  compose config` with `--project-directory` resolves `.env`, the project name
+  and the `../<app>-data` mounts against the deploy directory. Not yet run on
+  the VM.
