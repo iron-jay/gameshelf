@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { versionKind } from "@/lib/db/schema";
 
 import { platformsInUse } from "@/lib/platforms";
+import { seriesHref, seriesInUse, seriesOnShelf } from "@/lib/series";
 import {
   isShelfSort,
   SHELF_SORTS,
@@ -19,6 +20,7 @@ import { FilterForm } from "./filter-form";
 import { NowPlaying } from "./now-playing";
 import { RememberShelfView } from "./remember-shelf-view";
 import { ResolveOnce } from "./resolve-once";
+import { SeriesTile } from "./series-tile";
 import { ShelfGrid, type ShelfSection } from "./shelf-grid";
 import { preferencesFrom, SHELF_VIEW_COOKIE } from "./shelf-view";
 import { ShelfTile, type ShelfCard } from "./shelf-tile";
@@ -203,6 +205,10 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
       return { value, title: ROOM_TITLES[value], count: all.length, cards: all.slice(0, STRIP_LENGTH) };
     }).filter((room) => room.count > 0);
 
+    // Every series the shelf touches, whatever shelf its games are on, so a
+    // franchise reads as one thing on the main page as well as on the wall.
+    const series = seriesOnShelf(visible);
+
     let tileIndex = 0;
 
     return (
@@ -239,6 +245,28 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
               <div className="plank" />
             </section>
           ))}
+
+          {series.length > 0 ? (
+            <section className="mt-8">
+              <div className="flex items-baseline gap-3">
+                <h2 className="font-display text-2xl sm:text-[26px]">Series</h2>
+                <span className="text-ink-dim">{series.length}</span>
+                <div className="flex-1" />
+                <Link
+                  href={hrefWith({}, { view: "all", groupBy: "series", sort: "series" })}
+                  className="font-narrow text-ink-dim underline underline-offset-4 hover:text-ink"
+                >
+                  See all by series
+                </Link>
+              </div>
+              <ul className="shelf-strip">
+                {series.map((one) => (
+                  <SeriesTile key={one.name} series={one} index={tileIndex++} />
+                ))}
+              </ul>
+              <div className="plank" />
+            </section>
+          ) : null}
 
           {cards.length === 0 ? (
             <p className="mt-8 font-narrow text-ink-dim">
@@ -278,6 +306,8 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
     )
     .map(([label, group]) => ({
       label: groupBy === "status" ? (STATUS_LABELS[label as keyof typeof STATUS_LABELS] ?? label) : label,
+      // A series heading opens the whole series, games you do not have included.
+      href: groupBy === "series" && group.order !== "\uFFFF" ? seriesHref(label) : undefined,
       cards: group.cards,
     }));
 
@@ -387,6 +417,7 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
           // same one the version form offers rather than only what is on screen.
           platforms={await platformsInUse()}
           statuses={STATUS_ORDER}
+          seriesNames={await seriesInUse()}
         />
       )}
     </main>

@@ -2411,6 +2411,43 @@ Wishlist, Backlog, Recently played, Dropped (`ROOM_ORDER` in
 `app/(app)/page.tsx`), the same order the shelf nav and the wall already use.
 Checked on a local database: the strips render in that order.
 
+## 2026-10-20 — Series on the main page
+
+Jay: "I just want to be able to collect games in a series, and sort by them on
+the main page." Series already existed (`works.series`, 2026-10-11: set on the
+work page, IGDB fills it, sort and group by series on the wall), but none of it
+showed on the shelves overview, which is what `/` is since the redesign, and a
+series had no page of its own.
+
+- **Overview**: a Series strip after the shelves, one tile per series your
+  shelf touches (any shelf), alphabetical. Each is its earliest game's cover
+  with two hard box edges behind it (`.series-stack`, the same stack bookshelf
+  draws for a finished comic run), the name and "2 of 3 played" above it so
+  the plank stays under the art. "See all by series" opens the wall grouped
+  and sorted by series. Folded in the page from rows it already had
+  (`seriesOnShelf`), so no extra query.
+- **Series page** `/series/{name}`: every game in the series, shelved or not,
+  in release order, with your shelf (and rating) beside each, linking to the
+  version. Bookshelf's series page with release order for position. The work
+  page's series is now a link to it, and so is each heading of the wall when
+  grouped by series.
+- **Collecting**: the wall's select mode has "Put in series" beside platform
+  and shelf. Writes `works.series` for the selected games' works, matched to
+  an existing spelling like the work page. An empty box is refused rather than
+  clearing a whole selection; the work page still clears one.
+- Phone API: unchanged. Cards already carry `series` and the shelf already
+  sorts by it; shelf-mobile's All tab already groups by it.
+
+Checked against a local database with seven games added from live IGDB
+(Zelda ×3, Halo ×2, Destiny, Hollow Knight): the strip showed Destiny, Halo,
+The Legend of Zelda with the right counts and earliest covers; the Zelda page
+listed Ocarina, Majora's Mask 3D, Breath of the Wild in release order with
+Played, Backlog, Playing; selecting Hollow Knight and typing a series put it
+in one. tsc, lint and `check:actions` pass.
+
+**Next:** nothing pending here. The "Finished it" rating prompt is a separate
+change.
+
 ## 2026-10-20 — A rating when you finish, and finished first
 
 Jay asked that "Finished it" ask for a rating and put the game at the top of

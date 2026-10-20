@@ -1,16 +1,18 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useEffect, useState } from "react";
 
 import {
   changeSelectedPlatform,
+  changeSelectedSeries,
   changeSelectedStatus,
   type BulkState,
 } from "./bulk-actions";
 import { ShelfTile, type ShelfCard } from "./shelf-tile";
 import { PlatformField } from "./version-fields";
 
-export type ShelfSection = { label: string; cards: ShelfCard[] };
+export type ShelfSection = { label: string; href?: string; cards: ShelfCard[] };
 
 const BUTTON = "btn";
 
@@ -41,12 +43,15 @@ export function ShelfGrid({
   grouped,
   platforms,
   statuses,
+  seriesNames,
 }: {
   sections: ShelfSection[];
   /** Section headings are only meaningful when the shelf is grouped. */
   grouped: boolean;
   platforms: string[];
   statuses: readonly string[];
+  /** Suggested in the series box, so a selection joins a series rather than misspelling one. */
+  seriesNames: string[];
 }) {
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -81,8 +86,13 @@ export function ShelfGrid({
 
   const total = sections.reduce((sum, section) => sum + section.cards.length, 0);
   const everything = shown.flatMap((section) => section.cards.map((card) => card.entryId));
-  const state = platformState ?? statusState;
-  const pending = platformPending || statusPending;
+  const [seriesState, seriesAction, seriesPending] = useActionState<BulkState, FormData>(
+    changeSelectedSeries,
+    null,
+  );
+
+  const state = platformState ?? statusState ?? seriesState;
+  const pending = platformPending || statusPending || seriesPending;
 
   function toggle(entryId: string) {
     setSelected((current) => {
@@ -204,6 +214,31 @@ export function ShelfGrid({
             >
               {statusPending ? "Moving…" : "Change shelf"}
             </button>
+
+            <label className="flex flex-col gap-1.5">
+              <span className="font-narrow text-ink-dim">Series</span>
+              <input
+                name="series"
+                type="text"
+                list="bulk-series-names"
+                maxLength={120}
+                placeholder="The Legend of Zelda"
+                className="field w-56"
+              />
+            </label>
+            <datalist id="bulk-series-names">
+              {seriesNames.map((name) => (
+                <option key={name} value={name} />
+              ))}
+            </datalist>
+            <button
+              type="submit"
+              formAction={seriesAction}
+              disabled={pending || selected.size === 0}
+              className={BUTTON}
+            >
+              {seriesPending ? "Saving…" : "Put in series"}
+            </button>
           </div>
         ) : null}
 
@@ -215,7 +250,13 @@ export function ShelfGrid({
           <section key={section.label || "all"} className="shelf-wall mb-10">
             {grouped ? (
               <h2 className="mb-1 flex items-baseline gap-3">
-                <span className="font-display text-2xl">{section.label}</span>
+                {section.href ? (
+                  <Link href={section.href} className="font-display text-2xl hover:underline">
+                    {section.label}
+                  </Link>
+                ) : (
+                  <span className="font-display text-2xl">{section.label}</span>
+                )}
                 <span className="text-ink-dim">{section.cards.length}</span>
               </h2>
             ) : null}
