@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { platforms, versions, works } from "@/lib/db/schema";
 import { OFFICIAL_VERSION_KINDS } from "@/lib/db/schema";
 import { canHaveDlc, dlcOf, parentIgdbIdOf } from "@/lib/dlc";
+import { fillDlcOnce } from "@/lib/dlc-fill";
 import { seriesHref, seriesInUse } from "@/lib/series";
 
 import { BackToShelf } from "../../back-to-shelf";
@@ -47,6 +48,7 @@ export default async function WorkPage({ params }: { params: Promise<{ slug: str
 
   // Child works sit beneath the version list, never mixed into it: an expansion
   // is not a version, it is a work of its own with its own rating and review.
+  if (canHaveDlc(work.workKind)) await fillDlcOnce(user.id, work.id);
   const dlc = canHaveDlc(work.workKind) ? await dlcOf(user.id, work.id) : null;
   const [parent] = work.parentWorkId
     ? await db.select({ slug: works.slug, title: works.title }).from(works).where(eq(works.id, work.parentWorkId))

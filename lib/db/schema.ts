@@ -161,6 +161,8 @@ export const works = pgTable(
     }),
     /** On the game: show its DLC on the shelf as games of their own, rather than under it. */
     dlcOnShelf: boolean("dlc_on_shelf").notNull().default(false),
+    /** When its DLC list was filled in from IGDB; null until the game's page is first opened. */
+    dlcFilledAt: timestamp("dlc_filled_at", { withTimezone: true }),
 
     /** Free text, e.g. "The Legend of Zelda". A fact about the work, not the shelf. */
     series: text("series"),

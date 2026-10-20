@@ -8,6 +8,7 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { entries, versions, works } from "@/lib/db/schema";
 import { setDlcOnShelf } from "@/lib/dlc";
+import { updateEntry } from "@/lib/entries";
 import { addFromIgdb, applySgdbArt } from "@/lib/entries/add";
 import { slugify } from "@/lib/igdb/mapping";
 import { IgdbError } from "@/lib/igdb/types";
@@ -31,6 +32,22 @@ export async function setDlcShown(formData: FormData): Promise<void> {
   if (!workId) return;
   await setDlcOnShelf(workId, formData.get("show") === "true");
   refresh(slug);
+}
+
+/**
+ * One press of a DLC's shelf, on its game's page: onto your shelf if it was
+ * not, or moved if it was, by the same rules as the version page (a play
+ * recorded on arriving at Played).
+ */
+export async function setDlcStatus(formData: FormData): Promise<void> {
+  const user = await requireUser();
+  const versionId = String(formData.get("versionId") ?? "");
+  const status = formData.get("status");
+  if (!versionId || !isStatus(status)) return;
+  if (await updateEntry(user.id, versionId, { status })) {
+    refresh(String(formData.get("slug") ?? ""));
+    revalidatePath(`/version/${versionId}`);
+  }
 }
 
 /**

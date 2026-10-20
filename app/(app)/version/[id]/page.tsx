@@ -16,6 +16,7 @@ import {
 } from "@/lib/db/schema";
 import { STATUS_LABELS, STATUS_ORDER } from "@/lib/status";
 import { canHaveDlc, dlcOf, parentIgdbIdOf } from "@/lib/dlc";
+import { fillDlcOnce } from "@/lib/dlc-fill";
 import { seriesHref, seriesInUse } from "@/lib/series";
 import { isUuid } from "@/lib/uuid";
 
@@ -125,8 +126,9 @@ export default async function VersionPage({ params }: { params: Promise<{ id: st
     .orderBy(asc(versions.createdAt));
 
   // The game's DLC, where a tap on the game's cover lands; and on a DLC, its game.
-  const dlc =
-    canHaveDlc(row.workKind) && !isCommunity(version.kind) ? await dlcOf(user.id, version.workId) : null;
+  const listsDlc = canHaveDlc(row.workKind) && !isCommunity(version.kind);
+  if (listsDlc) await fillDlcOnce(user.id, version.workId);
+  const dlc = listsDlc ? await dlcOf(user.id, version.workId) : null;
   const [parent] = row.parentWorkId
     ? await db.select({ slug: works.slug, title: works.title }).from(works).where(eq(works.id, row.parentWorkId))
     : [];

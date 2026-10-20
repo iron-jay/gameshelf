@@ -55,3 +55,17 @@ export async function getGamesByIds(ids: number[]): Promise<IgdbGame[]> {
     `fields ${FIELDS}; where id = (${wanted.join(",")}); limit ${wanted.length};`,
   );
 }
+
+/**
+ * A game's DLC, expansions and standalone expansions as full payloads, for
+ * filling them in under the game in one request rather than one per DLC.
+ * Seasons and episodes are left to "Add DLC": Destiny 2 has more seasons than
+ * anyone wants listed by default.
+ */
+export async function getDlcOfGame(igdbId: number): Promise<IgdbGame[]> {
+  if (!Number.isInteger(igdbId) || igdbId <= 0) return [];
+  return igdbRequest<IgdbGame[]>(
+    "games",
+    `fields ${FIELDS}; where parent_game = ${igdbId} & game_type = (1,2,4); sort first_release_date asc; limit ${MAX_GAMES_PER_REQUEST};`,
+  );
+}

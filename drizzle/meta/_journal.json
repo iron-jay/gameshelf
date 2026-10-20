@@ -71,6 +71,13 @@
       "when": 1792476000000,
       "tag": "0009_dlc_under_games",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792479600000,
+      "tag": "0010_dlc_filled",
+      "breakpoints": true
     }
   ]
 }

@@ -2,9 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { shortDlcTitle, type DlcItem } from "@/lib/dlc";
-import { STATUS_LABELS } from "@/lib/status";
+import { STATUS_LABELS, STATUS_ORDER } from "@/lib/status";
 
-import { bringInGame, setDlcShown } from "./work/[slug]/dlc-actions";
+import { bringInGame, setDlcShown, setDlcStatus } from "./work/[slug]/dlc-actions";
 
 /**
  * A game's DLC, on the game page and on each of its versions' pages, since a
@@ -20,11 +20,13 @@ export function DlcSection({
   game: { id: string; slug: string; title: string; dlcOnShelf: boolean };
   items: DlcItem[];
 }) {
+  const shelved = items.filter((item) => item.status).length;
   return (
     <section>
       <div className="flex items-baseline gap-3">
         <h2 className="font-display text-xl">DLC</h2>
         <span className="text-ink-dim">{items.length}</span>
+        {shelved > 0 ? <span className="font-narrow text-ink-dim">{shelved} on your shelf</span> : null}
         <div className="flex-1" />
         <Link href={`/work/${game.slug}/dlc`} className="btn btn-sm">
           Add DLC
@@ -35,34 +37,64 @@ export function DlcSection({
         <p className="mt-2 font-narrow text-ink-dim">None here yet.</p>
       ) : (
         <>
-          <ul className="shelf-strip">
+          {/* Every DLC IGDB knows of is here already (lib/dlc-fill.ts), so
+              putting one on your shelf is one press of its shelf, the same
+              control the version page has. */}
+          <ul className="mt-2 flex flex-col">
             {items.map((item) => {
               const name = shortDlcTitle(item.title, game.title);
+              const href = item.versionId ? `/version/${item.versionId}` : `/work/${item.slug}`;
               return (
-                <li key={item.workId} className="w-28">
-                  <Link
-                    href={item.versionId ? `/version/${item.versionId}` : `/work/${item.slug}`}
-                    className="relative block aspect-[3/4] bg-panel"
-                  >
+                <li key={item.workId} className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line py-3">
+                  <Link href={href} className="relative block aspect-[3/4] w-12 shrink-0 bg-panel">
                     <span className="sr-only">{item.title}</span>
                     {item.coverUrl ? (
-                      <Image src={item.coverUrl} alt="" fill sizes="112px" className="object-cover" unoptimized />
-                    ) : (
-                      <span className="block p-2 font-display text-sm break-words">{name}</span>
-                    )}
-                    {item.rating ? <span className="sticker">{item.rating}</span> : null}
+                      <Image src={item.coverUrl} alt="" fill sizes="48px" className="object-cover" unoptimized />
+                    ) : null}
                   </Link>
-                  <p className="mt-1 line-clamp-2 font-narrow text-sm leading-tight">{name}</p>
-                  <p className="truncate font-narrow text-xs text-ink-dim">
-                    {item.status ? STATUS_LABELS[item.status] : "Not on your shelf"}
-                  </p>
+                  <div className="min-w-0 flex-1">
+                    <Link href={href} className="line-clamp-2 font-semibold hover:underline">
+                      {name}
+                    </Link>
+                    <p className="font-narrow text-ink-dim">
+                      {[
+                        item.workKind.replace(/_/g, " "),
+                        item.year,
+                        item.rating ? `${item.rating} / 10` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                  </div>
+                  {item.versionId ? (
+                    <form
+                      action={setDlcStatus}
+                      aria-label={`Shelf for ${name}`}
+                      className="-mx-4 w-[calc(100%+2rem)] overflow-x-auto px-4 sm:mx-0 sm:w-auto sm:px-0"
+                    >
+                      <input type="hidden" name="versionId" value={item.versionId} />
+                      <input type="hidden" name="slug" value={game.slug} />
+                      <div className="segmented text-[13px]">
+                        {STATUS_ORDER.map((value) => (
+                          <button
+                            key={value}
+                            type="submit"
+                            name="status"
+                            value={value}
+                            aria-pressed={item.status === value}
+                          >
+                            {STATUS_LABELS[value]}
+                          </button>
+                        ))}
+                      </div>
+                    </form>
+                  ) : null}
                 </li>
               );
             })}
           </ul>
-          <div className="plank" />
 
-          <form action={setDlcShown} className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+          <form action={setDlcShown} className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2">
             <input type="hidden" name="workId" value={game.id} />
             <input type="hidden" name="slug" value={game.slug} />
             <span className="font-narrow text-ink-dim">On your shelf</span>

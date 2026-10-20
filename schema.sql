@@ -127,6 +127,9 @@ CREATE TABLE works (
   -- own on the shelf. Set on the game (the parent) to put them back on the
   -- shelf as games of their own — the Destiny 2 player's choice, per game.
   dlc_on_shelf        boolean NOT NULL DEFAULT false,
+  -- When the game's DLC list was filled in from IGDB, so it happens once, the
+  -- first time the game's page is opened. Refreshed by hand, as art is.
+  dlc_filled_at       timestamptz,
 
   -- Free text, e.g. "The Legend of Zelda". A fact about the work, not about
   -- anyone's shelf, so it is a column here rather than a table or a tag.
