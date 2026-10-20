@@ -2517,3 +2517,21 @@ overview, with a place in the nav for every shelf in full.
   All shelves does that job.
 - Checked on a local database with Chromium, desktop and phone. tsc and lint
   pass.
+
+
+## 2026-10-20 — Delete the game or just this version
+
+Jay asked that Delete on a page offer removing just that version or the whole
+game, the whole game by default. The version page's Delete (and the edit
+page's) opens `/version/{id}/delete`, which now has a segmented switch, "The
+whole game" preselected, with the heading, the summary of what goes and the
+button following the choice. A game with one version shows no switch: a work
+never stands without a version, so its last one only goes with it, and
+`deleteFromVersion` enforces the same on the server. The work page's Delete is
+unchanged (it was already the whole game). The phone app only removes entries
+from the shelf, so the API is untouched.
+
+Checked on a local database in Chromium at phone width: whole game removed
+Celeste and its entry and landed on the shelf; Just this version removed Ship
+of Harkinian and left Ocarina with N64 (NTSC), landing on the game; Ocarina's
+last version then showed no switch. tsc, lint and `check:actions` pass.

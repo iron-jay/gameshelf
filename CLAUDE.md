@@ -355,7 +355,9 @@ generic AI product.
   row. Filters sit in one row that scrolls sideways on a phone. **All
   shelves** in the nav (header and tab bar) is the wall grouped by shelf,
   each shelf in full under a heading that opens it alone.
-- No Delete on a cover. It lives on the version and work pages.
+- No Delete on a cover. It lives on the version and work pages. On a version
+  page it asks "The whole game" (the default) or "Just this version"; a
+  game's last version only goes with the game (2026-10-20).
 - On hover-capable screens the tile shows its name and shelf on hover; on a
   phone a cover is a plain tap.
 - **Phones**: the header keeps only the name (and the link across to

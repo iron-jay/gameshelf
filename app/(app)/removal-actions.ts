@@ -1,12 +1,13 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { versions, works } from "@/lib/db/schema";
+import { isUuid } from "@/lib/uuid";
 import {
   inspectVersionRemoval,
   inspectWorkRemoval,
@@ -20,10 +21,35 @@ import {
  * confirmed, it should just leave a file for the sweep to find.
  */
 
-export async function deleteVersion(formData: FormData): Promise<void> {
+/**
+ * Delete on a version's page: the whole game unless "Just this version" was
+ * chosen. The last version of a game always takes the game with it, since a
+ * work never stands without one.
+ */
+export async function deleteFromVersion(formData: FormData): Promise<void> {
   await requireUser();
 
   const versionId = String(formData.get("versionId") ?? "");
+  if (!isUuid(versionId)) redirect("/");
+  const [version] = await db
+    .select({ workId: versions.workId })
+    .from(versions)
+    .where(eq(versions.id, versionId));
+  if (!version) redirect("/");
+
+  const [siblings] = await db
+    .select({ total: count() })
+    .from(versions)
+    .where(eq(versions.workId, version.workId));
+
+  if (formData.get("scope") === "version" && siblings.total > 1) {
+    await removeVersion(versionId);
+  } else {
+    await removeWork(version.workId);
+  }
+}
+
+async function removeVersion(versionId: string): Promise<void> {
   const removal = await inspectVersionRemoval(versionId);
   if (!removal) redirect("/");
 
@@ -47,8 +73,10 @@ export async function deleteVersion(formData: FormData): Promise<void> {
 
 export async function deleteWork(formData: FormData): Promise<void> {
   await requireUser();
+  await removeWork(String(formData.get("workId") ?? ""));
+}
 
-  const workId = String(formData.get("workId") ?? "");
+async function removeWork(workId: string): Promise<void> {
   const removal = await inspectWorkRemoval(workId);
   if (!removal) redirect("/");
 
