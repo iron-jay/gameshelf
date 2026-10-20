@@ -2482,6 +2482,42 @@ the version page shows the series as a link beside platform and year.
 `setSeries` revalidates the version and series pages too. Checked locally on
 desktop and phone; tsc and lint pass.
 
+## 2026-10-20 — A series box that suggests
+
+Jay: the box should offer the series already entered as you type, keep
+anything new you type, and make the example obvious; then, let the example
+cycle. `SeriesInput` (client) replaces the `<datalist>` on the game page, the
+version page and the wall's "Put in series": matching series drop down under
+the box (prefix matches first, six at most), a tap or arrows and Enter picks
+one, and a line under it says when what you typed will be a new series. The
+placeholder reads "e.g. …" and cycles every 2.2 s through your own series
+(fixed examples when you have fewer than three), stopping once you focus the
+box. `.field::placeholder` is now `--line-strong`, so an example can no longer
+pass for a filled-in value anywhere. Checked on a phone-width page: "ha"
+offered Halo, picking it filled the box, "Team Cherry" said it would be new.
+
+Then: the series Save button says "Saving…" while it saves and "Saved" once
+the box holds what was stored, back to "Save" when the box changes (Jay: the
+page refreshes in place, so nothing showed the save happened). `setSeries`
+now returns what it stored, for `useActionState` in a client `SeriesForm`.
+
+## 2026-10-20 — The main page as an overview, and All shelves
+
+Jay asked for the main page to show at most ten items to a shelf, as an
+overview, with a place in the nav for every shelf in full.
+
+- `STRIP_LENGTH` is 10 (was 24). The Now playing band is capped at ten too, with
+  "See all N" when there are more; the Series strip already had it.
+- **All shelves** replaces "All books/games" in the header and joins the phone
+  tab bar as "All" (five tabs now). It opens the wall grouped by shelf
+  (`/?view=all&groupBy=status`), titled "All shelves", and each shelf heading there opens that
+  shelf alone. The nav marks it current for any wall (a shelf or tag filter
+  too), not only `view/show=all`.
+- The "See them all, with filters" link under the strips is gone (Jay):
+  All shelves does that job.
+- Checked on a local database with Chromium, desktop and phone. tsc and lint
+  pass.
+
 
 ## 2026-10-20 — Delete the game or just this version
 

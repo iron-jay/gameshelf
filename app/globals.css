@@ -191,6 +191,11 @@ body {
   .field:focus {
     border-color: var(--color-ink-dim);
   }
+  /* Dim enough that an example never passes for something already filled in. */
+  .field::placeholder {
+    color: var(--color-line-strong);
+    opacity: 1;
+  }
   select.field {
     width: auto;
     max-width: 100%;

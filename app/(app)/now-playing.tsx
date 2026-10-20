@@ -11,14 +11,22 @@ import { type ShelfCard } from "./shelf-tile";
  * "reached the end" — the other levels are on the game's page, as before —
  * and asks for a rating on the way.
  */
-export function NowPlaying({ cards }: { cards: ShelfCard[] }) {
+export function NowPlaying({ cards, count, seeAll }: { cards: ShelfCard[]; count: number; seeAll: string }) {
   return (
     <section className="bg-band px-4 pt-6 pb-7 sm:px-10">
       <div className="mb-5 flex items-baseline gap-3">
         <h1 className="font-display text-3xl sm:text-4xl">Now playing</h1>
         <span className="text-ink-dim">
-          {cards.length === 0 ? "Nothing on the go" : `${cards.length} ${cards.length === 1 ? "game" : "games"}`}
+          {count === 0 ? "Nothing on the go" : `${count} ${count === 1 ? "game" : "games"}`}
         </span>
+        {count > cards.length ? (
+          <>
+            <div className="flex-1" />
+            <Link href={seeAll} className="font-narrow text-ink-dim underline underline-offset-4 hover:text-ink">
+              See all {count}
+            </Link>
+          </>
+        ) : null}
       </div>
 
       {cards.length === 0 ? (
