@@ -139,7 +139,11 @@ export function SeriesInput({
       ) : null}
 
       <p className="font-narrow text-sm text-ink-dim">
-        {needle && !exact ? `“${value.trim()}” will be a new series.` : "Pick one you have used, or type a new one."}
+        {showing
+          ? `Tap one to use it, or keep typing for a new series.`
+          : needle && !exact
+            ? `“${value.trim()}” will be a new series.`
+            : "Pick one you have used, or type a new one."}
       </p>
     </div>
   );
