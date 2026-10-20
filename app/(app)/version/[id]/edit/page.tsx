@@ -65,7 +65,7 @@ export default async function EditVersionPage({ params }: { params: Promise<{ id
           href={`/version/${row.version.id}/delete`}
           className="text-ink-dim underline hover:text-ink"
         >
-          Delete this version
+          Delete
         </Link>
       </p>
 

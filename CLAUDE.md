@@ -352,7 +352,9 @@ generic AI product.
 - **The wall** (`/?view=all`, or any shelf, platform or tag filter): every
   cover in a grid whose columns come from its own width, a plank under every
   row. Filters sit in one row that scrolls sideways on a phone.
-- No Delete on a cover. It lives on the version and work pages.
+- No Delete on a cover. It lives on the version and work pages. On a version
+  page it asks "The whole game" (the default) or "Just this version"; a
+  game's last version only goes with the game (2026-10-20).
 - On hover-capable screens the tile shows its name and shelf on hover; on a
   phone a cover is a plain tap.
 - **Phones**: the header keeps only the name (and the link across to
