@@ -437,6 +437,9 @@ docker compose up -d      # app + db
 - Postgres data on a bind mount, not a named volume, so the Proxmox backup
   covers it.
 - `pg_dump` nightly via cron to the same path.
+- A self-hosted runner on the VM (label `shelf-vm`) deploys each `main`
+  build: the `deploy` job in `publish.yml`, off until the repository variable
+  `DEPLOY_DIR` is set (README, "Deploying on push").
 - Reverse proxy terminates TLS; the app listens on plain HTTP internally.
 - Env vars: `DATABASE_URL`, `IGDB_CLIENT_ID`, `IGDB_CLIENT_SECRET`,
   `SESSION_SECRET`, `ORIGIN`, optional `BOOKSHELF_URL` (the header's link
