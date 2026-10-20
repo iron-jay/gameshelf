@@ -7,7 +7,7 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { platforms, versions, works } from "@/lib/db/schema";
 import { OFFICIAL_VERSION_KINDS } from "@/lib/db/schema";
-import { seriesInUse } from "@/lib/series";
+import { seriesHref, seriesInUse } from "@/lib/series";
 
 import { BackToShelf } from "../../back-to-shelf";
 import { setSeries } from "./series-actions";
@@ -71,11 +71,18 @@ export default async function WorkPage({ params }: { params: Promise<{ slug: str
               {[
                 work.workKind.replace(/_/g, " "),
                 work.firstReleaseDate?.slice(0, 4),
-                work.series,
                 work.source === "local" ? "local" : null,
               ]
                 .filter(Boolean)
                 .join(" · ")}
+              {work.series ? (
+                <>
+                  {" · "}
+                  <Link href={seriesHref(work.series)} className="underline underline-offset-4 hover:text-ink">
+                    {work.series}
+                  </Link>
+                </>
+              ) : null}
             </p>
           </div>
         </div>

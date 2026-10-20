@@ -32,3 +32,57 @@ export function canonicalSeries(name: string, existing: readonly string[]): stri
 
   return existing.find((known) => known.toLowerCase() === trimmed.toLowerCase()) ?? trimmed;
 }
+
+/** Where a series' own page lives. Names, not slugs: a series has no row to hang a slug on. */
+export function seriesHref(name: string): string {
+  return `/series/${encodeURIComponent(name)}`;
+}
+
+export type SeriesShelfRow = {
+  workId: string | null;
+  series: string | null;
+  status: string | null;
+  coverUrl: string | null;
+  releaseYear: number | null;
+};
+
+export type SeriesOnShelf = {
+  name: string;
+  /** Games, not entries: two platforms of Ocarina are one Zelda game. */
+  games: number;
+  played: number;
+  /** The earliest game's art, so a series is fronted by where it starts. */
+  coverUrl: string | null;
+};
+
+/**
+ * The series your shelf touches, folded from the rows the shelf already has
+ * rather than asked for again. Alphabetical, the same order the wall groups by.
+ */
+export function seriesOnShelf(rows: readonly SeriesShelfRow[]): SeriesOnShelf[] {
+  const byName = new Map<
+    string,
+    { works: Set<string>; played: Set<string>; cover: { year: number; url: string } | null }
+  >();
+
+  for (const row of rows) {
+    if (!row.series || !row.workId) continue;
+    const found = byName.get(row.series) ?? { works: new Set(), played: new Set(), cover: null };
+    found.works.add(row.workId);
+    if (row.status === "played") found.played.add(row.workId);
+    if (row.coverUrl) {
+      const year = row.releaseYear ?? Number.POSITIVE_INFINITY;
+      if (!found.cover || year < found.cover.year) found.cover = { year, url: row.coverUrl };
+    }
+    byName.set(row.series, found);
+  }
+
+  return [...byName.entries()]
+    .map(([name, found]) => ({
+      name,
+      games: found.works.size,
+      played: found.played.size,
+      coverUrl: found.cover?.url ?? null,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
