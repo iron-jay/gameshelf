@@ -24,12 +24,19 @@ export function SeriesInput({
   names,
   defaultValue = "",
   className = "w-64",
+  onValueChange,
 }: {
   names: readonly string[];
   defaultValue?: string;
   className?: string;
+  /** For a form that needs to know whether the box still says what was saved. */
+  onValueChange?: (value: string) => void;
 }) {
-  const [value, setValue] = useState(defaultValue);
+  const [value, setValueState] = useState(defaultValue);
+  function setValue(next: string) {
+    setValueState(next);
+    onValueChange?.(next);
+  }
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const listId = useId();

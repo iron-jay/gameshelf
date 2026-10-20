@@ -2495,3 +2495,8 @@ placeholder reads "e.g. …" and cycles every 2.2 s through your own series
 box. `.field::placeholder` is now `--line-strong`, so an example can no longer
 pass for a filled-in value anywhere. Checked on a phone-width page: "ha"
 offered Halo, picking it filled the box, "Team Cherry" said it would be new.
+
+Then: the series Save button says "Saving…" while it saves and "Saved" once
+the box holds what was stored, back to "Save" when the box changes (Jay: the
+page refreshes in place, so nothing showed the save happened). `setSeries`
+now returns what it stored, for `useActionState` in a client `SeriesForm`.
