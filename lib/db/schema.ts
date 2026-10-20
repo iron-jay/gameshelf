@@ -159,6 +159,8 @@ export const works = pgTable(
     parentWorkId: uuid("parent_work_id").references((): AnyPgColumn => works.id, {
       onDelete: "cascade",
     }),
+    /** On the game: show its DLC on the shelf as games of their own, rather than under it. */
+    dlcOnShelf: boolean("dlc_on_shelf").notNull().default(false),
 
     /** Free text, e.g. "The Legend of Zelda". A fact about the work, not the shelf. */
     series: text("series"),

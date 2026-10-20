@@ -1,6 +1,7 @@
 import { and, asc, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/lib/db";
+import { canHaveDlc, dlcOf, parentIgdbIdOf, type DlcItem } from "@/lib/dlc";
 import {
   entries,
   OFFICIAL_VERSION_KINDS,
@@ -40,9 +41,16 @@ export type WorkDetail = {
   coverUrl: string | null;
   source: string;
   parent: { slug: string; title: string } | null;
+  /** For DLC shelved before its game was here: IGDB's id for that game. */
+  parentIgdbId: number | null;
   versions: VersionSummary[];
-  /** DLC and expansions: works of their own, never versions (CLAUDE.md §2). */
-  children: { slug: string; title: string; workKind: string }[];
+  /**
+   * DLC and expansions: works of their own, never versions (CLAUDE.md §2),
+   * listed under the game with your shelf state beside each.
+   */
+  children: DlcItem[];
+  /** The game's DLC stands on the shelf as games of their own, rather than under it. */
+  dlcOnShelf: boolean;
 };
 
 const versionColumns = {
@@ -125,11 +133,7 @@ export async function workDetail(userId: string, slug: string): Promise<WorkDeta
         .where(eq(works.id, work.parentWorkId))
     : [];
 
-  const children = await db
-    .select({ slug: works.slug, title: works.title, workKind: works.workKind })
-    .from(works)
-    .where(eq(works.parentWorkId, work.id))
-    .orderBy(asc(works.firstReleaseDate));
+  const children = canHaveDlc(work.workKind) ? await dlcOf(userId, work.id) : [];
 
   return {
     id: work.id,
@@ -142,8 +146,10 @@ export async function workDetail(userId: string, slug: string): Promise<WorkDeta
     coverUrl: work.coverUrl,
     source: work.source,
     parent: parent ?? null,
+    parentIgdbId: work.parentWorkId ? null : parentIgdbIdOf(work.workKind, work.igdbPayload),
     versions: versionRows.map((row) => summaryFrom(row, mine.get(row.id) ?? null)),
     children,
+    dlcOnShelf: work.dlcOnShelf,
   };
 }
 

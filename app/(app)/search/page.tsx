@@ -141,9 +141,12 @@ export default async function SearchPage({
               <p className="font-narrow text-ink-dim">
                 {r.kind === "local"
                   ? "On your server"
-                  : r.platformOptions.length > 1
-                    ? "IGDB"
-                    : r.platforms || "IGDB"}
+                  : [
+                      r.workKind === "main_game" ? null : r.workKind.replace(/_/g, " "),
+                      r.platformOptions.length > 1 ? "IGDB" : r.platforms || "IGDB",
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
               </p>
             </div>
 

@@ -15,6 +15,7 @@ import {
   works,
 } from "@/lib/db/schema";
 import { STATUS_LABELS, STATUS_ORDER } from "@/lib/status";
+import { canHaveDlc, dlcOf, parentIgdbIdOf } from "@/lib/dlc";
 import { seriesHref, seriesInUse } from "@/lib/series";
 import { isUuid } from "@/lib/uuid";
 
@@ -29,6 +30,7 @@ import {
   untagShelf,
 } from "./actions";
 import { BackToShelf } from "../../back-to-shelf";
+import { DlcOf, DlcSection } from "../../dlc-section";
 import { SeriesForm } from "../../series-form";
 
 export const dynamic = "force-dynamic";
@@ -59,6 +61,10 @@ export default async function VersionPage({ params }: { params: Promise<{ id: st
       workSlug: works.slug,
       workCoverUrl: works.coverUrl,
       series: works.series,
+      workKind: works.workKind,
+      dlcOnShelf: works.dlcOnShelf,
+      parentWorkId: works.parentWorkId,
+      igdbPayload: works.igdbPayload,
       platformName: platforms.name,
     })
     .from(versions)
@@ -118,6 +124,13 @@ export default async function VersionPage({ params }: { params: Promise<{ id: st
     .where(eq(versions.workId, version.workId))
     .orderBy(asc(versions.createdAt));
 
+  // The game's DLC, where a tap on the game's cover lands; and on a DLC, its game.
+  const dlc =
+    canHaveDlc(row.workKind) && !isCommunity(version.kind) ? await dlcOf(user.id, version.workId) : null;
+  const [parent] = row.parentWorkId
+    ? await db.select({ slug: works.slug, title: works.title }).from(works).where(eq(works.id, row.parentWorkId))
+    : [];
+
   const hidden = <input type="hidden" name="versionId" value={version.id} />;
 
   const community = isCommunity(version.kind);
@@ -148,6 +161,11 @@ export default async function VersionPage({ params }: { params: Promise<{ id: st
           </div>
 
           <div className="min-w-0 pb-4">
+            <DlcOf
+              parent={parent ?? null}
+              parentIgdbId={parentIgdbIdOf(row.workKind, row.igdbPayload)}
+              slug={row.workSlug}
+            />
             {community ? (
               <p className="mb-1 font-narrow text-sm font-bold text-accent">Community release</p>
             ) : null}
@@ -402,6 +420,13 @@ export default async function VersionPage({ params }: { params: Promise<{ id: st
             </ul>
             <div className="plank" />
           </div>
+        ) : null}
+
+        {dlc ? (
+          <DlcSection
+            game={{ id: version.workId, slug: row.workSlug, title: row.workTitle, dlcOnShelf: row.dlcOnShelf }}
+            items={dlc}
+          />
         ) : null}
 
         <SeriesForm workSlug={row.workSlug} current={row.series} names={await seriesInUse()} />

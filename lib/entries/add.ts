@@ -4,7 +4,7 @@ import { downloadCover } from "@/lib/covers";
 import { db } from "@/lib/db";
 import { entries, platforms, versions, works } from "@/lib/db/schema";
 import { getGameById } from "@/lib/igdb/games";
-import { originalVersionName, releaseDateFor } from "@/lib/igdb/mapping";
+import { originalVersionName, releaseDateFor, workKindFor } from "@/lib/igdb/mapping";
 import { IgdbError, igdbImageUrl } from "@/lib/igdb/types";
 import { lookupArt, SgdbError } from "@/lib/sgdb";
 import type { Status } from "@/lib/status";
@@ -34,7 +34,13 @@ export type AddFromIgdbResult =
  */
 export async function addFromIgdb(
   userId: string,
-  input: { igdbId: number; platformId?: number | null; status: Status },
+  input: {
+    igdbId: number;
+    platformId?: number | null;
+    /** null adds the game without shelving it: a DLC's game, fetched so the DLC has somewhere to live. */
+    status: Status | null;
+  },
+  depth = 0,
 ): Promise<AddFromIgdbResult> {
   // Fetched here rather than taken from the caller: this is the payload stored
   // in igdb_payload, and a client-supplied copy is not something to trust.
@@ -48,6 +54,15 @@ export async function addFromIgdb(
     throw new IgdbError("IGDB request failed (no response)");
   }
   if (!game) return { kind: "gone" };
+
+  // DLC lives under its game (2026-10-20), so a DLC added before its game
+  // brings the game in with it: the work and its original version, not an
+  // entry — you asked for the DLC, not the game. The depth stops a DLC of an
+  // expansion of a DLC from walking IGDB for ever.
+  if (workKindFor(game) !== "main_game" && game.parent_game && depth < 3) {
+    const [parent] = await db.select({ id: works.id }).from(works).where(eq(works.igdbId, game.parent_game));
+    if (!parent) await addFromIgdb(userId, { igdbId: game.parent_game, status: null }, depth + 1);
+  }
 
   // Whichever release was picked, checked against the game IGDB just returned
   // rather than believed. Absent or unknown, it falls back to the earliest one.
@@ -84,11 +99,13 @@ export async function addFromIgdb(
       versionId = created.id;
     }
 
-    const inserted = await tx
-      .insert(entries)
-      .values({ userId, versionId, status: input.status })
-      .onConflictDoNothing()
-      .returning({ id: entries.id });
+    const inserted = input.status
+      ? await tx
+          .insert(entries)
+          .values({ userId, versionId, status: input.status })
+          .onConflictDoNothing()
+          .returning({ id: entries.id })
+      : [];
 
     return {
       workId: work.id,
@@ -135,7 +152,7 @@ export async function addFromIgdb(
  * /art, and anything weaker leaves the placeholder. Art is a nicety here: no
  * key, no answer or a failed download all leave the game added without it.
  */
-async function applySgdbArt(workId: string, title: string): Promise<void> {
+export async function applySgdbArt(workId: string, title: string): Promise<void> {
   let lookup;
   try {
     lookup = await lookupArt(title);
