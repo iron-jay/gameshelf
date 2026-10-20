@@ -94,6 +94,13 @@ Rules:
 When adding a feature, ask which of these four tables it belongs to. If the
 answer is "a new table", push back on the feature first.
 
+**Series** (2026-10-11) are `works.series`, free text, not a table: a series is
+a fact about the work and has nothing but a name. IGDB's franchise fills it on
+add (Settings backfills older works); the work page sets one, and the wall's
+select mode puts many games in one at once. Played in release order, so no
+position column. A series page (`/series/{name}`) lists every game in it,
+shelved or not, with your shelf beside each (2026-10-20).
+
 ---
 
 ## 3. Stack
@@ -211,7 +218,7 @@ form. Used for doujin games, prototypes, unreleased builds.
 ## 5. Screens (v1 scope)
 
 1. **Shelf** — the home page. Grid or list of entries, filter by status,
-   platform, shelf. Sort by added/rated/finished.
+   platform, shelf. Sort by added/rated/finished/series; group by series.
 2. **Search** — one box, IGDB results and local works interleaved, clearly
    marked. Add to shelf inline.
 3. **Work page** — cover, summary, list of versions. Add version here.
@@ -336,7 +343,10 @@ generic AI product.
 
 - **Shelves** (`/`): the "Now playing" band (cover, title, Finished it, Drop),
   then one sideways-scrolling strip per shelf (Wishlist, Backlog, Recently
-  played, Dropped), each on a plank, with "See all".
+  played, Dropped), each on a plank, with "See all"; then a Series strip, one
+  tile per series (its earliest game's cover with two box edges behind it,
+  the name above), opening the series page, with "See all by series" for the
+  wall grouped that way (2026-10-20).
 - **The wall** (`/?view=all`, or any shelf, platform or tag filter): every
   cover in a grid whose columns come from its own width, a plank under every
   row. Filters sit in one row that scrolls sideways on a phone.

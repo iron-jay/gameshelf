@@ -217,6 +217,16 @@ body {
       linear-gradient(var(--color-plank-shadow), transparent) bottom / 100% 6px no-repeat;
   }
 
+  /* A series on the overview: its first cover with two more boxes' edges
+     peeking out behind, up and to the right, as a stack on a shelf does.
+     bookshelf stacks a finished comic run the same way. Hard edges in the
+     plank's colours, never a soft shadow. */
+  .series-stack {
+    box-shadow:
+      3px -3px 0 -1px var(--color-plank-edge),
+      6px -6px 0 -2px var(--color-line-strong);
+  }
+
   /* The rating, stuck on the cover like a price sticker. */
   .sticker {
     position: absolute;
