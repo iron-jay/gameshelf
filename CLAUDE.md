@@ -364,6 +364,14 @@ generic AI product.
   bookshelf, `BOOKSHELF_URL`); Shelves, All (all shelves), Search, Add and
   More (Settings) move to a tab bar at the bottom. Words, not icons.
 
+### Icons
+
+The rating sticker as the icon (Jay, 2026-10-20): an amber sticker, tilted
+right, with a heavy Archivo "G" in `--ground`, on a ground tile. bookshelf's
+is a sage "B" tilted left; the phone app overlaps the two. `app/icon.svg` is
+the source; `favicon.ico`, `apple-icon.png` and `public/icons/` (the
+`manifest.ts` icons) are drawn from it. Redraw all of them together.
+
 ### Motion
 
 One orchestrated moment: the shelf resolving as covers load, on arrival only.
