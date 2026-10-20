@@ -75,8 +75,11 @@ const ROOM_TITLES: Record<(typeof ROOM_ORDER)[number], string> = {
   wishlist: "Wishlist",
   dropped: "Dropped",
 };
-/** A strip is a glimpse; "See all" is the whole shelf. */
-const STRIP_LENGTH = 24;
+/**
+ * The main page is an overview: ten to a strip at most (Jay, 2026-10-20).
+ * "See all" is that shelf in full, and "All shelves" in the nav is every one.
+ */
+const STRIP_LENGTH = 10;
 
 type Row = {
   entryId: string | null;
@@ -208,13 +211,18 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
     // Every series the shelf touches, whatever shelf its games are on, so a
     // franchise reads as one thing on the main page as well as on the wall.
     const series = seriesOnShelf(visible);
+    const seriesShown = series.slice(0, STRIP_LENGTH);
 
     let tileIndex = 0;
 
     return (
       <main className="flex-1">
         <RememberShelfView query={queryFor(params)} />
-        <NowPlaying cards={playing} />
+        <NowPlaying
+          cards={playing.slice(0, STRIP_LENGTH)}
+          count={playing.length}
+          seeAll={hrefWith({}, { status: "playing" })}
+        />
 
         <ResolveOnce>
         <div className="px-4 pb-14 sm:px-10">
@@ -256,11 +264,11 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
                   href={hrefWith({}, { view: "all", groupBy: "series", sort: "series" })}
                   className="font-narrow text-ink-dim underline underline-offset-4 hover:text-ink"
                 >
-                  See all by series
+                  See all {series.length} by series
                 </Link>
               </div>
               <ul className="shelf-strip">
-                {series.map((one) => (
+                {seriesShown.map((one) => (
                   <SeriesTile key={one.name} series={one} index={tileIndex++} />
                 ))}
               </ul>
@@ -306,8 +314,14 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
     )
     .map(([label, group]) => ({
       label: groupBy === "status" ? (STATUS_LABELS[label as keyof typeof STATUS_LABELS] ?? label) : label,
-      // A series heading opens the whole series, games you do not have included.
-      href: groupBy === "series" && group.order !== "\uFFFF" ? seriesHref(label) : undefined,
+      // A series heading opens the whole series, games you do not have
+      // included; a shelf heading opens that shelf on its own.
+      href:
+        groupBy === "series" && group.order !== "\uFFFF"
+          ? seriesHref(label)
+          : groupBy === "status" && isStatus(label)
+            ? hrefWith(params, { status: label, view: undefined, groupBy: undefined })
+            : undefined,
       cards: group.cards,
     }));
 
@@ -316,7 +330,7 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
       <RememberShelfView query={queryFor(params)} />
 
       <h1 className="mb-4 font-display text-3xl sm:text-4xl">
-        {status ? STATUS_LABELS[status] : "All games"}
+        {status ? STATUS_LABELS[status] : groupBy === "status" ? "All shelves" : "All games"}
       </h1>
 
       {/* One row on a phone, scrolled sideways, rather than wrapping into

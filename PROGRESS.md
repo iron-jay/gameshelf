@@ -2481,3 +2481,18 @@ shared `SeriesForm` on both pages (under the review on the version page), and
 the version page shows the series as a link beside platform and year.
 `setSeries` revalidates the version and series pages too. Checked locally on
 desktop and phone; tsc and lint pass.
+
+## 2026-10-20 — The main page as an overview, and All shelves
+
+Jay asked for the main page to show at most ten items to a shelf, as an
+overview, with a place in the nav for every shelf in full.
+
+- `STRIP_LENGTH` is 10 (was 24). The Now playing band is capped at ten too, with
+  "See all N" when there are more; the Series strip already had it.
+- **All shelves** replaces "All books/games" in the header and joins the phone
+  tab bar as "All" (five tabs now). It opens the wall grouped by shelf
+  (`/?view=all&groupBy=status`), titled "All shelves", and each shelf heading there opens that
+  shelf alone. The nav marks it current for any wall (a shelf or tag filter
+  too), not only `view/show=all`.
+- Checked on a local database with Chromium, desktop and phone. tsc and lint
+  pass.
