@@ -15,6 +15,7 @@ import {
   works,
 } from "@/lib/db/schema";
 import { STATUS_LABELS, STATUS_ORDER } from "@/lib/status";
+import { seriesHref, seriesInUse } from "@/lib/series";
 import { isUuid } from "@/lib/uuid";
 
 import {
@@ -28,6 +29,7 @@ import {
   untagShelf,
 } from "./actions";
 import { BackToShelf } from "../../back-to-shelf";
+import { SeriesForm } from "../../series-form";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +58,7 @@ export default async function VersionPage({ params }: { params: Promise<{ id: st
       workTitle: works.title,
       workSlug: works.slug,
       workCoverUrl: works.coverUrl,
+      series: works.series,
       platformName: platforms.name,
     })
     .from(versions)
@@ -173,6 +176,14 @@ export default async function VersionPage({ params }: { params: Promise<{ id: st
               ]
                 .filter(Boolean)
                 .join(" · ")}
+              {row.series ? (
+                <>
+                  {" · "}
+                  <Link href={seriesHref(row.series)} className="underline underline-offset-4 hover:text-ink">
+                    {row.series}
+                  </Link>
+                </>
+              ) : null}
             </p>
           </div>
         </div>
@@ -392,6 +403,8 @@ export default async function VersionPage({ params }: { params: Promise<{ id: st
             <div className="plank" />
           </div>
         ) : null}
+
+        <SeriesForm workSlug={row.workSlug} current={row.series} names={await seriesInUse()} />
 
         <p className="flex flex-wrap gap-x-5 gap-y-2 font-narrow">
           <Link href={`/work/${row.workSlug}`} className="text-ink-dim underline underline-offset-4 hover:text-ink">
