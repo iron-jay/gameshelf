@@ -2481,3 +2481,22 @@ shared `SeriesForm` on both pages (under the review on the version page), and
 the version page shows the series as a link beside platform and year.
 `setSeries` revalidates the version and series pages too. Checked locally on
 desktop and phone; tsc and lint pass.
+
+## 2026-10-20 — A series box that suggests
+
+Jay: the box should offer the series already entered as you type, keep
+anything new you type, and make the example obvious; then, let the example
+cycle. `SeriesInput` (client) replaces the `<datalist>` on the game page, the
+version page and the wall's "Put in series": matching series drop down under
+the box (prefix matches first, six at most), a tap or arrows and Enter picks
+one, and a line under it says when what you typed will be a new series. The
+placeholder reads "e.g. …" and cycles every 2.2 s through your own series
+(fixed examples when you have fewer than three), stopping once you focus the
+box. `.field::placeholder` is now `--line-strong`, so an example can no longer
+pass for a filled-in value anywhere. Checked on a phone-width page: "ha"
+offered Halo, picking it filled the box, "Team Cherry" said it would be new.
+
+Then: the series Save button says "Saving…" while it saves and "Saved" once
+the box holds what was stored, back to "Save" when the box changes (Jay: the
+page refreshes in place, so nothing showed the save happened). `setSeries`
+now returns what it stored, for `useActionState` in a client `SeriesForm`.

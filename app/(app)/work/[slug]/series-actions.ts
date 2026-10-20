@@ -8,6 +8,9 @@ import { db } from "@/lib/db";
 import { works } from "@/lib/db/schema";
 import { canonicalSeries, seriesInUse } from "@/lib/series";
 
+/** What was stored, so the form can say "Saved" for exactly that. */
+export type SeriesSaved = { saved: string | null } | null;
+
 /**
  * Sets or clears a work's series.
  *
@@ -16,11 +19,11 @@ import { canonicalSeries, seriesInUse } from "@/lib/series";
  * fact about the work, so this changes it for everyone who has it shelved —
  * which is the honest reading, and what the platform field already does.
  */
-export async function setSeries(formData: FormData): Promise<void> {
+export async function setSeries(_prev: SeriesSaved, formData: FormData): Promise<SeriesSaved> {
   await requireUser();
 
   const slug = String(formData.get("slug") ?? "");
-  if (!slug) return;
+  if (!slug) return null;
 
   const typed = String(formData.get("series") ?? "").slice(0, 120);
   const name = canonicalSeries(typed, await seriesInUse());
@@ -36,4 +39,6 @@ export async function setSeries(formData: FormData): Promise<void> {
   revalidatePath("/series/[name]", "page");
   // The shelf can sort by it, so the sorted view is stale now too.
   revalidatePath("/");
+
+  return { saved: name === "" ? null : name };
 }
