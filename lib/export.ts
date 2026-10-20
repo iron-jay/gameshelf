@@ -36,6 +36,7 @@ export type ExportEntry = {
     isCommunityRelease: boolean;
     baseVersion: string | null;
     sgdbGameId: number | null;
+    igdbId: number | null;
   };
   work: {
     title: string;
@@ -45,6 +46,12 @@ export type ExportEntry = {
     source: string;
     igdbId: number | null;
     parentWork: string | null;
+    parentIgdbId: number | null;
+    series: string | null;
+    summary: string | null;
+    /** The game's "On your shelf: As separate games" switch for its DLC. */
+    dlcOnShelf: boolean;
+    sgdbGameId: number | null;
   };
 };
 
@@ -85,6 +92,7 @@ export async function buildExport(userId: string, username: string): Promise<Exp
       versionNotes: versions.notes,
       versionSource: versions.source,
       versionSgdbGameId: versions.sgdbGameId,
+      versionIgdbId: versions.igdbId,
 
       workTitle: works.title,
       workSlug: works.slug,
@@ -92,10 +100,15 @@ export async function buildExport(userId: string, username: string): Promise<Exp
       workFirstReleaseDate: works.firstReleaseDate,
       workSource: works.source,
       workIgdbId: works.igdbId,
+      workSeries: works.series,
+      workSummary: works.summary,
+      workDlcOnShelf: works.dlcOnShelf,
+      workSgdbGameId: works.sgdbGameId,
 
       platformName: platforms.name,
       baseVersionName: baseVersions.name,
       parentWorkTitle: parentWorks.title,
+      parentWorkIgdbId: parentWorks.igdbId,
     })
     .from(entries)
     .innerJoin(versions, eq(versions.id, entries.versionId))
@@ -180,6 +193,7 @@ export async function buildExport(userId: string, username: string): Promise<Exp
         isCommunityRelease: !OFFICIAL.includes(row.versionKind),
         baseVersion: row.baseVersionName,
         sgdbGameId: row.versionSgdbGameId,
+        igdbId: row.versionIgdbId,
       },
       work: {
         title: row.workTitle,
@@ -189,6 +203,11 @@ export async function buildExport(userId: string, username: string): Promise<Exp
         source: row.workSource,
         igdbId: row.workIgdbId,
         parentWork: row.parentWorkTitle,
+        parentIgdbId: row.parentWorkIgdbId,
+        series: row.workSeries,
+        summary: row.workSummary,
+        dlcOnShelf: row.workDlcOnShelf,
+        sgdbGameId: row.workSgdbGameId,
       },
     })),
   };

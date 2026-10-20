@@ -2625,3 +2625,32 @@ Jay: can DLC be pre-filled, so you just press its shelf?
 Checked locally with Destiny 2: 13 DLC appeared on first view (about 8 s,
 once), covers on the next; pressing Played on Shadowkeep shelved it with a
 play, and it stayed off the shelf under its game.
+
+## 2026-10-20 — Restore from an export
+
+Jay asked for each app to import its own export, to restore a library or
+move it to another server. Built with bookshelf's, as a pair.
+
+- **Settings → Export and restore** gains "Restore from an export": the JSON
+  download, read once (`lib/import/restore.ts`, which also refuses a
+  bookshelf file by name) and sent back from the page ten entries at a time
+  (`RESTORE_CHUNK`) with progress, Stop, and the failures listed.
+- `lib/import/restore-run.ts`: one IGDB request per batch for games not here
+  yet. A game is joined by IGDB id, else a local game of the same title and
+  kind; its version by name and kind; an entry already on the shelf is left
+  alone, so a second run adds nothing. New games take the file's title,
+  series, summary and DLC switch over IGDB's; a DLC's game comes in without an
+  entry (`placeIgdbGame`). Art as on add: IGDB, else the SteamGridDB game it
+  was matched to, else a lookup — a community version by its own name.
+- The export now carries `work.series`, `summary`, `dlcOnShelf`,
+  `sgdbGameId`, `parentIgdbId` and `version.igdbId`. Older exports restore
+  without them.
+
+Checked on a local database: Ocarina of Time (renamed, series, rating,
+review, a play, a tag), a romhack on it with its base version, The Witch
+Queen (with Destiny 2 brought in) and a local homebrew, exported, restored
+into an empty database through the Settings page, exported again: identical
+but for the romhack, which now has SteamGridDB art it never had. Running it
+again: 4 already here. A bookshelf export is refused with a message. tsc,
+lint and `check:actions` pass. Uploaded art is not in the export, so it is
+looked up again rather than restored.

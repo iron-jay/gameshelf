@@ -15,3 +15,10 @@ export type ImportChunkResult = {
   alreadyThere: number;
   missing: string[];
 };
+
+/**
+ * Entries per restore request. One IGDB request covers the batch, but each new
+ * game may also download a cover and ask SteamGridDB, so smaller than the
+ * Grouvee import's batches keeps a request well inside any proxy timeout.
+ */
+export const RESTORE_CHUNK = 10;

@@ -14,6 +14,7 @@ import { AccountForm } from "./account-form";
 import { ConnectionCheck } from "./connection-check";
 import { GrouveeImport } from "./grouvee-import";
 import { PasswordForm } from "./password-form";
+import { RestoreImport } from "./restore-import";
 import { SeriesBackfill } from "./series-backfill";
 import { CoverSweep } from "./cover-sweep";
 
@@ -157,7 +158,7 @@ export default async function SettingsPage() {
         </section>
 
         <section>
-          <h2 className="mb-1 font-display text-xl">Export</h2>
+          <h2 className="mb-1 font-display text-xl">Export and restore</h2>
           <p className="mb-3 font-narrow text-ink-dim">
             {entryTotal.total} {entryTotal.total === 1 ? "entry" : "entries"}. No ceremony beyond
             being logged in — both are plain GETs you can curl. Cached IGDB payloads are left out
@@ -185,6 +186,15 @@ export default async function SettingsPage() {
             JSON keeps every play. CSV is one row per shelf entry with the plays summarised, the
             way a Goodreads export is one row per book.
           </p>
+
+          <h3 className="mt-6 font-medium">Restore from an export</h3>
+          <p className="font-narrow text-ink-dim">
+            The JSON download, here or from another gameshelf: to get a library back, or move it to
+            a new server. Games already here are joined rather than doubled, and entries already on
+            your shelf are left as they are. Covers are looked up again, so art you uploaded or
+            chose by hand needs choosing again.
+          </p>
+          <RestoreImport />
         </section>
       </div>
     </main>
