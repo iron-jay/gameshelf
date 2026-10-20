@@ -27,7 +27,7 @@ export function isShelfSort(value: unknown): value is ShelfSort {
 const ORDER_BY: Readonly<Record<ShelfSort, SQL>> = {
   added: sql`added_at desc`,
   rated: sql`rating desc nulls last, added_at desc`,
-  finished: sql`last_finished_on desc nulls last, added_at desc`,
+  finished: sql`last_finished_on desc nulls last, updated_at desc, added_at desc`,
   // Within a series, the order a series is played in is the order it came out
   // in, which release_year already knows. Anything with no series sorts last
   // rather than leading the page under a blank heading.

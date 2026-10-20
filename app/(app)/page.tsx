@@ -187,12 +187,18 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
     const playing = cards.filter((card) => card.status === "playing");
 
     // Played reads newest-finished first: what you last put down is what you
-    // came to rate or talk about.
-    const finishedOn = new Map(visible.map((row) => [row.entryId ?? "", row.lastFinishedOn ?? ""]));
+    // came to rate or talk about. Finishes are dates, so two on one day go by
+    // which entry changed last, and the one you just finished leads.
+    const finishedKey = new Map(
+      visible.map((row) => [
+        row.entryId ?? "",
+        `${row.lastFinishedOn ?? ""} ${row.updatedAt?.toISOString() ?? ""}`,
+      ]),
+    );
     const rooms = ROOM_ORDER.map((value) => {
       const all = cards.filter((card) => card.status === value);
       if (value === "played") {
-        all.sort((a, b) => (finishedOn.get(b.entryId) ?? "").localeCompare(finishedOn.get(a.entryId) ?? ""));
+        all.sort((a, b) => (finishedKey.get(b.entryId) ?? "").localeCompare(finishedKey.get(a.entryId) ?? ""));
       }
       return { value, title: ROOM_TITLES[value], count: all.length, cards: all.slice(0, STRIP_LENGTH) };
     }).filter((room) => room.count > 0);

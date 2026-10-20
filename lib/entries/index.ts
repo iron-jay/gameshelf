@@ -1,7 +1,7 @@
 import { and, count, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { completionLevel, entries, shelfEntries, shelves, versions } from "@/lib/db/schema";
+import { completionLevel, entries, plays, shelfEntries, shelves, versions } from "@/lib/db/schema";
 import { slugify } from "@/lib/slug";
 import type { Status } from "@/lib/status";
 
@@ -93,10 +93,27 @@ export async function updateEntry(
   if (changes.isFavourite !== undefined) set.isFavourite = changes.isFavourite;
   if (changes.isPrivate !== undefined) set.isPrivate = changes.isPrivate;
 
-  if (Object.keys(set).length > 0) {
-    await db.update(entries).set(set).where(eq(entries.id, entryId));
+  if (Object.keys(set).length === 0) return true;
+
+  const [before] = await db.select({ status: entries.status }).from(entries).where(eq(entries.id, entryId));
+  await db.update(entries).set(set).where(eq(entries.id, entryId));
+
+  // Arriving on played is finishing it, so it records a play finished today:
+  // that is what puts it first on Recently played. Choosing played again, or
+  // changing how far you got, is not a second finish.
+  if (changes.status === "played" && before?.status !== "played") {
+    await db.insert(plays).values({
+      entryId,
+      finishedOn: today(),
+      completion: changes.completion ?? null,
+    });
   }
   return true;
+}
+
+/** Today where the server is, as bookshelf dates its reads. */
+function today(): string {
+  return new Date().toLocaleDateString("en-CA");
 }
 
 /**
@@ -104,8 +121,17 @@ export async function updateEntry(
  * click and the other two are also one click — never a dropdown you have to
  * answer before you can finish a game.
  */
-export function markDone(userId: string, versionId: string, completion: Completion) {
-  return updateEntry(userId, versionId, { status: "played", completion });
+export function markDone(
+  userId: string,
+  versionId: string,
+  completion: Completion,
+  rating?: number | null,
+) {
+  return updateEntry(userId, versionId, {
+    status: "played",
+    completion,
+    ...(rating ? { rating } : {}),
+  });
 }
 
 /** Longest tag name kept; the rest is cut rather than refused. */

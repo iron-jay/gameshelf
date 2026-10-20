@@ -2410,3 +2410,28 @@ Jay asked for the wishlist above the backlog. The overview's strips now run
 Wishlist, Backlog, Recently played, Dropped (`ROOM_ORDER` in
 `app/(app)/page.tsx`), the same order the shelf nav and the wall already use.
 Checked on a local database: the strips render in that order.
+
+## 2026-10-20 — A rating when you finish, and finished first
+
+Jay asked that "Finished it" ask for a rating and put the game at the top of
+Recently played.
+
+- **The prompt** (`app/(app)/finish-prompt.tsx`): Finished it in the Now
+  playing band opens a dialog with the ten climbing bars, "Skip the rating"
+  (or "Keep 7 / 10" when it was rated while playing) and "Not yet". Nothing is
+  written until it is answered; Not yet leaves the game playing. A rating and
+  the finish go in one `markDone`.
+- **The order**: Recently played already sorted by `last_finished_on`, but
+  nothing had written a play since the plays UI went (2026-09-18), so a game
+  finished today had no date and sorted last. `updateEntry` now records a play
+  finished today whenever an entry arrives on `played` (web, phone API, the
+  game's page), not when it is already there. Same-day finishes go by the
+  entry's `updated_at`, so the one just finished leads. Bulk moves still write
+  no play.
+- Checked on a local database in Chromium: Not yet left Hades playing; rating
+  it 9 moved it to played with credits, 9 and a play today; Tunic kept its 7;
+  the strip read Tunic, Hades, Celeste (finished earlier today), Outer Wilds
+  (no play). `tsc`, lint and `check:actions` pass.
+
+**Next:** the phone app's Finished it does not prompt yet.
+

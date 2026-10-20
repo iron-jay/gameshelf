@@ -48,7 +48,11 @@ export async function markDone(formData: FormData): Promise<void> {
   const completion = formData.get("completion");
   if (!isCompletion(completion)) return;
 
-  if (await markEntryDone(user.id, versionId, completion)) refresh(versionId);
+  // Finishing from the shelves asks for a rating on the way; skipping it, or
+  // finishing from the game's page, sends none and leaves the rating alone.
+  const rating = ratingFrom(formData.get("rating"));
+
+  if (await markEntryDone(user.id, versionId, completion, rating)) refresh(versionId);
 }
 
 export async function setRating(formData: FormData): Promise<void> {
