@@ -286,10 +286,7 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
             </p>
           ) : (
             <p className="mt-10 font-narrow text-ink-dim">
-              {cards.length} {cards.length === 1 ? "game" : "games"} on your shelves.{" "}
-              <Link href="/?view=all" className="underline underline-offset-4 hover:text-ink">
-                See them all, with filters
-              </Link>
+              {cards.length} {cards.length === 1 ? "game" : "games"} on your shelves.
             </p>
           )}
         </div>
