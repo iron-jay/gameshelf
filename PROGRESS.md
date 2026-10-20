@@ -2536,6 +2536,18 @@ Celeste and its entry and landed on the shelf; Just this version removed Ship
 of Harkinian and left Ocarina with N64 (NTSC), landing on the game; Ocarina's
 last version then showed no switch. tsc, lint and `check:actions` pass.
 
+## 2026-10-20 — New icons
+
+Jay asked for new icons for both web apps, a distinct pair, and a matching
+one for the phone app. Jay picked the rating sticker from three directions.
+
+- `app/icon.svg`: an amber sticker tilted right with a heavy Archivo "G" in
+  the ground colour, on a ground tile (bookshelf has the sage "B").
+- `app/favicon.ico` (16/32/48), `app/apple-icon.png` (180, full bleed) and
+  `public/icons/` (192, 512, maskable 512) are rendered from it; the new
+  `app/manifest.ts` lists the PNGs for "Add to home screen".
+- tsc and lint pass.
+
 ## 2026-10-20 — DLC under its game
 
 Jay wasn't happy with DLC: it should be added under each game, and each game
