@@ -1,3 +1,4 @@
+import { SeriesInput } from "./series-input";
 import { setSeries } from "./work/[slug]/series-actions";
 
 /**
@@ -17,28 +18,13 @@ export function SeriesForm({
   return (
     <form action={setSeries} className="flex flex-wrap items-end gap-2">
       <input type="hidden" name="slug" value={workSlug} />
-      <label className="flex flex-col gap-1.5">
-        <span className="font-narrow text-ink-dim">Series</span>
-        <input
-          name="series"
-          type="text"
-          list="series-names"
-          maxLength={120}
-          placeholder="The Legend of Zelda"
-          defaultValue={current ?? ""}
-          className="field w-64"
-        />
-      </label>
-      <datalist id="series-names">
-        {names.map((name) => (
-          <option key={name} value={name} />
-        ))}
-      </datalist>
-      <button type="submit" className="btn">
+      <SeriesInput names={names} defaultValue={current ?? ""} />
+      {/* Level with the box, not with the hint line under it. */}
+      <button type="submit" className="btn mb-7">
         Save
       </button>
       {current ? (
-        <span className="font-narrow text-ink-dim">Empty the box and save to remove it.</span>
+        <span className="mb-9 font-narrow text-ink-dim">Empty the box and save to remove it.</span>
       ) : null}
     </form>
   );
