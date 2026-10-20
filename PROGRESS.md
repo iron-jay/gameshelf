@@ -2472,3 +2472,12 @@ Recently played.
 
 **Next:** the phone app's Finished it does not prompt yet.
 
+
+## 2026-10-20 — Series where you would look for it
+
+Jay asked where to set a series. The field was only at the bottom of the game
+page, which is a link away from the version page a cover opens. It is now a
+shared `SeriesForm` on both pages (under the review on the version page), and
+the version page shows the series as a link beside platform and year.
+`setSeries` revalidates the version and series pages too. Checked locally on
+desktop and phone; tsc and lint pass.

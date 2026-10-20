@@ -31,6 +31,9 @@ export async function setSeries(formData: FormData): Promise<void> {
     .where(eq(works.slug, slug));
 
   revalidatePath(`/work/${slug}`);
+  // Set from a version's page as well, and shown on the series pages.
+  revalidatePath("/version/[id]", "page");
+  revalidatePath("/series/[name]", "page");
   // The shelf can sort by it, so the sorted view is stale now too.
   revalidatePath("/");
 }

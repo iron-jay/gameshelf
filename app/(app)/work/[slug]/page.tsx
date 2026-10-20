@@ -10,7 +10,7 @@ import { OFFICIAL_VERSION_KINDS } from "@/lib/db/schema";
 import { seriesHref, seriesInUse } from "@/lib/series";
 
 import { BackToShelf } from "../../back-to-shelf";
-import { setSeries } from "./series-actions";
+import { SeriesForm } from "../../series-form";
 
 export const dynamic = "force-dynamic";
 
@@ -178,34 +178,7 @@ export default async function WorkPage({ params }: { params: Promise<{ slug: str
           </section>
         ) : null}
 
-        {/* Inline rather than behind an edit page: it is one field, and the
-            work page is the only place that represents the work itself. */}
-        <form action={setSeries} className="flex flex-wrap items-end gap-2">
-          <input type="hidden" name="slug" value={work.slug} />
-          <label className="flex flex-col gap-1.5">
-            <span className="font-narrow text-ink-dim">Series</span>
-            <input
-              name="series"
-              type="text"
-              list="series-names"
-              maxLength={120}
-              placeholder="The Legend of Zelda"
-              defaultValue={work.series ?? ""}
-              className="field w-64"
-            />
-          </label>
-          <datalist id="series-names">
-            {allSeries.map((name) => (
-              <option key={name} value={name} />
-            ))}
-          </datalist>
-          <button type="submit" className="btn">
-            Save
-          </button>
-          {work.series ? (
-            <span className="font-narrow text-ink-dim">Empty the box and save to remove it.</span>
-          ) : null}
-        </form>
+        <SeriesForm workSlug={work.slug} current={work.series} names={allSeries} />
 
         <p className="flex flex-wrap gap-x-5 gap-y-2 font-narrow">
           <Link href={`/work/${work.slug}/art`} className="text-ink-dim underline underline-offset-4 hover:text-ink">
