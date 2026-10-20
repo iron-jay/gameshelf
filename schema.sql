@@ -123,6 +123,10 @@ CREATE TABLE works (
   -- so "The Final Shape" can be logged separately from "Destiny 2".
   work_kind           work_kind NOT NULL DEFAULT 'main_game',
   parent_work_id      uuid REFERENCES works(id) ON DELETE CASCADE,
+  -- A romhack is a game of its own (0011), made from the game it was built on
+  -- and then edited apart from it. "Based on", not parent: that one means more
+  -- content and cascades, and deleting the original must leave the hack.
+  based_on_work_id    uuid REFERENCES works(id) ON DELETE SET NULL,
   -- A game's DLC lives under it, on its pages, rather than as tiles of its
   -- own on the shelf. Set on the game (the parent) to put them back on the
   -- shelf as games of their own — the Destiny 2 player's choice, per game.
@@ -155,6 +159,7 @@ CREATE TABLE works (
   updated_at          timestamptz NOT NULL DEFAULT now(),
 
   CONSTRAINT works_no_self_parent CHECK (id <> parent_work_id),
+  CONSTRAINT works_no_self_based_on CHECK (id <> based_on_work_id),
   -- A main game never hangs off anything. Everything else may.
   CONSTRAINT works_parent_required CHECK (
     work_kind <> 'main_game' OR parent_work_id IS NULL
@@ -165,14 +170,18 @@ CREATE INDEX works_title_trgm_idx ON works USING gin (title gin_trgm_ops);
 CREATE INDEX works_source_idx ON works(source);
 CREATE INDEX works_parent_idx ON works(parent_work_id);
 CREATE INDEX works_kind_idx ON works(work_kind);
+CREATE INDEX works_based_on_idx ON works(based_on_work_id);
 
 -- ------------------------------------------------------------
 -- Versions — the thing you actually played.
 --
--- Every work gets at least one version. A romhack is a version whose
--- kind is 'romhack' and whose base_version_id points at the ROM it
--- patches. This is the whole trick: local versions hang off canonical
--- IGDB works without contaminating the cached upstream data.
+-- Every work gets at least one version. A translation is a version whose
+-- kind is 'translation' and whose base_version_id points at the ROM it
+-- patches: local versions hang off canonical IGDB works without
+-- contaminating the cached upstream data. A romhack is the exception since
+-- 0011: a local work of its own (based_on_work_id), whose 'romhack' versions
+-- are its ways to play, each base_version_id pointing at the release it
+-- patches on the original's work.
 -- ------------------------------------------------------------
 
 CREATE TABLE versions (
@@ -318,10 +327,10 @@ SELECT
   v.kind              AS version_kind,
   v.author            AS version_author,
   -- A community version never inherits the parent work's boxart: showing
-  -- Ocarina of Time's cover for a romhack looks correct and is wrong, which
-  -- is a worse outcome than no art at all. Own art or placeholder, nothing else.
+  -- Ocarina of Time's cover for a translation looks correct and is wrong,
+  -- which is a worse outcome than no art at all. Own art or placeholder.
   CASE
-    WHEN v.kind NOT IN ('original','port','remaster','remake','compilation')
+    WHEN v.kind NOT IN ('original','port','remaster','remake','compilation','romhack')
       THEN v.cover_url
     ELSE COALESCE(v.cover_url, w.cover_url)
   END                 AS cover_url,
@@ -332,7 +341,7 @@ SELECT
   w.parent_work_id,
   pw.title            AS parent_work_title,
   p.name              AS platform_name,
-  (v.kind NOT IN ('original','port','remaster','remake','compilation')) AS is_community_version,
+  (v.kind NOT IN ('original','port','remaster','remake','compilation','romhack')) AS is_community_version,
   e.added_at,
   -- The shelf sorts by "finished", which lives on plays rather than on the
   -- entry: a replay is a new play, so the latest finish is the meaningful one.
@@ -341,11 +350,11 @@ SELECT
   -- no art of its own shows a placeholder, and a placeholder needs no review.
   CASE
     WHEN v.cover_url IS NOT NULL THEN v.cover_needs_review
-    WHEN v.kind NOT IN ('original','port','remaster','remake','compilation') THEN false
+    WHEN v.kind NOT IN ('original','port','remaster','remake','compilation','romhack') THEN false
     ELSE w.cover_needs_review
   END                 AS cover_needs_review,
-  -- The version's own date when it has one, so a romhack groups under the year
-  -- the hack came out rather than the year the original did.
+  -- The version's own date when it has one, so a port groups under the year
+  -- it came out rather than the year the original did.
   extract(year FROM COALESCE(v.release_date, w.first_release_date))::int AS release_year,
   w.series
 FROM entries e

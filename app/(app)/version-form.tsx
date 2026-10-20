@@ -20,7 +20,10 @@ import { createVersion, lookupArtForName, searchBaseGames } from "./version-acti
 export type KnownWork = {
   id: string;
   title: string;
+  /** What a release can patch: this game's, or for a romhack its original's. */
   versions: { id: string; name: string; kind: string }[];
+  /** Set when the work is a romhack's own game: this adds a way to play it. */
+  romhack?: { original: string | null } | null;
 };
 
 const CONFIDENCE_NOTE: Readonly<Record<string, string>> = {
@@ -113,9 +116,9 @@ export function VersionForm({
       ) : null}
 
       <VersionFields
-        kinds={homebrew ? (["homebrew"] as const) : COMMUNITY_KINDS}
+        kinds={homebrew ? (["homebrew"] as const) : work?.romhack ? (["romhack"] as const) : COMMUNITY_KINDS}
         platforms={platforms}
-        values={{ kind }}
+        values={work?.romhack ? { kind: "romhack", name: work.title } : { kind }}
         nameLabel={homebrew ? "Game name" : "Name of the hack or port"}
         nameHint="This is what the art search uses, so use the release&rsquo;s own name."
         onNameBlur={(value) => void onNameBlur(value)}
@@ -129,9 +132,11 @@ export function VersionForm({
         </p>
       ) : (
         <fieldset className="card flex flex-col gap-2">
-          <legend className="px-1 font-narrow text-ink-dim">Base game</legend>
+          <legend className="px-1 font-narrow text-ink-dim">{work?.romhack ? "Romhack of" : "Base game"}</legend>
 
-          {work ? (
+          {work?.romhack ? (
+            <p>{work.romhack.original ?? "Not recorded"}</p>
+          ) : work ? (
             <p>{work.title}</p>
           ) : baseGame ? (
             <p className="flex items-center gap-3">
@@ -198,6 +203,13 @@ export function VersionForm({
               </p>
             </>
           )}
+
+          {!work?.romhack ? (
+            <p className="font-narrow text-ink-dim">
+              A romhack becomes a game of its own. It starts with this game&rsquo;s series, summary
+              and year, and you can change them on its page afterwards.
+            </p>
+          ) : null}
 
           {work && work.versions.length > 0 ? (
             <label className="mt-2 flex flex-col gap-1.5">

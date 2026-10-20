@@ -7,7 +7,7 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import {
   entries,
-  OFFICIAL_VERSION_KINDS,
+  isCommunityVersionKind,
   platforms,
   shelfEntries,
   shelves,
@@ -17,6 +17,7 @@ import {
 import { STATUS_LABELS, STATUS_ORDER } from "@/lib/status";
 import { canHaveDlc, dlcOf, parentIgdbIdOf } from "@/lib/dlc";
 import { fillDlcOnce } from "@/lib/dlc-fill";
+import { basedOnOf } from "@/lib/romhacks";
 import { seriesHref, seriesInUse } from "@/lib/series";
 import { isUuid } from "@/lib/uuid";
 
@@ -44,9 +45,7 @@ const DONE_LEVELS = [
 
 const CHIP = "btn btn-sm";
 
-function isCommunity(kind: string): boolean {
-  return !(OFFICIAL_VERSION_KINDS as readonly string[]).includes(kind);
-}
+const isCommunity = isCommunityVersionKind;
 
 export default async function VersionPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -66,6 +65,7 @@ export default async function VersionPage({ params }: { params: Promise<{ id: st
       dlcOnShelf: works.dlcOnShelf,
       parentWorkId: works.parentWorkId,
       igdbPayload: works.igdbPayload,
+      basedOnWorkId: works.basedOnWorkId,
       platformName: platforms.name,
     })
     .from(versions)
@@ -126,7 +126,11 @@ export default async function VersionPage({ params }: { params: Promise<{ id: st
     .orderBy(asc(versions.createdAt));
 
   // The game's DLC, where a tap on the game's cover lands; and on a DLC, its game.
-  const listsDlc = canHaveDlc(row.workKind) && !isCommunity(version.kind);
+  // A romhack is a game of its own (2026-10-20): it has no DLC, and its
+  // original is a link away.
+  const romhack = version.kind === "romhack";
+  const basedOn = romhack ? await basedOnOf(row.basedOnWorkId) : null;
+  const listsDlc = canHaveDlc(row.workKind) && !isCommunity(version.kind) && !romhack;
   if (listsDlc) await fillDlcOnce(user.id, version.workId);
   const dlc = listsDlc ? await dlcOf(user.id, version.workId) : null;
   const [parent] = row.parentWorkId
@@ -168,6 +172,14 @@ export default async function VersionPage({ params }: { params: Promise<{ id: st
               parentIgdbId={parentIgdbIdOf(row.workKind, row.igdbPayload)}
               slug={row.workSlug}
             />
+            {basedOn ? (
+              <p className="mb-1 font-narrow text-ink-dim">
+                Romhack of{" "}
+                <Link href={`/work/${basedOn.slug}`} className="underline underline-offset-4 hover:text-ink">
+                  {basedOn.title}
+                </Link>
+              </p>
+            ) : null}
             {community ? (
               <p className="mb-1 font-narrow text-sm font-bold text-accent">Community release</p>
             ) : null}
@@ -189,7 +201,7 @@ export default async function VersionPage({ params }: { params: Promise<{ id: st
             <p className="mt-2 font-narrow text-ink-dim">
               {[
                 community ? version.kind.replace(/_/g, " ") : null,
-                row.platformName ?? (community ? null : version.name),
+                row.platformName ?? (community || romhack ? null : version.name),
                 version.author,
                 version.releaseDate?.slice(0, 4),
                 baseVersion ? `patches ${baseVersion.name}` : null,
@@ -458,6 +470,12 @@ export default async function VersionPage({ params }: { params: Promise<{ id: st
             className="text-ink-dim underline underline-offset-4 hover:text-ink"
           >
             Edit details
+          </Link>
+          <Link
+            href={`/work/${row.workSlug}/edit`}
+            className="text-ink-dim underline underline-offset-4 hover:text-ink"
+          >
+            Edit game details
           </Link>
           {/* Deleting lives here rather than on the shelf's covers, behind its
               own confirmation page. */}

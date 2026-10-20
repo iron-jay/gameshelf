@@ -39,7 +39,7 @@ export function NowPlaying({ cards, count, seeAll }: { cards: ShelfCard[]; count
             const title = card.isCommunityVersion ? card.versionName : card.workTitle;
             const subtitle = card.isCommunityVersion
               ? [card.platformName, card.workTitle].filter(Boolean).join(" · ")
-              : (card.platformName ?? card.versionName);
+              : (card.platformName ?? (card.versionName === card.workTitle ? "" : card.versionName));
 
             return (
               <li key={card.entryId} className="flex gap-4">

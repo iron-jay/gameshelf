@@ -78,6 +78,13 @@
       "when": 1792479600000,
       "tag": "0010_dlc_filled",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792483200000,
+      "tag": "0011_romhacks_own_games",
+      "breakpoints": true
     }
   ]
 }
