@@ -9,8 +9,14 @@ import { inspectWorkRemoval } from "@/lib/works/removal";
 
 import { deleteWork } from "../../../removal-actions";
 import { RemovalSummary } from "../../../removal-summary";
+import type { Metadata } from "next";
+import { workTitle } from "../../../page-titles";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  return workTitle((await params).slug, "Delete");
+}
 
 export default async function DeleteWorkPage({ params }: { params: Promise<{ slug: string }> }) {
   await requireUser();

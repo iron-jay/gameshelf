@@ -18,6 +18,7 @@ import { SeriesTile } from "./series-tile";
 import { ShelfGrid, type ShelfSection } from "./shelf-grid";
 import { preferencesFrom, SHELF_VIEW_COOKIE } from "./shelf-view";
 import { ShelfTile, type ShelfCard } from "./shelf-tile";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 
@@ -125,6 +126,25 @@ function bucketFor(row: Row, groupBy: GroupBy): { label: string; order: number |
     default:
       return { label: "", order: 0 };
   }
+}
+
+export async function generateMetadata({ searchParams }: { searchParams: Promise<Params> }): Promise<Metadata> {
+  // The tab says what the wall's heading says, so it reads the view the same way.
+  const params: Params = {
+    ...preferencesFrom((await cookies()).get(SHELF_VIEW_COOKIE)?.value),
+    ...(await searchParams),
+  };
+  if (isStatus(params.status)) return { title: STATUS_LABELS[params.status] };
+  const shelfSlug = params.shelf?.trim();
+  if (shelfSlug) {
+    const user = await requireUser();
+    const tag = (await userTags(user.id)).find((option) => option.slug === shelfSlug);
+    if (tag) return { title: tag.name };
+  }
+  const platform = params.platform?.trim();
+  if (platform) return { title: platform };
+  if (params.view !== "all") return {};
+  return { title: params.groupBy === "status" ? "All shelves" : "All games" };
 }
 
 export default async function ShelfPage({ searchParams }: { searchParams: Promise<Params> }) {

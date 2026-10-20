@@ -17,6 +17,7 @@ import { PasswordForm } from "./password-form";
 import { RestoreImport } from "./restore-import";
 import { SeriesBackfill } from "./series-backfill";
 import { CoverSweep } from "./cover-sweep";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,8 @@ export const dynamic = "force-dynamic";
 function configured(value: string | undefined): string {
   return value ? "set" : "not set";
 }
+
+export const metadata: Metadata = { title: "Settings" };
 
 export default async function SettingsPage() {
   const user = await requireUser();

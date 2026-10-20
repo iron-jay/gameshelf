@@ -2654,3 +2654,17 @@ but for the romhack, which now has SteamGridDB art it never had. Running it
 again: 4 already here. A bookshelf export is refused with a message. tsc,
 lint and `check:actions` pass. Uploaded art is not in the export, so it is
 looked up again rather than restored.
+
+## 2026-10-20 — tab titles
+
+- Every page's tab said only "gameshelf". The root layout now has a title
+  template, "%s · gameshelf", and each page names itself, as its heading
+  does: a version page by its game's title, or a romhack's own name ("Edit
+  …", "Delete …", "Art for …" on its other pages), a game and its Add DLC /
+  Add a version pages, a series by name, the wall by its heading ("All
+  shelves", "All games", a shelf, a tag or a platform), "Search: zelda",
+  "Add a romhack", "Settings" and so on. The overview stays plain
+  "gameshelf". Lookups are in `app/(app)/page-titles.ts`; each checks the
+  session first. Same change in bookshelf.
+- Checked on a local database: every page's `<title>`. tsc, lint and
+  `check:actions` pass.

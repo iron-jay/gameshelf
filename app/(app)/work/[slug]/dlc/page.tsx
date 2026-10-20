@@ -15,6 +15,8 @@ import { STATUS_LABELS, STATUS_ORDER } from "@/lib/status";
 
 import { AddButton } from "../../../search/add-button";
 import { addDlcByHand } from "../dlc-actions";
+import type { Metadata } from "next";
+import { workTitle } from "../../../page-titles";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +25,10 @@ export const dynamic = "force-dynamic";
  * add straight onto the shelf, under the game. Anything it does not list is
  * made by hand below, the same as any local release.
  */
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  return workTitle((await params).slug, "Add DLC for");
+}
+
 export default async function AddDlcPage({ params }: { params: Promise<{ slug: string }> }) {
   const user = await requireUser();
   const { slug } = await params;

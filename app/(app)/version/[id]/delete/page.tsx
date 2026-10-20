@@ -11,8 +11,14 @@ import { inspectVersionRemoval, inspectWorkRemoval } from "@/lib/works/removal";
 import { deleteFromVersion } from "../../../removal-actions";
 import { RemovalSummary } from "../../../removal-summary";
 import { DeleteChoice } from "./delete-choice";
+import type { Metadata } from "next";
+import { versionTitle } from "../../../page-titles";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  return versionTitle((await params).id, "Delete");
+}
 
 export default async function DeleteVersionPage({ params }: { params: Promise<{ id: string }> }) {
   await requireUser();

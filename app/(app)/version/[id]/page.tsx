@@ -33,6 +33,8 @@ import {
 import { BackToShelf } from "../../back-to-shelf";
 import { DlcOf, DlcSection } from "../../dlc-section";
 import { SeriesForm } from "../../series-form";
+import type { Metadata } from "next";
+import { versionTitle } from "../../page-titles";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +48,10 @@ const CHIP = "btn btn-sm";
 
 function isCommunity(kind: string): boolean {
   return !(OFFICIAL_VERSION_KINDS as readonly string[]).includes(kind);
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  return versionTitle((await params).id);
 }
 
 export default async function VersionPage({ params }: { params: Promise<{ id: string }> }) {

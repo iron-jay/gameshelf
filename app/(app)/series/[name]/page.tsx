@@ -9,6 +9,7 @@ import { entries, platforms, versions, works } from "@/lib/db/schema";
 import { STATUS_LABELS } from "@/lib/status";
 
 import { BackToShelf } from "../../back-to-shelf";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,10 @@ export const dynamic = "force-dynamic";
  * bookshelf's series page, with release order standing in for a numbered
  * position (a game has none). That is the whole feature: no completion bar.
  */
+export async function generateMetadata({ params }: { params: Promise<{ name: string }> }): Promise<Metadata> {
+  return { title: decodeURIComponent((await params).name) };
+}
+
 export default async function SeriesPage({ params }: { params: Promise<{ name: string }> }) {
   const user = await requireUser();
   const name = decodeURIComponent((await params).name);
