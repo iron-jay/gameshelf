@@ -264,7 +264,17 @@ form. Used for doujin games, prototypes, unreleased builds.
 3. **Work page** — cover, summary, list of versions. Add version here.
 4. **Version page** — your entry, shelf, rating out of ten, review.
 5. ~~**Stats**~~ — removed on 2026-09-18 with the plays UI it was built on.
-6. **Settings** — IGDB credentials check, export, import, cover art.
+6. **Settings** — IGDB credentials check, export, import, cover art, and
+   games not on your shelf.
+   - **Not on your shelf** (`/off-shelf`, Jay, 2026-10-21): every game here
+     with no entry of yours on any version, which the shelf therefore never
+     shows: games with no way to play (originals whose romhacks moved out in
+     `0011`; one from IGDB gets its release back from `igdb_payload` when
+     shelved), games taken off the shelf, standalone expansions pre-filled
+     before they were games of their own, and games here for a DLC or romhack
+     you have. Each can go on a shelf in one press (when it has one way to
+     play), be opened, or be deleted. DLC under its game is not listed; it
+     lives on the game's page. `lib/off-shelf.ts`.
 
 Out of scope for v1: social features, following, public profiles, Steam import,
 achievements, recommendations. Note them in `IDEAS.md` and move on.
