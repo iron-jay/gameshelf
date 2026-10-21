@@ -416,6 +416,11 @@ generic AI product.
   row. Filters sit in one row that scrolls sideways on a phone. **All
   shelves** in the nav (header and tab bar) is the wall grouped by shelf,
   each shelf in full under a heading that opens it alone.
+  The wall remembers its sort and grouping (the `gameshelf-preferences` cookie,
+  written only when you change them in the filter row; Jay, 2026-10-21), so
+  All shelves opens grouped by shelf only until you pick another grouping.
+  A link that names a value still wins for that visit without changing what
+  is remembered. Which shelf, tag or platform you filtered to is not kept.
 - No Delete on a cover. It lives on the version and work pages. On a version
   page it asks "The whole game" (the default) or "Just this version"; a
   game's last version only goes with the game (2026-10-20).

@@ -2783,3 +2783,31 @@ tile is the same design, so it gets the same fix.
 - The typeset placeholder clamps its name to five lines too.
 - Checked locally in Chromium at 400px and 1280px with a very long name;
   tsc and lint pass.
+
+## 2026-10-21 — The wall remembers how you look at it
+
+- Jay: sort and grouping kept resetting. A cookie already remembered them,
+  but it was the same one that records the shelf's last query for "Back to
+  shelf", rewritten on every render, so the nav's "All shelves" link
+  (`groupBy=...` in its URL) and "See all by series" overwrote whatever
+  grouping had been picked.
+- Now a separate `gameshelf-preferences` cookie holds the preferences (sort and grouping),
+  written by the filter row before it navigates, and only for the control
+  you changed (so changing sort on one shelf does not also store that
+  shelf's grouping). The server fills whatever the URL leaves out from it,
+  so there is no flash; URL values still win.
+- The nav's All shelves is now a bare wall link; the wall groups by shelf
+  when nothing is remembered. A single shelf shows ungrouped when the
+  preference is "by shelf" and no longer offers that option.
+- Cookie rather than localStorage because the page is server-rendered; not
+  a per-user DB setting because Simple beats complete (the phone has its
+  own screens anyway). The old cookie's preferences are not carried over:
+  one reset on deploy.
+- Checked in a browser against a local database: choices survive Shelves →
+  All shelves, a link naming a grouping does not overwrite them, a new
+  browser gets the default. Same change in bookshelf.
+
+- Later the same day: the wall's filter box has its own × to clear it (and
+  Escape clears it too), since iOS shows no native one; the browser's own
+  is hidden on that box only. It filters on the client, so clearing keeps
+  the sort, grouping and URL as they were.
