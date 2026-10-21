@@ -15,10 +15,16 @@ import { seriesHref, seriesInUse } from "@/lib/series";
 import { BackToShelf } from "../../back-to-shelf";
 import { DlcOf, DlcSection } from "../../dlc-section";
 import { SeriesForm } from "../../series-form";
+import type { Metadata } from "next";
+import { workTitle } from "../../page-titles";
 
 export const dynamic = "force-dynamic";
 
 const isCommunity = isCommunityVersionKind;
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  return workTitle((await params).slug);
+}
 
 export default async function WorkPage({ params }: { params: Promise<{ slug: string }> }) {
   const user = await requireUser();

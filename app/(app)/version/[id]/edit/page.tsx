@@ -9,8 +9,14 @@ import { platformsInUse } from "@/lib/platforms";
 import { isUuid } from "@/lib/uuid";
 
 import { EditVersionForm } from "./edit-form";
+import type { Metadata } from "next";
+import { versionTitle } from "../../../page-titles";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  return versionTitle((await params).id, "Edit");
+}
 
 export default async function EditVersionPage({ params }: { params: Promise<{ id: string }> }) {
   await requireUser();

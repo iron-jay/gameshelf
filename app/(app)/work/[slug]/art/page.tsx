@@ -10,10 +10,23 @@ import { lookupArt } from "@/lib/sgdb";
 import { isUuid } from "@/lib/uuid";
 
 import { ArtPicker } from "./art-picker";
+import type { Metadata } from "next";
+import { versionTitle, workTitle } from "../../../page-titles";
 
 export const dynamic = "force-dynamic";
 
 const isCommunity = isCommunityVersionKind;
+
+export async function generateMetadata({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ version?: string }>;
+}): Promise<Metadata> {
+  const { version } = await searchParams;
+  return version ? versionTitle(version, "Art for") : workTitle((await params).slug, "Art for");
+}
 
 export default async function ArtPage({
   params,

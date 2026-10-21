@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -7,9 +8,14 @@ import { db } from "@/lib/db";
 import { works } from "@/lib/db/schema";
 import { basedOnOf } from "@/lib/romhacks";
 
+import { workTitle } from "../../../page-titles";
 import { EditWorkForm } from "./edit-form";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  return workTitle((await params).slug, "Edit");
+}
 
 export default async function EditWorkPage({ params }: { params: Promise<{ slug: string }> }) {
   await requireUser();

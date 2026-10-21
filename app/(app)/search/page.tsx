@@ -8,6 +8,7 @@ import { igdbResultFor, searchLocalWorks, type IgdbResult } from "@/lib/search";
 import { STATUS_ORDER } from "@/lib/status";
 
 import { AddButton } from "./add-button";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,11 @@ type SearchResult =
       href: string;
     }
   | ({ kind: "igdb" } & IgdbResult);
+
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ q?: string }> }): Promise<Metadata> {
+  const q = ((await searchParams).q ?? "").trim();
+  return { title: q ? `Search: ${q}` : "Search" };
+}
 
 export default async function SearchPage({
   searchParams,
