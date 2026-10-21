@@ -410,7 +410,8 @@ generic AI product.
   page it asks "The whole game" (the default) or "Just this version"; a
   game's last version only goes with the game (2026-10-20).
 - On hover-capable screens the tile shows its name and shelf on hover; on a
-  phone a cover is a plain tap.
+  phone a cover is a plain tap. That text stays on the cover (2026-10-21):
+  the name clamped to three lines, the rating sticker above it.
 - **Phones**: the header keeps only the name (and the link across to
   bookshelf, `BOOKSHELF_URL`); Shelves, All (all shelves), Search, Add and
   More (Settings) move to a tab bar at the bottom. Words, not icons.

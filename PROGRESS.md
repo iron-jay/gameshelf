@@ -2746,3 +2746,15 @@ and is not listed under it.
 - Checked locally: Uncharted 4 on Played and The Lost Legacy on Backlog both
   show on `GET /shelf?dlc=fold`; Uncharted 4's page lists no DLC. tsc, lint
   and `check:actions` pass. The phone app's labels follow (shelf-mobile).
+
+## 2026-10-21 — tile text stays on the cover
+
+Jay saw a book tile's hover text run off its cover in bookshelf; gameshelf's
+tile is the same design, so it gets the same fix.
+
+- The hover overlay clips to the cover, the name is clamped to three lines and
+  the platform and version lines to two, and the shelf line never shrinks.
+- The rating sticker sits above the overlay (z-index 25) instead of under it.
+- The typeset placeholder clamps its name to five lines too.
+- Checked locally in Chromium at 400px and 1280px with a very long name;
+  tsc and lint pass.
