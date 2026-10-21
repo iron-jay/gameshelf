@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { OFFICIAL_VERSION_KINDS, versions, works } from "@/lib/db/schema";
+import { isCommunityVersionKind, versions, works } from "@/lib/db/schema";
 import type { ArtCandidate } from "@/lib/sgdb";
 import { lookupArt } from "@/lib/sgdb";
 import { isUuid } from "@/lib/uuid";
@@ -15,9 +15,7 @@ import { versionTitle, workTitle } from "../../../page-titles";
 
 export const dynamic = "force-dynamic";
 
-function isCommunity(kind: string): boolean {
-  return !(OFFICIAL_VERSION_KINDS as readonly string[]).includes(kind);
-}
+const isCommunity = isCommunityVersionKind;
 
 export async function generateMetadata({
   params,

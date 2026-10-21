@@ -49,6 +49,9 @@ export type RestoreRow = {
     summary: string | null;
     dlcOnShelf: boolean;
     sgdbGameId: number | null;
+    /** A romhack's own game: the game it was built on. */
+    basedOn: string | null;
+    basedOnIgdbId: number | null;
   };
 };
 
@@ -126,12 +129,14 @@ export function toRestoreRow(value: unknown, line: number): RestoreRow | string 
     series: opt(work.series, 300),
     summary: opt(work.summary, 50_000),
     workSgdb: optInt(work.sgdbGameId, 1, ID),
+    basedOn: opt(work.basedOn, 500),
+    basedOnIgdbId: optInt(work.basedOnIgdbId, 1, ID),
   };
   const bad = Object.entries(fields).find(([, v]) => v === false);
   if (bad) return `${bad[0]} unreadable`;
   const f = fields as { [K in keyof typeof fields]: Exclude<(typeof fields)[K], false> };
 
-  return {
+  const restored: RestoreRow = {
     line,
     status: value.status,
     completion: f.completion,
@@ -167,6 +172,33 @@ export function toRestoreRow(value: unknown, line: number): RestoreRow | string 
       summary: f.summary,
       dlcOnShelf: work.dlcOnShelf === true,
       sgdbGameId: f.workSgdb,
+      basedOn: f.basedOn,
+      basedOnIgdbId: f.basedOnIgdbId,
+    },
+  };
+  // An export from before romhacks were games of their own has the hack as a
+  // version of its original. It comes back as the migration made them: a game
+  // of its own, from the original's details.
+  return restored.version.kind === "romhack" && !("basedOn" in work) ? asOwnGame(restored) : restored;
+}
+
+function asOwnGame(row: RestoreRow): RestoreRow {
+  const { work, version } = row;
+  return {
+    ...row,
+    work: {
+      title: version.name,
+      workKind: "main_game",
+      firstReleaseDate: version.releaseDate ?? work.firstReleaseDate,
+      igdbId: null,
+      parentWork: null,
+      parentIgdbId: null,
+      series: work.series,
+      summary: work.summary,
+      dlcOnShelf: false,
+      sgdbGameId: version.sgdbGameId,
+      basedOn: work.title,
+      basedOnIgdbId: work.igdbId,
     },
   };
 }
@@ -200,7 +232,8 @@ export function parseRestore(text: string): RestoreParse {
 
   // Games before their DLC, and releases before the hacks and ports built on
   // them, so what a row hangs off is here when it arrives.
-  const rank = (row: RestoreRow) => (row.work.workKind === "main_game" ? 0 : 2) + (row.version.baseVersion ? 1 : 0);
+  const builtOn = (row: RestoreRow) => Boolean(row.version.baseVersion || row.work.basedOn || row.work.basedOnIgdbId);
+  const rank = (row: RestoreRow) => (row.work.workKind === "main_game" ? 0 : 2) + (builtOn(row) ? 1 : 0);
   rows.sort((a, b) => rank(a) - rank(b));
   return { rows, skipped };
 }

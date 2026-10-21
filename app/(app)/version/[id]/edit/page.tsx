@@ -30,6 +30,7 @@ export default async function EditVersionPage({ params }: { params: Promise<{ id
       version: versions,
       workSlug: works.slug,
       workTitle: works.title,
+      basedOnWorkId: works.basedOnWorkId,
       platformName: platforms.name,
     })
     .from(versions)
@@ -41,11 +42,17 @@ export default async function EditVersionPage({ params }: { params: Promise<{ id
 
   // Siblings only, and never itself — the schema forbids a version being its
   // own base, and basing it on a version of a different game is meaningless.
-  const siblings = await db
-    .select({ id: versions.id, name: versions.name })
-    .from(versions)
-    .where(and(eq(versions.workId, row.version.workId), ne(versions.id, row.version.id)))
-    .orderBy(asc(versions.createdAt));
+  // A romhack is the exception: it is a game of its own, and what it patches
+  // is a release of the original.
+  const romhack = row.version.kind === "romhack";
+  const baseWorkId = romhack ? row.basedOnWorkId : row.version.workId;
+  const siblings = baseWorkId
+    ? await db
+        .select({ id: versions.id, name: versions.name })
+        .from(versions)
+        .where(and(eq(versions.workId, baseWorkId), ne(versions.id, row.version.id)))
+        .orderBy(asc(versions.createdAt))
+    : [];
 
   const platformNames = await platformsInUse();
 
@@ -62,8 +69,11 @@ export default async function EditVersionPage({ params }: { params: Promise<{ id
       </p>
       <h1 className="mb-2 font-display text-3xl">Edit version</h1>
       <p className="mb-6 max-w-2xl font-narrow text-ink-dim">
-        The version&rsquo;s own details. Your rating, review and plays live on the version page, and
-        the cover has its own picker.
+        The version&rsquo;s own details. The game&rsquo;s title, year and summary are{" "}
+        <Link href={`/work/${row.workSlug}/edit`} className="underline">
+          its details
+        </Link>
+        ; your rating, review and plays live on the version page, and the cover has its own picker.
       </p>
 
       <p className="mb-6 font-narrow">
@@ -81,8 +91,9 @@ export default async function EditVersionPage({ params }: { params: Promise<{ id
         siblings={siblings}
         platforms={platformNames}
         // Every kind, not just the community ones: an official release added
-        // from IGDB should be fixable here too.
-        kinds={versionKind.enumValues}
+        // from IGDB should be fixable here too. Except a romhack, which is a
+        // game of its own rather than a kind of release of this one.
+        kinds={romhack ? ["romhack"] : versionKind.enumValues.filter((value) => value !== "romhack")}
         values={{
           name: row.version.name,
           kind: row.version.kind,

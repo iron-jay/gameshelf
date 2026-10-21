@@ -5,15 +5,14 @@ import { canHaveDlc, dlcOf, parentIgdbIdOf, type DlcItem } from "@/lib/dlc";
 import { fillDlcOnce } from "@/lib/dlc-fill";
 import {
   entries,
-  OFFICIAL_VERSION_KINDS,
+  isCommunityVersionKind,
   platforms,
   versions,
   works,
 } from "@/lib/db/schema";
+import { basedOnOf, isRomhackWork, romhacksOf, type RomhackItem, type WorkLink } from "@/lib/romhacks";
 
-export function isCommunityKind(kind: string): boolean {
-  return !(OFFICIAL_VERSION_KINDS as readonly string[]).includes(kind);
-}
+export const isCommunityKind = isCommunityVersionKind;
 
 export type VersionSummary = {
   id: string;
@@ -52,6 +51,10 @@ export type WorkDetail = {
   children: DlcItem[];
   /** The game's DLC stands on the shelf as games of their own, rather than under it. */
   dlcOnShelf: boolean;
+  /** A romhack's own game: the game it was built on, when that is still here. */
+  basedOn: WorkLink | null;
+  /** Romhacks made from this game, each a game of its own. */
+  romhacks: RomhackItem[];
 };
 
 const versionColumns = {
@@ -134,8 +137,10 @@ export async function workDetail(userId: string, slug: string): Promise<WorkDeta
         .where(eq(works.id, work.parentWorkId))
     : [];
 
-  if (canHaveDlc(work.workKind)) await fillDlcOnce(userId, work.id);
-  const children = canHaveDlc(work.workKind) ? await dlcOf(userId, work.id) : [];
+  // A romhack has no DLC of its own to list.
+  const listsDlc = canHaveDlc(work.workKind) && !(await isRomhackWork(db, work.id));
+  if (listsDlc) await fillDlcOnce(userId, work.id);
+  const children = listsDlc ? await dlcOf(userId, work.id) : [];
 
   return {
     id: work.id,
@@ -152,6 +157,8 @@ export async function workDetail(userId: string, slug: string): Promise<WorkDeta
     versions: versionRows.map((row) => summaryFrom(row, mine.get(row.id) ?? null)),
     children,
     dlcOnShelf: work.dlcOnShelf,
+    basedOn: await basedOnOf(work.basedOnWorkId),
+    romhacks: await romhacksOf(work.id),
   };
 }
 

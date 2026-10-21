@@ -111,7 +111,7 @@ curl -H "authorization: Bearer $TOKEN" http://localhost:3000/api/v1/me
 | `PUT /api/v1/entries/{id}/tags/{name}` | Adds a tag, creating it if new. Returns `{ tags }` |
 | `DELETE /api/v1/entries/{id}/tags/{name}` | Removes a tag; one left on nothing is deleted, as on the web. Returns `{ tags }` |
 | `GET /api/v1/versions/{id}` | A version, its work, its base version and your entry id if shelved |
-| `GET /api/v1/works/{slug}` | A work, its versions (with your entry ids), its DLC (`children`, each with `versionId`, `entryId`, `status`, `rating`, `coverUrl`, `year`) and `dlcOnShelf` |
+| `GET /api/v1/works/{slug}` | A work, its versions (with your entry ids), its DLC (`children`, each with `versionId`, `entryId`, `status`, `rating`, `coverUrl`, `year`), `dlcOnShelf`, and for romhacks `basedOn` (`{ slug, title }` of the original) and `romhacks` (on the original: `slug`, `title`, `year`, `coverUrl`) |
 | `PATCH /api/v1/works/{slug}` | `{ "dlcOnShelf": true }` shows the game's DLC on the shelf as separate games; `false` keeps it under the game. Returns the work |
 | `GET /api/v1/search?q=` | `{ local, igdb, igdbError }`; local results come back even when IGDB cannot be reached |
 | `GET /api/v1/tags` | Your tags with how many entries carry each |

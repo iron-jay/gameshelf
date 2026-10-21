@@ -52,6 +52,9 @@ export type ExportEntry = {
     /** The game's "On your shelf: As separate games" switch for its DLC. */
     dlcOnShelf: boolean;
     sgdbGameId: number | null;
+    /** A romhack's own game: the game it was built on. */
+    basedOn: string | null;
+    basedOnIgdbId: number | null;
   };
 };
 
@@ -70,6 +73,7 @@ export async function buildExport(userId: string, username: string): Promise<Exp
   // collapses the select row type to never.
   const baseVersions = alias(versions, "base_versions");
   const parentWorks = alias(works, "parent_works");
+  const basedOnWorks = alias(works, "based_on_works");
 
   const rows = await db
     .select({
@@ -109,6 +113,8 @@ export async function buildExport(userId: string, username: string): Promise<Exp
       baseVersionName: baseVersions.name,
       parentWorkTitle: parentWorks.title,
       parentWorkIgdbId: parentWorks.igdbId,
+      basedOnTitle: basedOnWorks.title,
+      basedOnIgdbId: basedOnWorks.igdbId,
     })
     .from(entries)
     .innerJoin(versions, eq(versions.id, entries.versionId))
@@ -116,6 +122,7 @@ export async function buildExport(userId: string, username: string): Promise<Exp
     .leftJoin(platforms, eq(platforms.id, versions.platformId))
     .leftJoin(baseVersions, eq(baseVersions.id, versions.baseVersionId))
     .leftJoin(parentWorks, eq(parentWorks.id, works.parentWorkId))
+    .leftJoin(basedOnWorks, eq(basedOnWorks.id, works.basedOnWorkId))
     .where(eq(entries.userId, userId))
     .orderBy(asc(works.title), asc(versions.name));
 
@@ -208,6 +215,8 @@ export async function buildExport(userId: string, username: string): Promise<Exp
         summary: row.workSummary,
         dlcOnShelf: row.workDlcOnShelf,
         sgdbGameId: row.workSgdbGameId,
+        basedOn: row.basedOnTitle,
+        basedOnIgdbId: row.basedOnIgdbId,
       },
     })),
   };

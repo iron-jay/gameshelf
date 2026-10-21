@@ -2686,6 +2686,50 @@ Checked on a local database in Chromium at phone width: Halo renamed to
 "halo", one game taken out, the series removed, both games still there.
 tsc, lint and `check:actions` pass.
 
+## 2026-10-20 — Romhacks as games of their own
+
+Jay: a romhack should be its own thing, separate from its base game — details
+pulled from the base when it is made, but its year, ways to play and the rest
+its own.
+
+- **Model.** `works.based_on_work_id` (migration `0011`, `ON DELETE SET NULL`):
+  a romhack is a local main game based on its original. Its versions, kind
+  `romhack`, are its ways to play; `base_version_id` still names the release
+  it patches, on the original's work. `OWN_WORK_VERSION_KINDS` /
+  `isCommunityVersionKind` (`lib/db/schema.ts`) and `entry_cards` now treat a
+  romhack version like an official one: the work's art and title, no band.
+- **Migration.** Every romhack version on another game moves to a new local
+  work (same-named ones on one game become one work with several ways to
+  play): the hack's name, the original's series and summary, the hack's date
+  else the original's, and its art moved up to the work. Versions keep their
+  ids, so entries, plays, tags, ratings and reviews are untouched (checked by
+  hashing them before and after on seeded data). Running it twice moves
+  nothing.
+- **Adding.** Door A and Door B make a new work (`lib/romhacks.ts`); Door A's
+  original now arrives with its own release (no entry) via `placeIgdbGame`,
+  so it is never a game with no versions. Door B on a romhack's page is "Add a
+  way to play". A new romhack plays where what it patches does unless the form
+  says otherwise.
+- **Editing.** `/work/{slug}/edit` (any game): title, release date, summary.
+  The version edit page offers a romhack's original's releases as what it
+  patches, and refuses turning a romhack into another kind or back.
+- **Pages.** "Romhack of …" on its game and version pages; the original lists
+  its "Romhacks"; no DLC section on a romhack. Tiles no longer repeat a title
+  as the subtitle.
+- **Export/restore.** The export carries `work.basedOn` / `basedOnIgdbId`;
+  restore links them (fetching the original from IGDB if missing) and turns an
+  older export's romhacks into games of their own, as the migration does.
+  Restore now matches a version by platform and label as well as name and
+  kind, since a romhack's ways to play often share its name.
+- **API.** `GET /works/{slug}` gains `basedOn` and `romhacks`; cards already
+  say `community: false` for romhacks via the view.
+
+Checked locally: migration on seeded data and through `drizzle-kit migrate`
+and the production migrate bundle; adding through Add, a game's page and a
+romhack's page; editing; the delete page (hacks stay); export then restore of
+new and old-format files into empty databases, twice. tsc, lint and
+`check:actions` pass.
+
 ## 2026-10-20 — standalone expansions are games of their own
 
 Jay: a standalone expansion is not reached through its game, so it is its own
