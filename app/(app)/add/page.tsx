@@ -5,6 +5,7 @@ import { platformsInUse } from "@/lib/platforms";
 import { isFormKind, KIND_LABELS, type FormKind } from "@/lib/versions/types";
 
 import { VersionForm } from "../version-form";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,11 @@ const CHOICES: ReadonlyArray<{ kind: FormKind | "game"; label: string; hint: str
   { kind: "mod", label: KIND_LABELS.mod, hint: "A PC mod or total conversion." },
   { kind: "homebrew", label: KIND_LABELS.homebrew, hint: "An original game that is not based on anything." },
 ];
+
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ kind?: string }> }): Promise<Metadata> {
+  const { kind } = await searchParams;
+  return { title: isFormKind(kind) ? `Add a ${KIND_LABELS[kind].toLowerCase()}` : "Add a game" };
+}
 
 export default async function AddPage({
   searchParams,

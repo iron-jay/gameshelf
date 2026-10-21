@@ -8,6 +8,8 @@ import { versions, works } from "@/lib/db/schema";
 import { platformsInUse } from "@/lib/platforms";
 
 import { VersionForm } from "../../../version-form";
+import type { Metadata } from "next";
+import { workTitle } from "../../../page-titles";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +17,10 @@ export const dynamic = "force-dynamic";
  * Door B. Same form as Door A, with the base game already known — it is passed
  * in as a prop rather than searched for. No second component.
  */
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  return workTitle((await params).slug, "Add a version of");
+}
+
 export default async function AddVersionPage({ params }: { params: Promise<{ slug: string }> }) {
   await requireUser();
   const { slug } = await params;

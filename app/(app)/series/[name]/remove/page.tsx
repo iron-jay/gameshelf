@@ -1,4 +1,5 @@
 import { count, eq } from "drizzle-orm";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -10,6 +11,10 @@ import { seriesHref } from "@/lib/series";
 import { removeSeries } from "../actions";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ name: string }> }): Promise<Metadata> {
+  return { title: `Remove ${decodeURIComponent((await params).name)}` };
+}
 
 /** Its own page, as deleting a game is: one tap on the series page should not undo a series. */
 export default async function RemoveSeriesPage({ params }: { params: Promise<{ name: string }> }) {

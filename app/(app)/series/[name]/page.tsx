@@ -11,6 +11,7 @@ import { STATUS_LABELS } from "@/lib/status";
 
 import { BackToShelf } from "../../back-to-shelf";
 import { renameSeries, takeOutOfSeries } from "./actions";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,10 @@ export const dynamic = "force-dynamic";
  * Renaming and removing the series live here too, since this is the one page
  * that is about the series rather than a game in it (Jay, 2026-10-20).
  */
+export async function generateMetadata({ params }: { params: Promise<{ name: string }> }): Promise<Metadata> {
+  return { title: decodeURIComponent((await params).name) };
+}
+
 export default async function SeriesPage({ params }: { params: Promise<{ name: string }> }) {
   const user = await requireUser();
   const name = decodeURIComponent((await params).name);
