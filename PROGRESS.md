@@ -2770,3 +2770,7 @@ and is not listed under it.
   All shelves, a link naming a grouping does not overwrite them, a new
   browser gets the default. Same change in bookshelf.
 
+- Later the same day: the wall's filter box has its own × to clear it (and
+  Escape clears it too), since iOS shows no native one; the browser's own
+  is hidden on that box only. It filters on the client, so clearing keeps
+  the sort, grouping and URL as they were.
