@@ -76,11 +76,7 @@ export const completionLevel = pgEnum("completion_level", [
   "mastered",
 ]);
 
-/**
- * Version kinds that are official releases. Everything else is a community
- * release: it gets the label band and never inherits the parent work's art.
- * Kept in one place so those two rules cannot drift apart.
- */
+/** Version kinds that are official releases. */
 export const OFFICIAL_VERSION_KINDS = [
   "original",
   "port",
@@ -88,6 +84,18 @@ export const OFFICIAL_VERSION_KINDS = [
   "remake",
   "compilation",
 ] as const;
+
+/**
+ * Kinds that are a release of the work they sit on: officials, and since 0011
+ * romhacks, which are games of their own. Everything else is a version of
+ * somebody else's game, which gets the label band and never shows that game's
+ * art (entry_cards says the same in SQL).
+ */
+export const OWN_WORK_VERSION_KINDS = [...OFFICIAL_VERSION_KINDS, "romhack"] as const;
+
+export function isCommunityVersionKind(kind: string): boolean {
+  return !(OWN_WORK_VERSION_KINDS as readonly string[]).includes(kind);
+}
 
 // ---------------------------------------------------------------- users
 
@@ -159,6 +167,13 @@ export const works = pgTable(
     parentWorkId: uuid("parent_work_id").references((): AnyPgColumn => works.id, {
       onDelete: "cascade",
     }),
+    /**
+     * A romhack is a game of its own (0011); this is the game it was built on.
+     * Not a parent: deleting the original leaves the hack, and only forgets.
+     */
+    basedOnWorkId: uuid("based_on_work_id").references((): AnyPgColumn => works.id, {
+      onDelete: "set null",
+    }),
     /** On the game: show its DLC on the shelf as games of their own, rather than under it. */
     dlcOnShelf: boolean("dlc_on_shelf").notNull().default(false),
     /** When its DLC list was filled in from IGDB; null until the game's page is first opened. */
@@ -185,7 +200,9 @@ export const works = pgTable(
     index("works_source_idx").on(t.source),
     index("works_parent_idx").on(t.parentWorkId),
     index("works_kind_idx").on(t.workKind),
+    index("works_based_on_idx").on(t.basedOnWorkId),
     check("works_no_self_parent", sql`${t.id} <> ${t.parentWorkId}`),
+    check("works_no_self_based_on", sql`${t.id} <> ${t.basedOnWorkId}`),
     check(
       "works_parent_required",
       sql`${t.workKind} <> 'main_game' OR ${t.parentWorkId} IS NULL`,

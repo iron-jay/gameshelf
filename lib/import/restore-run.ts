@@ -2,7 +2,7 @@ import { and, eq, isNull, ne, sql } from "drizzle-orm";
 
 import { downloadCover } from "@/lib/covers";
 import { db } from "@/lib/db";
-import { entries, plays, shelfEntries, versions, works } from "@/lib/db/schema";
+import { entries, platforms, plays, shelfEntries, versions, works } from "@/lib/db/schema";
 import { applySgdbArt, artForPlaced, placeIgdbGame, type Placed } from "@/lib/entries/add";
 import { getGamesByIds } from "@/lib/igdb/games";
 import { slugify, sortTitleFor } from "@/lib/igdb/mapping";
@@ -45,6 +45,15 @@ async function parentFor(tx: Tx, row: RestoreRow): Promise<string | null> {
   return hit?.id ?? null;
 }
 
+/** A romhack's original, by IGDB id, else by title. */
+async function basedOnFor(tx: Tx | typeof db, row: RestoreRow): Promise<string | null> {
+  const { basedOn, basedOnIgdbId } = row.work;
+  const by = basedOnIgdbId ? eq(works.igdbId, basedOnIgdbId) : basedOn ? eq(sql`lower(${works.title})`, basedOn.toLowerCase()) : null;
+  if (!by) return null;
+  const [hit] = await tx.select({ id: works.id }).from(works).where(by).limit(1);
+  return hit?.id ?? null;
+}
+
 /** A game IGDB does not have (or no longer has), from the file's own details. */
 async function insertLocalWork(tx: Tx, row: RestoreRow, userId: string): Promise<string> {
   const { work } = row;
@@ -62,6 +71,7 @@ async function insertLocalWork(tx: Tx, row: RestoreRow, userId: string): Promise
       firstReleaseDate: work.firstReleaseDate,
       dlcOnShelf: work.dlcOnShelf,
       sgdbGameId: work.sgdbGameId,
+      basedOnWorkId: await basedOnFor(tx, row),
       source: "local",
       createdBy: userId,
     })
@@ -70,8 +80,9 @@ async function insertLocalWork(tx: Tx, row: RestoreRow, userId: string): Promise
 }
 
 /**
- * The version the entry is on: one of that game's by the same name and kind,
- * else a new one from the file.
+ * The version the entry is on: one of that game's by the same name, kind,
+ * platform and label, else a new one from the file. A romhack's ways to play
+ * often share its name, so the name alone would fold them into one.
  */
 async function ensureVersion(tx: Tx, row: RestoreRow, workId: string, userId: string): Promise<{ id: string; created: boolean }> {
   const { version } = row;
@@ -83,6 +94,8 @@ async function ensureVersion(tx: Tx, row: RestoreRow, workId: string, userId: st
         eq(versions.workId, workId),
         eq(versions.kind, version.kind),
         eq(sql`lower(${versions.name})`, version.name.toLowerCase()),
+        sql`${versions.versionLabel} is not distinct from ${version.versionLabel}`,
+        sql`(select ${platforms.name} from ${platforms} where ${platforms.id} = ${versions.platformId}) is not distinct from ${version.platform}`,
       ),
     )
     .limit(1);
@@ -107,13 +120,15 @@ async function ensureVersion(tx: Tx, row: RestoreRow, workId: string, userId: st
     })
     .returning({ id: versions.id });
 
-  // What it patches or ports, by name within the game. The file puts these
-  // last, so the base is here by now if it was exported at all.
-  if (version.baseVersion) {
+  // What it patches or ports, by name within the game — for a romhack, its
+  // original. The file puts these last, so the base is here by now if it was
+  // exported at all.
+  const baseWorkId = version.kind === "romhack" ? await basedOnFor(tx, row) : workId;
+  if (version.baseVersion && baseWorkId) {
     const [base] = await tx
       .select({ id: versions.id })
       .from(versions)
-      .where(and(eq(versions.workId, workId), eq(versions.name, version.baseVersion), ne(versions.id, created.id)))
+      .where(and(eq(versions.workId, baseWorkId), eq(versions.name, version.baseVersion), ne(versions.id, created.id)))
       .limit(1);
     if (base) await tx.update(versions).set({ baseVersionId: base.id }).where(eq(versions.id, created.id));
   }
@@ -129,7 +144,7 @@ type Placement = {
   workCreated: boolean;
   versionCreated: boolean;
   game: IgdbGame | null;
-  /** A DLC's game, brought in without an entry as an add would. */
+  /** A DLC's game, or a romhack's original, brought in without an entry as an add would. */
   parent: { placed: Placed; game: IgdbGame } | null;
 };
 
@@ -160,6 +175,11 @@ async function place(tx: Tx, row: RestoreRow, userId: string, games: Map<number,
       })
       .where(eq(works.id, workId));
   } else if (!workId) {
+    // A romhack's original first, so the hack has it to point at.
+    const original = work.basedOnIgdbId ? games.get(work.basedOnIgdbId) : undefined;
+    if (original && !(await basedOnFor(tx, row))) {
+      parent = { game: original, placed: await placeIgdbGame(tx, userId, original, primaryPlatformFor(original), null) };
+    }
     workId = await insertLocalWork(tx, row, userId);
   }
 
@@ -167,6 +187,13 @@ async function place(tx: Tx, row: RestoreRow, userId: string, games: Map<number,
     const parentId = await parentFor(tx, row);
     if (parentId && parentId !== workId) {
       await tx.update(works).set({ parentWorkId: parentId }).where(and(eq(works.id, workId), isNull(works.parentWorkId)));
+    }
+  }
+
+  if (!workCreated && (work.basedOn || work.basedOnIgdbId)) {
+    const basedOnId = await basedOnFor(tx, row);
+    if (basedOnId && basedOnId !== workId) {
+      await tx.update(works).set({ basedOnWorkId: basedOnId }).where(and(eq(works.id, workId), isNull(works.basedOnWorkId)));
     }
   }
 
@@ -279,6 +306,7 @@ export async function restoreRows(userId: string, rows: RestoreRow[]): Promise<R
       wanted.push(row.work.igdbId);
       if (row.work.parentIgdbId) wanted.push(row.work.parentIgdbId);
     }
+    if (row.work.basedOnIgdbId && !(await basedOnFor(db, row))) wanted.push(row.work.basedOnIgdbId);
   }
 
   let games = new Map<number, IgdbGame>();
@@ -295,7 +323,8 @@ export async function restoreRows(userId: string, rows: RestoreRow[]): Promise<R
   const outcomes: RestoreOutcome[] = [];
   for (const row of rows) {
     const base = { line: row.line, title: row.work.title };
-    if (igdbFailure && row.work.igdbId && wanted.includes(row.work.igdbId)) {
+    const needs = row.work.igdbId ?? row.work.basedOnIgdbId;
+    if (igdbFailure && needs && wanted.includes(needs)) {
       outcomes.push({ ...base, result: "failed", message: igdbFailure });
       continue;
     }

@@ -6,9 +6,10 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { platforms, versions, works } from "@/lib/db/schema";
-import { OFFICIAL_VERSION_KINDS } from "@/lib/db/schema";
+import { isCommunityVersionKind } from "@/lib/db/schema";
 import { canHaveDlc, dlcOf, parentIgdbIdOf } from "@/lib/dlc";
 import { fillDlcOnce } from "@/lib/dlc-fill";
+import { basedOnOf, isRomhackWork, romhacksOf } from "@/lib/romhacks";
 import { seriesHref, seriesInUse } from "@/lib/series";
 
 import { BackToShelf } from "../../back-to-shelf";
@@ -19,9 +20,7 @@ import { workTitle } from "../../page-titles";
 
 export const dynamic = "force-dynamic";
 
-function isCommunity(kind: string): boolean {
-  return !(OFFICIAL_VERSION_KINDS as readonly string[]).includes(kind);
-}
+const isCommunity = isCommunityVersionKind;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   return workTitle((await params).slug);
@@ -52,10 +51,18 @@ export default async function WorkPage({ params }: { params: Promise<{ slug: str
     .where(eq(versions.workId, work.id))
     .orderBy(asc(versions.createdAt));
 
+  // A romhack is a game of its own, made from the one it was built on; the
+  // original lists the romhacks made from it.
+  const romhack = await isRomhackWork(db, work.id);
+  const basedOn = await basedOnOf(work.basedOnWorkId);
+  const romhacks = await romhacksOf(work.id);
+
   // Child works sit beneath the version list, never mixed into it: an expansion
   // is not a version, it is a work of its own with its own rating and review.
-  if (canHaveDlc(work.workKind)) await fillDlcOnce(user.id, work.id);
-  const dlc = canHaveDlc(work.workKind) ? await dlcOf(user.id, work.id) : null;
+  // A romhack has no DLC of its own to list.
+  const listsDlc = canHaveDlc(work.workKind) && !romhack;
+  if (listsDlc) await fillDlcOnce(user.id, work.id);
+  const dlc = listsDlc ? await dlcOf(user.id, work.id) : null;
   const [parent] = work.parentWorkId
     ? await db.select({ slug: works.slug, title: works.title }).from(works).where(eq(works.id, work.parentWorkId))
     : [];
@@ -80,10 +87,18 @@ export default async function WorkPage({ params }: { params: Promise<{ slug: str
               parentIgdbId={parentIgdbIdOf(work.workKind, work.igdbPayload)}
               slug={work.slug}
             />
+            {basedOn ? (
+              <p className="mb-1 font-narrow text-ink-dim">
+                Romhack of{" "}
+                <Link href={`/work/${basedOn.slug}`} className="underline underline-offset-4 hover:text-ink">
+                  {basedOn.title}
+                </Link>
+              </p>
+            ) : null}
             <h1 className="font-display text-[26px] break-words sm:text-5xl">{work.title}</h1>
             <p className="mt-2 font-narrow text-ink-dim">
               {[
-                work.workKind.replace(/_/g, " "),
+                romhack ? "romhack" : work.workKind.replace(/_/g, " "),
                 work.firstReleaseDate?.slice(0, 4),
                 work.source === "local" ? "local" : null,
               ]
@@ -178,11 +193,40 @@ export default async function WorkPage({ params }: { params: Promise<{ slug: str
 
         {dlc ? <DlcSection game={work} items={dlc} /> : null}
 
+        {romhacks.length > 0 ? (
+          <section>
+            <div className="flex items-baseline gap-3">
+              <h2 className="font-display text-xl">Romhacks</h2>
+              <span className="text-ink-dim">{romhacks.length}</span>
+            </div>
+            <ul className="shelf-strip">
+              {romhacks.map((hack) => (
+                <li key={hack.slug} className="w-28">
+                  <Link href={`/work/${hack.slug}`} className="relative block aspect-[3/4] bg-panel">
+                    <span className="sr-only">{hack.title}</span>
+                    {hack.coverUrl ? (
+                      <Image src={hack.coverUrl} alt="" fill sizes="112px" className="object-cover" unoptimized />
+                    ) : (
+                      <span className="block p-2 font-display text-sm">{hack.title}</span>
+                    )}
+                  </Link>
+                  <p className="mt-1 truncate font-narrow text-sm">{hack.title}</p>
+                  {hack.year ? <p className="font-narrow text-xs text-ink-dim">{hack.year}</p> : null}
+                </li>
+              ))}
+            </ul>
+            <div className="plank" />
+          </section>
+        ) : null}
+
         <SeriesForm workSlug={work.slug} current={work.series} names={allSeries} />
 
         <p className="flex flex-wrap gap-x-5 gap-y-2 font-narrow">
           <Link href={`/work/${work.slug}/art`} className="text-ink-dim underline underline-offset-4 hover:text-ink">
             Change art
+          </Link>
+          <Link href={`/work/${work.slug}/edit`} className="text-ink-dim underline underline-offset-4 hover:text-ink">
+            Edit details
           </Link>
           <Link
             href={`/work/${work.slug}/delete`}

@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq, isNotNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { requireUser } from "@/lib/auth";
@@ -22,7 +22,10 @@ import { isCommunityKind, isFormKind, OTHER_PLATFORM } from "@/lib/versions/type
 function isVersionKind(value: string): value is (typeof versionKind.enumValues)[number] {
   return (versionKind.enumValues as readonly string[]).includes(value);
 }
-import { ensureWorkFromIgdb } from "@/lib/works/ensure";
+import { artForPlaced, placeIgdbGame, type Placed } from "@/lib/entries/add";
+import { createRomhackWork, isRomhackWork } from "@/lib/romhacks";
+import { isUuid } from "@/lib/uuid";
+import { primaryPlatformFor } from "@/lib/works/ensure";
 
 /**
  * Fired on blur of the name field while the form is still open. Nothing is
@@ -126,11 +129,27 @@ export async function createVersion(
 
   const platformName = platformFrom(formData);
 
+  const romhack = kind === "romhack";
+  const releaseDate = optional(formData, "releaseDate");
+
   const outcome = await db.transaction(async (tx) => {
-    const platformId = await resolvePlatform(tx, platformName);
+    let platformId = await resolvePlatform(tx, platformName);
 
     let workId: string;
     let workSlug: string;
+    // Where art goes: the work when the work is the thing (homebrew, a
+    // romhack's own game), else the version.
+    let artOnWork = homebrew;
+    // The original's work, for what a romhack patches.
+    let baseWorkId: string | null = null;
+    let placedBase: { placed: Placed; game: NonNullable<typeof game> } | null = null;
+
+    if (!homebrew && !knownWorkId) {
+      // The original arrives with its own release and no entry, as a DLC's
+      // game does: it is the game, now here, and you did not shelve it.
+      const placed = await placeIgdbGame(tx, user.id, game!, primaryPlatformFor(game!), null);
+      placedBase = { placed, game: game! };
+    }
 
     if (homebrew) {
       // Homebrew modifies nothing, so it is a work in its own right rather than
@@ -149,19 +168,55 @@ export async function createVersion(
         .returning({ id: works.id, slug: works.slug });
       workId = created.id;
       workSlug = created.slug;
-    } else if (knownWorkId) {
-      const [row] = await tx
-        .select({ id: works.id, slug: works.slug })
-        .from(works)
-        .where(eq(works.id, knownWorkId));
-      if (!row) throw new Error("That work no longer exists.");
-      workId = row.id;
-      workSlug = row.slug;
     } else {
-      const ensured = await ensureWorkFromIgdb(tx, game!, user.id);
-      const [row] = await tx.select({ slug: works.slug }).from(works).where(eq(works.id, ensured.id));
-      workId = ensured.id;
-      workSlug = row.slug;
+      const knownId = knownWorkId ?? placedBase!.placed.workId;
+      const [known] = await tx
+        .select({ id: works.id, slug: works.slug, basedOnWorkId: works.basedOnWorkId })
+        .from(works)
+        .where(eq(works.id, knownId));
+      if (!known) throw new Error("That work no longer exists.");
+
+      if (romhack && (await isRomhackWork(tx, known.id))) {
+        // Another way to play a romhack already here: Door B on its own page.
+        workId = known.id;
+        workSlug = known.slug;
+        baseWorkId = known.basedOnWorkId;
+        artOnWork = false;
+      } else if (romhack) {
+        // A romhack is a game of its own (2026-10-20), started from the
+        // original's details and edited apart from it afterwards.
+        baseWorkId = known.id;
+        const created = await createRomhackWork(tx, { name, baseWorkId, releaseDate, userId: user.id });
+        workId = created.id;
+        workSlug = created.slug;
+        artOnWork = true;
+      } else {
+        workId = known.id;
+        workSlug = known.slug;
+        baseWorkId = known.id;
+      }
+    }
+
+    // Only a release of the original can be what this patches.
+    let baseVersionId: string | null = null;
+    const requestedBase = optional(formData, "baseVersionId");
+    if (requestedBase && baseWorkId && isUuid(requestedBase)) {
+      const [base] = await tx
+        .select({ id: versions.id, platformId: versions.platformId })
+        .from(versions)
+        .where(and(eq(versions.id, requestedBase), eq(versions.workId, baseWorkId)));
+      baseVersionId = base?.id ?? null;
+      // A romhack plays where what it patches does, unless the form says otherwise.
+      if (romhack && platformId === null) platformId = base?.platformId ?? null;
+    }
+    if (romhack && platformId === null && baseWorkId) {
+      const [first] = await tx
+        .select({ platformId: versions.platformId })
+        .from(versions)
+        .where(and(eq(versions.workId, baseWorkId), isNotNull(versions.platformId)))
+        .orderBy(asc(versions.createdAt))
+        .limit(1);
+      platformId = first?.platformId ?? null;
     }
 
     const [version] = await tx
@@ -171,10 +226,10 @@ export async function createVersion(
         name: homebrew ? "Original release" : name,
         kind: homebrew ? "original" : isCommunityKind(kind) ? kind : "other",
         platformId,
-        baseVersionId: optional(formData, "baseVersionId"),
+        baseVersionId,
         author: optional(formData, "author"),
         versionLabel: optional(formData, "versionLabel"),
-        releaseDate: optional(formData, "releaseDate"),
+        releaseDate,
         url: optional(formData, "url"),
         notes: optional(formData, "notes"),
         source: "local",
@@ -187,16 +242,20 @@ export async function createVersion(
       .values({ userId: user.id, versionId: version.id, status: "backlog" })
       .onConflictDoNothing();
 
-    return { workId, workSlug, versionId: version.id, homebrew };
+    return { workId, workSlug, versionId: version.id, artOnWork, placedBase };
   });
+
+  if (outcome.placedBase) {
+    await artForPlaced(outcome.placedBase.placed, outcome.placedBase.game).catch(() => undefined);
+  }
 
   // Art is downloaded after the transaction, for the same reason as covers on
   // add-to-shelf: failing to fetch a picture must not undo a correct row.
   if (artUrl) {
-    // Homebrew art belongs to the work, because the work is the thing. A
-    // community version's art belongs to the version — it must never end up on
-    // the parent work, where it would become the original's cover.
-    const target = outcome.homebrew ? outcome.workId : outcome.versionId;
+    // Art belongs to the work when the work is the thing. A community
+    // version's art belongs to the version — it must never end up on the
+    // original's work, where it would become the original's cover.
+    const target = outcome.artOnWork ? outcome.workId : outcome.versionId;
     const filename = await downloadCover(artUrl, target);
 
     if (filename) {
@@ -209,7 +268,7 @@ export async function createVersion(
         sgdbGameId: artSgdbGameId,
       };
 
-      if (outcome.homebrew) {
+      if (outcome.artOnWork) {
         await db.update(works).set(patch).where(eq(works.id, outcome.workId));
       } else {
         await db.update(versions).set(patch).where(eq(versions.id, outcome.versionId));
@@ -247,22 +306,30 @@ export async function updateVersion(
   }
 
   const [existing] = await db
-    .select({ id: versions.id, workId: versions.workId })
+    .select({ id: versions.id, workId: versions.workId, kind: versions.kind, basedOnWorkId: works.basedOnWorkId })
     .from(versions)
+    .innerJoin(works, eq(works.id, versions.workId))
     .where(eq(versions.id, versionId));
 
   if (!existing) return { ok: false, message: "That version no longer exists." };
 
+  // A romhack is a game of its own, so being one is not an edit: turning a
+  // translation into one, or one into a port, would be a different game.
+  if ((existing.kind === "romhack") !== (kind === "romhack")) {
+    return { ok: false, message: "A romhack is a game of its own, so it cannot become another kind or be made from one." };
+  }
+
   const requestedBase = optional(formData, "baseVersionId");
   let baseVersionId: string | null = null;
 
-  if (requestedBase && requestedBase !== versionId) {
-    // Only a sibling on the same work, and never itself — the schema forbids
-    // the second and the first would be nonsense.
+  // A romhack patches a release of its original; anything else, a sibling.
+  const baseWorkId = existing.kind === "romhack" ? existing.basedOnWorkId : existing.workId;
+  if (requestedBase && requestedBase !== versionId && baseWorkId && isUuid(requestedBase)) {
+    // Never itself — the schema forbids it — and never another game's.
     const [sibling] = await db
       .select({ id: versions.id })
       .from(versions)
-      .where(and(eq(versions.id, requestedBase), eq(versions.workId, existing.workId)));
+      .where(and(eq(versions.id, requestedBase), eq(versions.workId, baseWorkId)));
     baseVersionId = sibling?.id ?? null;
   }
 

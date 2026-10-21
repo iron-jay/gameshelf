@@ -35,10 +35,12 @@ The core split, in plain terms:
 work        Ocarina of Time                    (usually an IGDB row)
  └ version  N64 (NTSC)              original   (IGDB)
  └ version  Ship of Harkinian       decomp_port(local)
- └ version  Master of Time          romhack    (local, base = N64 NTSC)
      └ entry   Jay's shelf row: status, rating, review
          └ play   Mar 2026, 41h, credits
          └ play   Aug 2026, 12h, dropped
+
+work        Master of Time    based on Ocarina of Time   (local)
+ └ version  Master of Time          romhack    (base = N64 NTSC)
 ```
 
 ### Two hierarchies, and they are not the same thing
@@ -85,6 +87,18 @@ Consequences to honour in the UI:
   which puts its DLC back on the shelf as games of their own. There is no
   global toggle. The rule is `lib/dlc.ts`; the API applies it with
   `GET /shelf?dlc=fold`.
+- **A romhack is a game of its own** (Jay, 2026-10-20). Not a version on
+  its original's work but a local work with `based_on_work_id` pointing at
+  the original (`ON DELETE SET NULL`: deleting the original leaves the hack).
+  Created from the original's series, summary and year (the hack's own date
+  if given), then edited apart from it on `/work/{slug}/edit`. Its versions,
+  kind `romhack`, are its ways to play, each `base_version_id` pointing at
+  the release it patches on the original's work. It shows its own art and
+  title like an official release (no label band), has no DLC, and the
+  original's page lists "Romhacks". Door A and Door B both make one; Door B
+  on a romhack's own page adds another way to play. Migration `0011` moved
+  every existing romhack, and a restore of an older export does the same.
+  Translations, decomp ports, recomps and mods are still versions.
 - Live-service base games are never "finished". Leave Destiny 2 sitting in
   `playing` indefinitely; the expansions carry the completions. No special
   status enum for this.
@@ -368,7 +382,8 @@ generic AI product.
 - **Rating sticker**: a small cream tag, rotated, on a rated cover. The rating
   control is ten bars climbing left to right, filled up to the rating.
 - **The label band**: community versions still carry a solid band across the
-  lower cover with the version name and author. Official releases get nothing.
+  lower cover with the version name and author. Official releases and
+  romhacks (games of their own since 2026-10-20) get nothing.
 
 ### Layout
 

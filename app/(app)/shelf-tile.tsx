@@ -48,10 +48,11 @@ export function ShelfTile({
   // An official version is named after its platform ("N64"), which the platform
   // line then repeated in full ("Nintendo 64"). Prefer the full name and drop
   // the duplicate, falling back to the version name for an official release
-  // that has no platform recorded.
+  // that has no platform recorded — unless it only repeats the title, as a
+  // romhack's own release does.
   const subtitle = card.isCommunityVersion
     ? card.workTitle
-    : (card.platformName ?? card.versionName);
+    : (card.platformName ?? (card.versionName === card.workTitle ? "" : card.versionName));
 
   // The band carries the author, and the overlay covers the band, so without
   // this it disappears exactly when you go looking for it.
