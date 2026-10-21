@@ -2841,3 +2841,25 @@ Checked locally against IGDB and SteamGridDB: an edited Hollow Knight with
 SteamGridDB art on Playing; a romhack of an Ocarina result with an edited
 summary on Wishlist; homebrew with a series; the API with edited details.
 tsc, lint and `check:actions` pass.
+
+## 2026-10-21 — quick shelf moves on the main page
+
+Jay: entries on the main page, Now playing and the wishlist and backlog
+especially, should open a quick actions panel, so wishlist to playing or
+playing to dropped is not a trip to the game's page and back.
+
+- **A cover on the main page** (the band or any strip) opens a panel
+  (`app/(app)/quick-shelf.tsx`): the cover and title, the shelf as the
+  version page's segmented control, "Open the game" and Close. Choosing a
+  shelf saves it through `setStatus` and closes; the cover moves strip.
+  Played turns the panel into Finished it's rating step (`RatingAnswers`,
+  now exported from `finish-prompt.tsx`) and finishes through `markDone`
+  with credits, so it records a play as Finished it does. Escape or a
+  press on the dim room around it closes it.
+- The band's title is still a link straight to the game; Finished it and
+  Drop stay beside it. The wall's covers open the game as before (`quick`
+  on `ShelfTile` is only set on the overview).
+
+Checked locally at desktop and phone width: Hades wishlist to playing,
+Hollow Knight playing to dropped from the band, Celeste to played rated 8
+with a play recorded. tsc, lint and `check:actions` pass.

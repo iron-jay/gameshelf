@@ -422,6 +422,11 @@ generic AI product.
   ten on the way, which can be skipped (Jay, 2026-10-20), and Recently played
   runs newest finish first. It is an overview: the band and every strip show
   ten at most (Jay, 2026-10-20), with "See all N" for the rest.
+  A cover here (band or strip) opens a quick shelf panel rather than the
+  game (Jay, 2026-10-21): the shelf as a segmented control, Played going
+  by way of the rating as Finished it does, and "Open the game". The band's
+  title still opens the game directly. `quick-shelf.tsx`; the wall's covers
+  open the game as before.
 - **The wall** (`/?view=all`, or any shelf, platform or tag filter): every
   cover in a grid whose columns come from its own width, a plank under every
   row. Filters sit in one row that scrolls sideways on a phone. **All

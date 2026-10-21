@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { markDone, setStatus } from "./version/[id]/actions";
 import { FinishPrompt } from "./finish-prompt";
+import { QuickShelf } from "./quick-shelf";
 import { type ShelfCard } from "./shelf-tile";
 
 /**
@@ -43,9 +44,13 @@ export function NowPlaying({ cards, count, seeAll }: { cards: ShelfCard[]; count
 
             return (
               <li key={card.entryId} className="flex gap-4">
-                <Link
-                  href={`/version/${card.versionId}`}
-                  className="relative aspect-[3/4] w-20 shrink-0 bg-panel sm:w-32"
+                {/* The cover opens the quick shelf panel, as on the strips below;
+                    the title is still the way straight to the game. */}
+                <QuickShelf
+                  card={card}
+                  title={title}
+                  subtitle={subtitle}
+                  className="relative aspect-[3/4] w-20 shrink-0 bg-panel text-left sm:w-32"
                 >
                   <span className="sr-only">{title}</span>
                   {card.coverUrl ? (
@@ -58,7 +63,7 @@ export function NowPlaying({ cards, count, seeAll }: { cards: ShelfCard[]; count
                       {card.versionAuthor ?? card.versionName}
                     </span>
                   ) : null}
-                </Link>
+                </QuickShelf>
 
                 <div className="flex min-w-0 flex-col gap-1">
                   <Link href={`/version/${card.versionId}`} className="text-lg leading-tight font-bold [font-stretch:110%] hover:underline">
