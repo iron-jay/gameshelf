@@ -5,10 +5,9 @@ import { requireUser } from "@/lib/auth";
 import { searchGames } from "@/lib/igdb/search";
 import { IgdbError, IgdbNotConfiguredError } from "@/lib/igdb/types";
 import { igdbResultFor, searchLocalWorks, type IgdbResult } from "@/lib/search";
-import { STATUS_ORDER } from "@/lib/status";
-
-import { AddButton } from "./add-button";
 import type { Metadata } from "next";
+
+import { addHref } from "../add/igdb/[id]/href";
 
 export const dynamic = "force-dynamic";
 
@@ -142,28 +141,24 @@ export default async function SearchPage({
                 )}
                 {r.year ? <span className="ml-2 text-ink-dim">{r.year}</span> : null}
               </p>
-              {/* Once the picker is listing the platforms, repeating a
-                  truncated copy of them here is just noise. */}
               <p className="font-narrow text-ink-dim">
                 {r.kind === "local"
                   ? "On your server"
                   : [
                       r.workKind === "main_game" ? null : r.workKind.replace(/_/g, " "),
-                      r.platformOptions.length > 1 ? "IGDB" : r.platforms || "IGDB",
+                      r.platforms || "IGDB",
                     ]
                       .filter(Boolean)
                       .join(" · ")}
               </p>
             </div>
 
+            {/* Adding opens the game's details to look over first (Jay,
+                2026-10-21); the platform and shelf are asked there too. */}
             {r.kind === "igdb" ? (
-              <AddButton
-                igdbId={r.id}
-                platforms={r.platformOptions}
-                defaultPlatformId={r.defaultPlatformId}
-                statuses={STATUS_ORDER}
-                defaultStatus={r.defaultStatus}
-              />
+              <Link href={addHref(r.id, { back: `/search?q=${encodeURIComponent(term)}` })} className="btn btn-primary ml-auto">
+                Add
+              </Link>
             ) : null}
           </li>
         ))}

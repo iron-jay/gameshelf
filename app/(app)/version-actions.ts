@@ -8,7 +8,7 @@ import { downloadCover } from "@/lib/covers";
 import { db } from "@/lib/db";
 import { entries, versionKind, versions, works } from "@/lib/db/schema";
 import { getGameById } from "@/lib/igdb/games";
-import { slugify } from "@/lib/igdb/mapping";
+import { seriesFor, slugify, sortTitleFor } from "@/lib/igdb/mapping";
 import { searchGames } from "@/lib/igdb/search";
 import { lookupArt, SgdbNotConfiguredError } from "@/lib/sgdb";
 import type {
@@ -24,6 +24,8 @@ function isVersionKind(value: string): value is (typeof versionKind.enumValues)[
 }
 import { artForPlaced, placeIgdbGame, type Placed } from "@/lib/entries/add";
 import { createRomhackWork, isRomhackWork } from "@/lib/romhacks";
+import { canonicalSeries, seriesInUse } from "@/lib/series";
+import { isStatus } from "@/lib/status";
 import { isUuid } from "@/lib/uuid";
 import { primaryPlatformFor } from "@/lib/works/ensure";
 
@@ -72,6 +74,8 @@ export async function searchBaseGames(term: string): Promise<BaseGameOption[]> {
       year: game.first_release_date
         ? new Date(game.first_release_date * 1000).getUTCFullYear()
         : null,
+      series: seriesFor(game),
+      summary: game.summary ?? null,
     }));
   } catch {
     return [];
@@ -131,6 +135,18 @@ export async function createVersion(
 
   const romhack = kind === "romhack";
   const releaseDate = optional(formData, "releaseDate");
+  const asked = formData.get("status");
+  const status = isStatus(asked) ? asked : "backlog";
+
+  // A new game's own details, as the form showed them (2026-10-21): sent
+  // only when this makes a game, a romhack or homebrew. Absent, a romhack
+  // takes its original's; a box emptied on the form stays empty.
+  const details = formData.has("summary")
+    ? {
+        summary: optional(formData, "summary"),
+        series: canonicalSeries(optional(formData, "series") ?? "", await seriesInUse()) || null,
+      }
+    : undefined;
 
   const outcome = await db.transaction(async (tx) => {
     let platformId = await resolvePlatform(tx, platformName);
@@ -161,6 +177,10 @@ export async function createVersion(
         .values({
           slug: clash ? `${base}-${Date.now().toString(36)}` : base,
           title: name,
+          sortTitle: sortTitleFor(name),
+          series: details?.series ?? null,
+          summary: details?.summary ?? null,
+          firstReleaseDate: releaseDate,
           workKind: "main_game",
           source: "local",
           createdBy: user.id,
@@ -186,7 +206,7 @@ export async function createVersion(
         // A romhack is a game of its own (2026-10-20), started from the
         // original's details and edited apart from it afterwards.
         baseWorkId = known.id;
-        const created = await createRomhackWork(tx, { name, baseWorkId, releaseDate, userId: user.id });
+        const created = await createRomhackWork(tx, { name, baseWorkId, releaseDate, userId: user.id, details });
         workId = created.id;
         workSlug = created.slug;
         artOnWork = true;
@@ -239,7 +259,7 @@ export async function createVersion(
 
     await tx
       .insert(entries)
-      .values({ userId: user.id, versionId: version.id, status: "backlog" })
+      .values({ userId: user.id, versionId: version.id, status })
       .onConflictDoNothing();
 
     return { workId, workSlug, versionId: version.id, artOnWork, placedBase };

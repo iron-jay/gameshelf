@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { platforms, works } from "@/lib/db/schema";
 import type { IgdbGame, IgdbPlatform } from "@/lib/igdb/types";
 import { platformNameFor, primaryPlatformFor, releaseDateFor, seriesFor, slugify, sortTitleFor, workKindFor } from "@/lib/igdb/mapping";
+import type { GameDraft } from "@/lib/entries/draft";
 import { canonicalSeries } from "@/lib/series";
 
 export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -42,9 +43,15 @@ export async function upsertPlatform(tx: Tx, platform: IgdbPlatform | undefined)
 /**
  * Find or create the work for an IGDB game. Shared by add-to-shelf and by the
  * version form, which needs the base game to exist before it can hang a romhack
- * off it.
+ * off it. A draft is the add form's edited details, used only if this creates
+ * the work: one already here keeps what it has.
  */
-export async function ensureWorkFromIgdb(tx: Tx, game: IgdbGame, userId: string): Promise<EnsuredWork> {
+export async function ensureWorkFromIgdb(
+  tx: Tx,
+  game: IgdbGame,
+  userId: string,
+  draft?: GameDraft,
+): Promise<EnsuredWork> {
   const [existing] = await tx
     .select({ id: works.id, coverUrl: works.coverUrl })
     .from(works)
@@ -80,7 +87,7 @@ export async function ensureWorkFromIgdb(tx: Tx, game: IgdbGame, userId: string)
     .from(works)
     .where(isNotNull(works.series));
   const series = canonicalSeries(
-    seriesFor(game) ?? "",
+    (draft ? draft.series : seriesFor(game)) ?? "",
     known.map((row) => row.series).filter((name): name is string => Boolean(name)),
   );
 
@@ -91,13 +98,11 @@ export async function ensureWorkFromIgdb(tx: Tx, game: IgdbGame, userId: string)
       // IGDB slugs are unique upstream, but a local work may already hold this
       // one. The IGDB id is the tiebreak that cannot collide.
       slug: clash ? `${base}-${game.id}` : base,
-      title: game.name,
-      // Matched against the series already here, so IGDB's "Destiny" joins a
-      // hand-typed "destiny" rather than standing beside it in the grouping.
+      title: draft?.title ?? game.name,
       series: series || null,
-      sortTitle: sortTitleFor(game.name),
-      summary: game.summary ?? null,
-      firstReleaseDate: releaseDateFor(game),
+      sortTitle: sortTitleFor(draft?.title ?? game.name),
+      summary: draft ? draft.summary : (game.summary ?? null),
+      firstReleaseDate: draft ? draft.releaseDate : releaseDateFor(game),
       workKind: kind,
       parentWorkId,
       igdbPayload: game,

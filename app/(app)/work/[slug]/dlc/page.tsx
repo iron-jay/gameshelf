@@ -13,7 +13,7 @@ import { IgdbError, IgdbNotConfiguredError, type IgdbGame } from "@/lib/igdb/typ
 import { igdbResultFor } from "@/lib/search";
 import { STATUS_LABELS, STATUS_ORDER } from "@/lib/status";
 
-import { AddButton } from "../../../search/add-button";
+import { addHref } from "../../../add/igdb/[id]/href";
 import { addDlcByHand } from "../dlc-actions";
 import type { Metadata } from "next";
 import { workTitle } from "../../../page-titles";
@@ -153,17 +153,17 @@ export default async function AddDlcPage({ params }: { params: Promise<{ slug: s
                         : "Here, not on your shelf"}
                     </Link>
                   ) : (
-                    <AddButton
-                      igdbId={result.id}
-                      platforms={result.platformOptions}
-                      defaultPlatformId={
-                        result.platformOptions.some((option) => option.id === gamePlatform?.igdbId)
+                    <Link
+                      href={addHref(result.id, {
+                        back: `/work/${game.slug}/dlc`,
+                        platformId: result.platformOptions.some((option) => option.id === gamePlatform?.igdbId)
                           ? (gamePlatform?.igdbId ?? null)
-                          : result.defaultPlatformId
-                      }
-                      statuses={STATUS_ORDER}
-                      defaultStatus={result.defaultStatus}
-                    />
+                          : null,
+                      })}
+                      className="btn btn-primary"
+                    >
+                      Add
+                    </Link>
                   )}
                 </li>
               );

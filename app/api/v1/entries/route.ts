@@ -3,6 +3,7 @@ import { entryJson } from "@/lib/api/cards";
 import { refreshEntryPages } from "@/lib/api/refresh";
 import { entryIdFor, shelveVersion } from "@/lib/entries";
 import { addFromIgdb } from "@/lib/entries/add";
+import { readGameDraft, type GameDraft } from "@/lib/entries/draft";
 import { entryDetail } from "@/lib/entries/read";
 import { IgdbError, IgdbNotConfiguredError } from "@/lib/igdb/types";
 import { isStatus, type Status } from "@/lib/status";
@@ -13,8 +14,11 @@ export const dynamic = "force-dynamic";
 /**
  * Puts something on your shelf, from either half of search:
  *
- * - `{ igdbId, platformId?, shelf? }` for an IGDB result, which creates the
- *   work and its original version the way the web's search does.
+ * - `{ igdbId, platformId?, shelf?, details? }` for an IGDB result, which
+ *   creates the work and its original version the way the web's search does.
+ *   `details` (`{ title, releaseDate, summary, series }`, as
+ *   `GET /catalogue/igdb/{id}` gives them) are what a game not here yet is
+ *   saved with; a game already here ignores them.
  * - `{ versionId, shelf? }` for anything already on the server, romhacks and
  *   ports included.
  *
@@ -55,9 +59,20 @@ export const POST = withUser(async (request, { user }) => {
     }
     const platformId = Number.isInteger(body.platformId) ? (body.platformId as number) : null;
 
+    let draft: GameDraft | undefined;
+    if (body.details !== undefined && body.details !== null) {
+      if (typeof body.details !== "object" || Array.isArray(body.details)) {
+        throw new ApiError("invalid", "details must be an object.", { fields: { details: "Invalid." } });
+      }
+      const details = body.details as Record<string, unknown>;
+      const read = readGameDraft((field) => details[field]);
+      if (!read.ok) throw new ApiError("invalid", read.message, { fields: { details: read.message } });
+      draft = read.draft;
+    }
+
     let result;
     try {
-      result = await addFromIgdb(user.id, { igdbId: body.igdbId as number, platformId, status: shelf });
+      result = await addFromIgdb(user.id, { igdbId: body.igdbId as number, platformId, status: shelf, draft });
     } catch (err) {
       if (err instanceof IgdbNotConfiguredError) {
         throw new ApiError("upstream", "This server has no IGDB credentials.");

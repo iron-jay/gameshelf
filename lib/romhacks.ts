@@ -39,7 +39,14 @@ export async function isRomhackWork(tx: Reader, workId: string): Promise<boolean
 /** A new romhack's own game, made from what the original has. */
 export async function createRomhackWork(
   tx: Tx,
-  input: { name: string; baseWorkId: string | null; releaseDate: string | null; userId: string },
+  input: {
+    name: string;
+    baseWorkId: string | null;
+    releaseDate: string | null;
+    userId: string;
+    /** The form's own series and summary, edited from the original's before adding. */
+    details?: { series: string | null; summary: string | null };
+  },
 ): Promise<{ id: string; slug: string }> {
   const [base] = input.baseWorkId
     ? await tx
@@ -57,9 +64,9 @@ export async function createRomhackWork(
       title: input.name,
       workKind: "main_game",
       basedOnWorkId: base ? input.baseWorkId : null,
-      series: base?.series ?? null,
+      series: input.details ? input.details.series : (base?.series ?? null),
       sortTitle: sortTitleFor(input.name),
-      summary: base?.summary ?? null,
+      summary: input.details ? input.details.summary : (base?.summary ?? null),
       firstReleaseDate: input.releaseDate ?? base?.firstReleaseDate ?? null,
       source: "local",
       createdBy: input.userId,

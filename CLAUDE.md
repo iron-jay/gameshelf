@@ -304,6 +304,17 @@ Door B — "Add version" on an existing work page
 Door B is Door A with the base game pre-filled. Build the form once and pass
 the known fields in. Do not write two components.
 
+**Details are looked over before anything is saved** (Jay, 2026-10-21). An
+IGDB result's Add (search, and Add DLC's list) opens `/add/igdb/{id}`: IGDB's
+title, release date, summary and series to edit, its cover or SteamGridDB
+art picked by hand, the platform and the shelf, then one Add. Only a game not
+here yet takes the details (`GameDraft`, `lib/entries/draft.ts`); one already
+here keeps its own, edited on its page. The romhack and homebrew form shows
+the new game's series and summary, filled from the original, and every add
+form asks the shelf. The one-press shelf buttons (DLC rows, Not on your
+shelf) shelve what is here already and stay as they are. The phone reads
+`GET /catalogue/igdb/{id}` and sends `details` with `POST /entries`.
+
 **Community version form** (romhack, translation, decomp_port, recomp, mod):
 
 | Field | Notes |
