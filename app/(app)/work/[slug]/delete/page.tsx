@@ -18,9 +18,17 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return workTitle((await params).slug, "Delete");
 }
 
-export default async function DeleteWorkPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function DeleteWorkPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ from?: string }>;
+}) {
   await requireUser();
   const { slug } = await params;
+  const fromOffShelf = (await searchParams).from === "off-shelf";
+  const back = fromOffShelf ? "/off-shelf" : `/work/${slug}`;
 
   const [work] = await db
     .select({ id: works.id, title: works.title })
@@ -45,13 +53,14 @@ export default async function DeleteWorkPage({ params }: { params: Promise<{ slu
 
       <form action={deleteWork} className="mt-6 flex items-center gap-4">
         <input type="hidden" name="workId" value={work.id} />
+        {fromOffShelf ? <input type="hidden" name="from" value="off-shelf" /> : null}
         <button
           type="submit"
           className="btn btn-danger"
         >
           Delete this game and everything on it
         </button>
-        <Link href={`/work/${slug}`} className="font-narrow text-ink-dim underline hover:text-ink">
+        <Link href={back} className="font-narrow text-ink-dim underline hover:text-ink">
           Keep it
         </Link>
       </form>

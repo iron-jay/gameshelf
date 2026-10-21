@@ -73,10 +73,12 @@ async function removeVersion(versionId: string): Promise<void> {
 
 export async function deleteWork(formData: FormData): Promise<void> {
   await requireUser();
-  await removeWork(String(formData.get("workId") ?? ""));
+  // Deleting from the list of games not on your shelf goes back to the list.
+  const back = formData.get("from") === "off-shelf" ? "/off-shelf" : "/";
+  await removeWork(String(formData.get("workId") ?? ""), back);
 }
 
-async function removeWork(workId: string): Promise<void> {
+async function removeWork(workId: string, back = "/"): Promise<void> {
   const removal = await inspectWorkRemoval(workId);
   if (!removal) redirect("/");
 
@@ -84,5 +86,6 @@ async function removeWork(workId: string): Promise<void> {
   await removeCoverFiles(removal.coverFiles);
 
   revalidatePath("/");
-  redirect("/");
+  revalidatePath("/off-shelf");
+  redirect(back);
 }

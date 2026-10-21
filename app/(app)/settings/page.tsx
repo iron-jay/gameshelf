@@ -7,6 +7,7 @@ import { listCoverFiles } from "@/lib/covers";
 import { db } from "@/lib/db";
 import { entries, igdbTokens, works } from "@/lib/db/schema";
 
+import { offShelfGames } from "@/lib/off-shelf";
 import { orphanedCoverFiles } from "@/lib/works/removal";
 
 import { revokeDevice } from "./actions";
@@ -48,6 +49,7 @@ export default async function SettingsPage() {
     .where(and(isNotNull(works.igdbId), isNull(works.series)));
   const fromIgdb = fromIgdbRow.total;
   const seriesless = seriesLessRow.total;
+  const offShelf = (await offShelfGames(user.id)).length;
 
 
   return (
@@ -121,6 +123,20 @@ export default async function SettingsPage() {
             </li>
           </ul>
           <ConnectionCheck />
+        </section>
+
+        <section>
+          <h2 className="mb-2 font-display text-xl">Games not on your shelf</h2>
+          <p className="mb-3 font-narrow text-ink-dim">
+            {offShelf === 0
+              ? "Every game here is on your shelf."
+              : `${offShelf} ${offShelf === 1 ? "game is" : "games are"} on this server but on none of your shelves, so the shelf never shows ${offShelf === 1 ? "it" : "them"}: games with no way to play, games taken off the shelf, and games here for a DLC or romhack you have.`}
+          </p>
+          {offShelf > 0 ? (
+            <Link href="/off-shelf" className="btn">
+              Review them
+            </Link>
+          ) : null}
         </section>
 
         <section>

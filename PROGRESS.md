@@ -2747,6 +2747,71 @@ and is not listed under it.
   show on `GET /shelf?dlc=fold`; Uncharted 4's page lists no DLC. tsc, lint
   and `check:actions` pass. The phone app's labels follow (shelf-mobile).
 
+## 2026-10-21 — games not on your shelf
+
+Jay: games on the server with no way to play never show on the shelf, so
+there was no way to find them.
+
+- **What was hidden.** A game stands on the shelf only through an entry on one
+  of its versions. Games with none of yours: originals of romhacks that had
+  only romhack versions, emptied by migration `0011` when those moved to
+  games of their own (no versions at all); games taken off the shelf;
+  standalone expansions pre-filled before #25; the game a DLC or romhack you
+  have belongs to (brought in with no entry, on purpose). Pre-filled DLC under
+  a game is expected and reachable from the game's page, so it is left out
+  unless it has no version.
+- **Settings → Games not on your shelf** (`/off-shelf`): those games in three
+  groups (no way to play, off the shelf, here for something you have), each
+  with one-press shelf buttons when there is one way to play, "Choose a way to
+  play" when there are several, "Add a way to play" for a local game with
+  none, and Delete (its confirm page returns to the list). An IGDB game with no
+  versions gets its original release back from `igdb_payload` on that press,
+  as `placeIgdbGame` makes it — no request. `lib/off-shelf.ts`.
+- Checked locally with seeded data (each kind above): shelving Super Mario
+  World with no versions gave it its Super Famicom release and an entry on
+  Played (with its play); deleting a local game from the list came back to
+  the list. tsc, lint and `check:actions` pass.
+
+## 2026-10-21 — tile text stays on the cover
+
+Jay saw a book tile's hover text run off its cover in bookshelf; gameshelf's
+tile is the same design, so it gets the same fix.
+
+- The hover overlay clips to the cover, the name is clamped to three lines and
+  the platform and version lines to two, and the shelf line never shrinks.
+- The rating sticker sits above the overlay (z-index 25) instead of under it.
+- The typeset placeholder clamps its name to five lines too.
+- Checked locally in Chromium at 400px and 1280px with a very long name;
+  tsc and lint pass.
+
+## 2026-10-21 — The wall remembers how you look at it
+
+- Jay: sort and grouping kept resetting. A cookie already remembered them,
+  but it was the same one that records the shelf's last query for "Back to
+  shelf", rewritten on every render, so the nav's "All shelves" link
+  (`groupBy=...` in its URL) and "See all by series" overwrote whatever
+  grouping had been picked.
+- Now a separate `gameshelf-preferences` cookie holds the preferences (sort and grouping),
+  written by the filter row before it navigates, and only for the control
+  you changed (so changing sort on one shelf does not also store that
+  shelf's grouping). The server fills whatever the URL leaves out from it,
+  so there is no flash; URL values still win.
+- The nav's All shelves is now a bare wall link; the wall groups by shelf
+  when nothing is remembered. A single shelf shows ungrouped when the
+  preference is "by shelf" and no longer offers that option.
+- Cookie rather than localStorage because the page is server-rendered; not
+  a per-user DB setting because Simple beats complete (the phone has its
+  own screens anyway). The old cookie's preferences are not carried over:
+  one reset on deploy.
+- Checked in a browser against a local database: choices survive Shelves →
+  All shelves, a link naming a grouping does not overwrite them, a new
+  browser gets the default. Same change in bookshelf.
+
+- Later the same day: the wall's filter box has its own × to clear it (and
+  Escape clears it too), since iOS shows no native one; the browser's own
+  is hidden on that box only. It filters on the client, so clearing keeps
+  the sort, grouping and URL as they were.
+
 ## 2026-10-21 — look over a game's details before adding it
 
 Jay: when you add a game you need to be able to edit the details before it

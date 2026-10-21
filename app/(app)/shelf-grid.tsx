@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 
 import {
   changeSelectedPlatform,
@@ -57,6 +57,7 @@ export function ShelfGrid({
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState("");
+  const filterBox = useRef<HTMLInputElement>(null);
 
   const [platformState, platformAction, platformPending] = useActionState<BulkState, FormData>(
     changeSelectedPlatform,
@@ -117,16 +118,40 @@ export function ShelfGrid({
       <div className="mb-6 flex flex-wrap items-center gap-3 font-narrow">
         {/* Filters what is on screen as you type. The nav's Search is the other
             thing — that one goes out to IGDB to find what you do not have yet. */}
-        <label className="flex-1 basis-64">
-          <span className="sr-only">Filter this shelf</span>
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Filter by title"
-            className="field max-w-md rounded-full px-4"
-          />
-        </label>
+        {/* Its own clear button, because the browser's is missing on iOS and
+            easy to miss elsewhere (Jay, 2026-10-21); the native one is hidden
+            in globals.css so there are never two. */}
+        <div className="flex-1 basis-64">
+          <div className="relative max-w-md">
+            <label>
+              <span className="sr-only">Filter this shelf</span>
+              <input
+                ref={filterBox}
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") setQuery("");
+                }}
+                placeholder="Filter by title"
+                className="field shelf-filter w-full rounded-full pr-10 pl-4"
+              />
+            </label>
+            {query ? (
+              <button
+                type="button"
+                aria-label="Clear the filter"
+                onClick={() => {
+                  setQuery("");
+                  filterBox.current?.focus();
+                }}
+                className="absolute inset-y-0 right-1 my-auto flex h-8 w-8 items-center justify-center rounded-full text-xl leading-none text-ink-dim hover:text-ink"
+              >
+                ×
+              </button>
+            ) : null}
+          </div>
+        </div>
 
         {/* Silent at zero, where the sentence below the controls says it
             better than a counter can. */}

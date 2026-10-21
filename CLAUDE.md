@@ -264,7 +264,17 @@ form. Used for doujin games, prototypes, unreleased builds.
 3. **Work page** — cover, summary, list of versions. Add version here.
 4. **Version page** — your entry, shelf, rating out of ten, review.
 5. ~~**Stats**~~ — removed on 2026-09-18 with the plays UI it was built on.
-6. **Settings** — IGDB credentials check, export, import, cover art.
+6. **Settings** — IGDB credentials check, export, import, cover art, and
+   games not on your shelf.
+   - **Not on your shelf** (`/off-shelf`, Jay, 2026-10-21): every game here
+     with no entry of yours on any version, which the shelf therefore never
+     shows: games with no way to play (originals whose romhacks moved out in
+     `0011`; one from IGDB gets its release back from `igdb_payload` when
+     shelved), games taken off the shelf, standalone expansions pre-filled
+     before they were games of their own, and games here for a DLC or romhack
+     you have. Each can go on a shelf in one press (when it has one way to
+     play), be opened, or be deleted. DLC under its game is not listed; it
+     lives on the game's page. `lib/off-shelf.ts`.
 
 Out of scope for v1: social features, following, public profiles, Steam import,
 achievements, recommendations. Note them in `IDEAS.md` and move on.
@@ -417,11 +427,17 @@ generic AI product.
   row. Filters sit in one row that scrolls sideways on a phone. **All
   shelves** in the nav (header and tab bar) is the wall grouped by shelf,
   each shelf in full under a heading that opens it alone.
+  The wall remembers its sort and grouping (the `gameshelf-preferences` cookie,
+  written only when you change them in the filter row; Jay, 2026-10-21), so
+  All shelves opens grouped by shelf only until you pick another grouping.
+  A link that names a value still wins for that visit without changing what
+  is remembered. Which shelf, tag or platform you filtered to is not kept.
 - No Delete on a cover. It lives on the version and work pages. On a version
   page it asks "The whole game" (the default) or "Just this version"; a
   game's last version only goes with the game (2026-10-20).
 - On hover-capable screens the tile shows its name and shelf on hover; on a
-  phone a cover is a plain tap.
+  phone a cover is a plain tap. That text stays on the cover (2026-10-21):
+  the name clamped to three lines, the rating sticker above it.
 - **Phones**: the header keeps only the name (and the link across to
   bookshelf, `BOOKSHELF_URL`); Shelves, All (all shelves), Search, Add and
   More (Settings) move to a tab bar at the bottom. Words, not icons.
