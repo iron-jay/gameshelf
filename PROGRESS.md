@@ -2746,3 +2746,28 @@ and is not listed under it.
 - Checked locally: Uncharted 4 on Played and The Lost Legacy on Backlog both
   show on `GET /shelf?dlc=fold`; Uncharted 4's page lists no DLC. tsc, lint
   and `check:actions` pass. The phone app's labels follow (shelf-mobile).
+
+## 2026-10-21 — games not on your shelf
+
+Jay: games on the server with no way to play never show on the shelf, so
+there was no way to find them.
+
+- **What was hidden.** A game stands on the shelf only through an entry on one
+  of its versions. Games with none of yours: originals of romhacks that had
+  only romhack versions, emptied by migration `0011` when those moved to
+  games of their own (no versions at all); games taken off the shelf;
+  standalone expansions pre-filled before #25; the game a DLC or romhack you
+  have belongs to (brought in with no entry, on purpose). Pre-filled DLC under
+  a game is expected and reachable from the game's page, so it is left out
+  unless it has no version.
+- **Settings → Games not on your shelf** (`/off-shelf`): those games in three
+  groups (no way to play, off the shelf, here for something you have), each
+  with one-press shelf buttons when there is one way to play, "Choose a way to
+  play" when there are several, "Add a way to play" for a local game with
+  none, and Delete (its confirm page returns to the list). An IGDB game with no
+  versions gets its original release back from `igdb_payload` on that press,
+  as `placeIgdbGame` makes it — no request. `lib/off-shelf.ts`.
+- Checked locally with seeded data (each kind above): shelving Super Mario
+  World with no versions gave it its Super Famicom release and an entry on
+  Played (with its play); deleting a local game from the list came back to
+  the list. tsc, lint and `check:actions` pass.
