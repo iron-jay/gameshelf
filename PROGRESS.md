@@ -2668,3 +2668,20 @@ looked up again rather than restored.
   session first. Same change in bookshelf.
 - Checked on a local database: every page's `<title>`. tsc, lint and
   `check:actions` pass.
+
+## 2026-10-20 — Rename and remove a series
+
+Jay asked for a way to edit and remove series, and to take games out of one.
+All on the series page (`series/[name]/actions.ts`):
+
+- **Rename**: a Name box and Rename. A name that matches another series
+  (ignoring case) joins the two; the series' own name is left out of that
+  match, so "zelda" can become "Zelda". Lands on the renamed page.
+- **Remove the series**: a confirm page, as deleting a game has. Clears
+  `works.series` on every game in it; games and entries stay.
+- **Take out**: on each row, clears that game's series. The last one out
+  goes back to the shelves, since the page no longer exists.
+
+Checked on a local database in Chromium at phone width: Halo renamed to
+"halo", one game taken out, the series removed, both games still there.
+tsc, lint and `check:actions` pass.

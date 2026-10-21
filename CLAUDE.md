@@ -117,7 +117,10 @@ a fact about the work and has nothing but a name. IGDB's franchise fills it on
 add (Settings backfills older works); the work page sets one, and the wall's
 select mode puts many games in one at once. Played in release order, so no
 position column. A series page (`/series/{name}`) lists every game in it,
-shelved or not, with your shelf beside each (2026-10-20).
+shelved or not, with your shelf beside each (2026-10-20). It is also where a
+series is renamed (to an existing name, the two join), removed (its own
+confirm page, `/series/{name}/remove`), or a game taken out of it; removing
+only clears the name, never a game or an entry (Jay, 2026-10-20).
 
 ---
 
