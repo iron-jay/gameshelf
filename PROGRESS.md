@@ -2771,3 +2771,15 @@ there was no way to find them.
   World with no versions gave it its Super Famicom release and an entry on
   Played (with its play); deleting a local game from the list came back to
   the list. tsc, lint and `check:actions` pass.
+
+## 2026-10-21 — tile text stays on the cover
+
+Jay saw a book tile's hover text run off its cover in bookshelf; gameshelf's
+tile is the same design, so it gets the same fix.
+
+- The hover overlay clips to the cover, the name is clamped to three lines and
+  the platform and version lines to two, and the shelf line never shrinks.
+- The rating sticker sits above the overlay (z-index 25) instead of under it.
+- The typeset placeholder clamps its name to five lines too.
+- Checked locally in Chromium at 400px and 1280px with a very long name;
+  tsc and lint pass.

@@ -109,9 +109,9 @@ export function ShelfTile({
         ) : (
           // No art yet: the name, set like a box's spine label, so a shelf of
           // things nobody has art for still reads as a shelf.
-          <div className="flex h-full flex-col justify-between p-2.5">
-            <p className="font-display text-[15px] leading-tight break-words">{title}</p>
-            <p className="font-narrow text-sm text-ink-dim">{subtitle}</p>
+          <div className="flex h-full flex-col justify-between gap-1 overflow-hidden p-2.5">
+            <p className="line-clamp-5 font-display text-[15px] leading-tight break-words">{title}</p>
+            <p className="line-clamp-2 shrink-0 font-narrow text-sm text-ink-dim">{subtitle}</p>
           </div>
         )}
 
@@ -139,15 +139,17 @@ export function ShelfTile({
             There is no Delete here any more. It was invisible on a touch
             screen and still took the tap, so the lower corner of every cover
             opened a delete page. Deleting lives on the game's own page. */}
-        <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-end bg-ground/92 p-2.5 opacity-0 transition-opacity [@media(hover:hover)]:group-hover:opacity-100 group-has-[:focus-visible]:opacity-100">
-          <p className="font-semibold leading-tight">{title}</p>
-          <p className="font-narrow text-sm text-ink-dim">{subtitle}</p>
-          {detail ? <p className="font-narrow text-sm text-ink-dim">{detail}</p> : null}
-          <p className="mt-1 font-narrow text-sm text-ink-dim">
+        <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-end overflow-hidden bg-ground/92 p-2.5 opacity-0 transition-opacity [@media(hover:hover)]:group-hover:opacity-100 group-has-[:focus-visible]:opacity-100">
+          {/* Clamped so a long name stays on the cover and clear of the sticker
+              (it ran over its neighbours); the shelf line never shrinks away. */}
+          <p className="line-clamp-3 min-h-0 pr-5 font-semibold leading-tight break-words">{title}</p>
+          <p className="line-clamp-2 shrink-0 font-narrow text-sm break-words text-ink-dim">{subtitle}</p>
+          {detail ? <p className="line-clamp-2 shrink-0 font-narrow text-sm break-words text-ink-dim">{detail}</p> : null}
+          <p className="mt-1 shrink-0 font-narrow text-sm text-ink-dim">
             {card.status.charAt(0).toUpperCase() + card.status.slice(1)} · {ratingLabel(card.rating)}
           </p>
           {card.coverNeedsReview ? (
-            <p className="font-narrow text-sm text-ink-dim">Cover needs review</p>
+            <p className="shrink-0 font-narrow text-sm text-ink-dim">Cover needs review</p>
           ) : null}
         </div>
       </div>
