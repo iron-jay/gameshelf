@@ -5,6 +5,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { entryCards } from "@/lib/db/schema";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,8 @@ export const dynamic = "force-dynamic";
  * work through, not a way of looking at what you own, and a permanent line
  * above the grid counting your unfinished chores is not what the shelf is for.
  */
+export const metadata: Metadata = { title: "Cover art to review" };
+
 export default async function ArtReviewPage() {
   const user = await requireUser();
 

@@ -21,7 +21,8 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "gameshelf",
+  // A page names itself before the app, so a row of tabs can be told apart.
+  title: { default: "gameshelf", template: "%s · gameshelf" },
   description: "Self-hosted game tracker",
 };
 

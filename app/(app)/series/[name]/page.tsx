@@ -6,9 +6,12 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { entries, platforms, versions, works } from "@/lib/db/schema";
+import { seriesHref } from "@/lib/series";
 import { STATUS_LABELS } from "@/lib/status";
 
 import { BackToShelf } from "../../back-to-shelf";
+import { renameSeries, takeOutOfSeries } from "./actions";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +19,13 @@ export const dynamic = "force-dynamic";
  * A series in the order it came out, with your shelf state beside each game —
  * bookshelf's series page, with release order standing in for a numbered
  * position (a game has none). That is the whole feature: no completion bar.
+ * Renaming and removing the series live here too, since this is the one page
+ * that is about the series rather than a game in it (Jay, 2026-10-20).
  */
+export async function generateMetadata({ params }: { params: Promise<{ name: string }> }): Promise<Metadata> {
+  return { title: decodeURIComponent((await params).name) };
+}
+
 export default async function SeriesPage({ params }: { params: Promise<{ name: string }> }) {
   const user = await requireUser();
   const name = decodeURIComponent((await params).name);
@@ -71,6 +80,31 @@ export default async function SeriesPage({ params }: { params: Promise<{ name: s
           {members.length} {members.length === 1 ? "game" : "games"}
           {played > 0 ? ` · ${played} played` : ""}
         </p>
+
+        <form action={renameSeries} className="mt-4 flex flex-wrap items-end gap-x-4 gap-y-2">
+          <input type="hidden" name="from" value={name} />
+          <label className="flex w-64 flex-col gap-1.5">
+            <span className="font-narrow text-ink-dim">Name</span>
+            <input
+              name="to"
+              type="text"
+              required
+              maxLength={120}
+              autoComplete="off"
+              defaultValue={name}
+              className="field"
+            />
+          </label>
+          <button type="submit" className="btn">
+            Rename
+          </button>
+          <Link
+            href={`${seriesHref(name)}/remove`}
+            className="py-2 font-narrow text-ink-dim underline underline-offset-4 hover:text-danger"
+          >
+            Remove the series
+          </Link>
+        </form>
       </section>
       <div className="plank" />
 
@@ -85,7 +119,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ name: s
                   <Image src={work.coverUrl} alt="" fill sizes="56px" className="object-cover" unoptimized />
                 ) : null}
               </Link>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="truncate">
                   <Link href={`/work/${work.slug}`} className="font-semibold hover:underline">
                     {work.title}
@@ -111,6 +145,16 @@ export default async function SeriesPage({ params }: { params: Promise<{ name: s
                       ))}
                 </p>
               </div>
+              <form action={takeOutOfSeries} className="shrink-0">
+                <input type="hidden" name="name" value={name} />
+                <input type="hidden" name="workId" value={work.id} />
+                <button
+                  type="submit"
+                  className="py-2 font-narrow text-ink-dim underline underline-offset-4 hover:text-ink"
+                >
+                  Take out<span className="sr-only"> {work.title}</span>
+                </button>
+              </form>
             </li>
           );
         })}
