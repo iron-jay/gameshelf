@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { QuickShelf } from "./quick-shelf";
+
 export type ShelfCard = {
   entryId: string;
   versionId: string;
@@ -27,6 +29,7 @@ export function ShelfTile({
   selecting = false,
   checked = false,
   onToggle,
+  quick = false,
   className = "",
   sizes = "160px",
 }: {
@@ -36,6 +39,8 @@ export function ShelfTile({
   selecting?: boolean;
   checked?: boolean;
   onToggle?: (entryId: string) => void;
+  /** On the main page a press opens the quick shelf panel; the game is a step further. */
+  quick?: boolean;
   /** The wall sizes tiles by its columns; a strip gives them a fixed width. */
   className?: string;
   sizes?: string;
@@ -89,6 +94,10 @@ export function ShelfTile({
               className={`size-6 rounded-full border-2 ${checked ? "border-accent bg-accent" : "border-ink bg-ground/70"}`}
             />
           </button>
+        ) : quick ? (
+          <QuickShelf card={card} title={title} subtitle={subtitle} className="absolute inset-0 z-10">
+            <span className="sr-only">{title}</span>
+          </QuickShelf>
         ) : (
           <Link href={`/version/${card.versionId}`} className="absolute inset-0 z-10">
             <span className="sr-only">{title}</span>

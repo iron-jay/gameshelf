@@ -261,6 +261,7 @@ export default async function ShelfPage({ searchParams }: { searchParams: Promis
                     key={card.entryId}
                     card={card}
                     index={tileIndex++}
+                    quick
                     className="w-[30vw] max-w-36 sm:w-36"
                     sizes="144px"
                   />
