@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, ne } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { entries, versions, works } from "@/lib/db/schema";
@@ -28,6 +28,9 @@ export type FoldedShelf = {
  *
  * One exception: something you are playing is never hidden from Playing by a
  * game that is not. Now playing is where you look for it.
+ *
+ * A standalone expansion is never folded: it is launched on its own, not from
+ * inside its game, so it is a game of its own on the shelf (Jay, 2026-10-20).
  */
 export async function foldedShelfRows(userId: string, filters: ShelfFilters = {}): Promise<FoldedShelf> {
   const rows = await shelfRows(userId, filters);
@@ -51,7 +54,7 @@ export function foldDlc(
   const under = new Map<string, number>();
   const kept = rows.filter((row) => {
     const parent = row.parentWorkId;
-    if (!parent || showing.has(parent)) return true;
+    if (!parent || isStandalone(row.workKind) || showing.has(parent)) return true;
     const parentShelves = shelvesByWork.get(parent);
     // A DLC whose game is not here at all would otherwise vanish entirely.
     if (!parentShelves) return true;
@@ -84,7 +87,10 @@ export type DlcItem = {
   rating: number | null;
 };
 
-/** A game's DLC, oldest first, each with your shelf state beside it. */
+/**
+ * A game's DLC, oldest first, each with your shelf state beside it. Standalone
+ * expansions keep their link to the game but are not listed under it.
+ */
 export async function dlcOf(userId: string, workId: string): Promise<DlcItem[]> {
   const children = await db
     .select({
@@ -96,7 +102,7 @@ export async function dlcOf(userId: string, workId: string): Promise<DlcItem[]> 
       coverUrl: works.coverUrl,
     })
     .from(works)
-    .where(eq(works.parentWorkId, workId))
+    .where(and(eq(works.parentWorkId, workId), ne(works.workKind, "standalone_expansion")))
     .orderBy(asc(works.firstReleaseDate), asc(works.title));
   if (children.length === 0) return [];
 
@@ -157,6 +163,14 @@ export function shortDlcTitle(title: string, gameTitle: string): string {
   if (!title.toLowerCase().startsWith(gameTitle.toLowerCase())) return title;
   const rest = title.slice(gameTitle.length).replace(/^\s*[:\-–—]\s*/, "").trim();
   return rest || title;
+}
+
+/**
+ * Played without starting its game, so it stands on the shelf as a game of its
+ * own and is not listed under the game, though it keeps the link to it.
+ */
+export function isStandalone(workKind: string | null | undefined): boolean {
+  return workKind === "standalone_expansion";
 }
 
 /** DLC, seasons, episodes and bundles are more of a game; anything else can have more of it. */

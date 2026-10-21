@@ -15,7 +15,7 @@ import {
   works,
 } from "@/lib/db/schema";
 import { STATUS_LABELS, STATUS_ORDER } from "@/lib/status";
-import { canHaveDlc, dlcOf, parentIgdbIdOf } from "@/lib/dlc";
+import { canHaveDlc, dlcOf, isStandalone, parentIgdbIdOf } from "@/lib/dlc";
 import { fillDlcOnce } from "@/lib/dlc-fill";
 import { basedOnOf } from "@/lib/romhacks";
 import { seriesHref, seriesInUse } from "@/lib/series";
@@ -177,6 +177,7 @@ export default async function VersionPage({ params }: { params: Promise<{ id: st
               parent={parent ?? null}
               parentIgdbId={parentIgdbIdOf(row.workKind, row.igdbPayload)}
               slug={row.workSlug}
+              standalone={isStandalone(row.workKind)}
             />
             {basedOn ? (
               <p className="mb-1 font-narrow text-ink-dim">

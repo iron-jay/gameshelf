@@ -41,12 +41,13 @@ export async function searchGames(term: string, limit = 20): Promise<IgdbGame[]>
 /**
  * The DLC, expansions, episodes and seasons IGDB hangs off a game, oldest
  * first, in the search projection so each can be added the way a search
- * result is. Bundles are left out: a bundle is not more of the game.
+ * result is. Bundles are left out: a bundle is not more of the game. So are
+ * standalone expansions, which are games of their own, added from search.
  */
 export async function dlcOfGame(igdbId: number, limit = 100): Promise<IgdbGame[]> {
   if (!Number.isInteger(igdbId) || igdbId <= 0) return [];
   return igdbRequest<IgdbGame[]>(
     "games",
-    `fields ${SEARCH_FIELDS}; where parent_game = ${igdbId} & game_type = (1,2,4,6,7); sort first_release_date asc; limit ${limit};`,
+    `fields ${SEARCH_FIELDS}; where parent_game = ${igdbId} & game_type = (1,2,6,7); sort first_release_date asc; limit ${limit};`,
   );
 }

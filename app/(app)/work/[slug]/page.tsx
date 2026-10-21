@@ -7,7 +7,7 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { platforms, versions, works } from "@/lib/db/schema";
 import { isCommunityVersionKind } from "@/lib/db/schema";
-import { canHaveDlc, dlcOf, parentIgdbIdOf } from "@/lib/dlc";
+import { canHaveDlc, dlcOf, isStandalone, parentIgdbIdOf } from "@/lib/dlc";
 import { fillDlcOnce } from "@/lib/dlc-fill";
 import { basedOnOf, isRomhackWork, romhacksOf } from "@/lib/romhacks";
 import { seriesHref, seriesInUse } from "@/lib/series";
@@ -86,6 +86,7 @@ export default async function WorkPage({ params }: { params: Promise<{ slug: str
               parent={parent ?? null}
               parentIgdbId={parentIgdbIdOf(work.workKind, work.igdbPayload)}
               slug={work.slug}
+              standalone={isStandalone(work.workKind)}
             />
             {basedOn ? (
               <p className="mb-1 font-narrow text-ink-dim">
