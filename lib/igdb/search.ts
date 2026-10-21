@@ -18,6 +18,9 @@ export const SEARCH_FIELDS = [
   "release_dates.platform",
   "game_type.id",
   "parent_game",
+  // For a romhack's form, which starts from its original's series.
+  "franchises.name",
+  "collections.name",
 ].join(",");
 
 /**

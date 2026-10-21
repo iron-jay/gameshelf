@@ -61,6 +61,9 @@ export type BaseGameOption = {
   igdbId: number;
   title: string;
   year: number | null;
+  /** What a romhack of it starts with, to edit on the form. */
+  series: string | null;
+  summary: string | null;
 };
 
 export type ArtActionState = { ok: boolean; message: string } | null;

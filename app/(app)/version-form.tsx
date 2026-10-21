@@ -13,6 +13,8 @@ import {
   type FormKind,
 } from "@/lib/versions/types";
 
+import { SeriesInput } from "./series-input";
+import { ShelfChoice } from "./shelf-choice";
 import { FIELD, VersionFields } from "./version-fields";
 
 import { createVersion, lookupArtForName, searchBaseGames } from "./version-actions";
@@ -24,6 +26,9 @@ export type KnownWork = {
   versions: { id: string; name: string; kind: string }[];
   /** Set when the work is a romhack's own game: this adds a way to play it. */
   romhack?: { original: string | null } | null;
+  /** What a romhack of this game starts with, to edit before adding. */
+  series?: string | null;
+  summary?: string | null;
 };
 
 const CONFIDENCE_NOTE: Readonly<Record<string, string>> = {
@@ -42,11 +47,14 @@ export function VersionForm({
   kind,
   work,
   platforms,
+  seriesNames,
 }: {
   kind: FormKind;
   work?: KnownWork;
   /** Names already in the platforms table, so the field can suggest them. */
   platforms: string[];
+  /** Series already in use, for a new game's series box. */
+  seriesNames: string[];
 }) {
   const [state, action, pending] = useActionState<CreateVersionState, FormData>(
     createVersion,
@@ -62,6 +70,12 @@ export function VersionForm({
   const [baseSearching, setBaseSearching] = useState(false);
 
   const homebrew = kind === "homebrew";
+  const [chosenKind, setChosenKind] = useState<string>(work?.romhack ? "romhack" : kind);
+  // A romhack (unless it is another way to play one) and homebrew are games
+  // of their own, so their own details are on the form, filled from the
+  // original where there is one (2026-10-21).
+  const newGame = homebrew || (chosenKind === "romhack" && !work?.romhack);
+  const startsFrom = work ?? baseGame;
 
   async function onNameBlur(value: string) {
     if (!value.trim()) return;
@@ -122,6 +136,7 @@ export function VersionForm({
         nameLabel={homebrew ? "Game name" : "Name of the hack or port"}
         nameHint="This is what the art search uses, so use the release&rsquo;s own name."
         onNameBlur={(value) => void onNameBlur(value)}
+        onKindChange={setChosenKind}
         autoFocus
       />
 
@@ -204,10 +219,10 @@ export function VersionForm({
             </>
           )}
 
-          {!work?.romhack ? (
+          {newGame ? (
             <p className="font-narrow text-ink-dim">
               A romhack becomes a game of its own. It starts with this game&rsquo;s series, summary
-              and year, and you can change them on its page afterwards.
+              and year, which you can change below before adding.
             </p>
           ) : null}
 
@@ -228,6 +243,23 @@ export function VersionForm({
           ) : null}
         </fieldset>
       )}
+
+      {newGame ? (
+        // Keyed by the base game, so choosing another refills them from it.
+        <fieldset key={startsFrom ? ("igdbId" in startsFrom ? startsFrom.igdbId : startsFrom.id) : "none"} className="flex flex-col gap-4">
+          <legend className="mb-2 font-display text-xl">Its details</legend>
+          <SeriesInput names={seriesNames} defaultValue={homebrew ? "" : (startsFrom?.series ?? "")} className="sm:w-80" />
+          <label className="flex flex-col gap-1.5">
+            <span className="font-narrow text-ink-dim">Summary</span>
+            <textarea
+              name="summary"
+              rows={5}
+              defaultValue={homebrew ? "" : (startsFrom?.summary ?? "")}
+              className={`${FIELD} leading-relaxed`}
+            />
+          </label>
+        </fieldset>
+      ) : null}
 
       <section className="card">
         <h2 className="font-narrow text-ink-dim">Cover art</h2>
@@ -277,6 +309,8 @@ export function VersionForm({
           </p>
         )}
       </section>
+
+      <ShelfChoice />
 
       {state && !state.ok ? (
         <p role="alert" className="border-l-2 border-ink-dim pl-3 font-narrow">

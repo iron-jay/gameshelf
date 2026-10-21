@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { downloadCover } from "@/lib/covers";
 import { db } from "@/lib/db";
 import { entries, platforms, versions, works } from "@/lib/db/schema";
+import type { GameDraft } from "@/lib/entries/draft";
 import { getGameById } from "@/lib/igdb/games";
 import { originalVersionName, releaseDateFor, workKindFor } from "@/lib/igdb/mapping";
 import { IgdbError, igdbImageUrl, type IgdbGame, type IgdbPlatform } from "@/lib/igdb/types";
@@ -22,6 +23,8 @@ export type AddFromIgdbResult =
        * look like it took.
        */
       keptOn: string | null;
+      /** This add made the game here, so the draft it was given is what it now says. */
+      workCreated: boolean;
     };
 
 /**
@@ -39,6 +42,10 @@ export async function addFromIgdb(
     platformId?: number | null;
     /** null adds the game without shelving it: a DLC's game, fetched so the DLC has somewhere to live. */
     status: Status | null;
+    /** The add form's edited details, for a game not here yet. */
+    draft?: GameDraft;
+    /** SteamGridDB art chosen on the add form, in place of IGDB's cover. */
+    art?: { url: string; sgdbGameId: number | null };
   },
   depth = 0,
 ): Promise<AddFromIgdbResult> {
@@ -70,18 +77,22 @@ export async function addFromIgdb(
     (game.platforms ?? []).find((platform) => platform.id === input.platformId) ??
     primaryPlatformFor(game);
 
-  const outcome = await db.transaction((tx) => placeIgdbGame(tx, userId, game, igdbPlatform, input.status));
+  const outcome = await db.transaction((tx) =>
+    placeIgdbGame(tx, userId, game, igdbPlatform, input.status, input.draft),
+  );
 
   // Outside the transaction on purpose: this is network I/O that should not
   // hold a database transaction open, and a failed download must not roll back
   // an otherwise correct shelf row.
-  await artForPlaced(outcome, game);
+  const chosen = input.art && outcome.workCreated ? await applyChosenArt(outcome.workId, input.art) : false;
+  if (!chosen) await artForPlaced(outcome, game);
 
   return {
     kind: outcome.added ? "added" : "already",
     workId: outcome.workId,
     versionId: outcome.versionId,
     keptOn: outcome.keptOn,
+    workCreated: outcome.workCreated,
   };
 }
 
@@ -115,8 +126,23 @@ export async function applySgdbArt(workId: string, title: string): Promise<void>
     .where(eq(works.id, workId));
 }
 
+/**
+ * Art picked by hand on the add form: no review flag, since choosing it was
+ * the review. False when it could not be fetched, so IGDB's is used instead.
+ */
+async function applyChosenArt(workId: string, art: { url: string; sgdbGameId: number | null }): Promise<boolean> {
+  const filename = await downloadCover(art.url, workId);
+  if (!filename) return false;
+  await db
+    .update(works)
+    .set({ coverUrl: `/covers/${filename}`, coverSource: "steamgriddb", coverNeedsReview: false, sgdbGameId: art.sgdbGameId })
+    .where(eq(works.id, workId));
+  return true;
+}
+
 export type Placed = {
   workId: string;
+  workCreated: boolean;
   versionId: string;
   /** An entry was made by this call. */
   added: boolean;
@@ -137,9 +163,10 @@ export async function placeIgdbGame(
   game: IgdbGame,
   igdbPlatform: IgdbPlatform | undefined,
   status: Status | null,
+  draft?: GameDraft,
 ): Promise<Placed> {
   const platformId = await upsertPlatform(tx, igdbPlatform);
-  const work = await ensureWorkFromIgdb(tx, game, userId);
+  const work = await ensureWorkFromIgdb(tx, game, userId, draft);
 
   const [existing] = await tx
     .select({ id: versions.id, platformName: platforms.name })
@@ -157,7 +184,9 @@ export async function placeIgdbGame(
         name: originalVersionName(igdbPlatform),
         kind: "original",
         platformId,
-        releaseDate: releaseDateFor(game),
+        // The edited date only for a game this add made; a release added
+        // to a game already here takes IGDB's.
+        releaseDate: draft && work.created ? draft.releaseDate : releaseDateFor(game),
         igdbId: game.id,
         source: "igdb",
         createdBy: userId,
@@ -176,6 +205,7 @@ export async function placeIgdbGame(
 
   return {
     workId: work.id,
+    workCreated: work.created,
     versionId,
     added: inserted.length > 0,
     keptOn: existing && existing.platformName !== igdbPlatform?.name ? existing.platformName : null,

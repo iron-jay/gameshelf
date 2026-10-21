@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { versions, works } from "@/lib/db/schema";
 import { platformsInUse } from "@/lib/platforms";
+import { seriesInUse } from "@/lib/series";
 import { basedOnOf, isRomhackWork } from "@/lib/romhacks";
 
 import { VersionForm } from "../../../version-form";
@@ -27,7 +28,14 @@ export default async function AddVersionPage({ params }: { params: Promise<{ slu
   const { slug } = await params;
 
   const [work] = await db
-    .select({ id: works.id, slug: works.slug, title: works.title, basedOnWorkId: works.basedOnWorkId })
+    .select({
+      id: works.id,
+      slug: works.slug,
+      title: works.title,
+      basedOnWorkId: works.basedOnWorkId,
+      series: works.series,
+      summary: works.summary,
+    })
     .from(works)
     .where(eq(works.slug, slug));
 
@@ -65,8 +73,11 @@ export default async function AddVersionPage({ params }: { params: Promise<{ slu
           title: work.title,
           versions: versionRows,
           romhack: romhack ? { original: original?.title ?? null } : null,
+          series: work.series,
+          summary: work.summary,
         }}
         platforms={platformNames}
+        seriesNames={await seriesInUse()}
       />
     </main>
   );

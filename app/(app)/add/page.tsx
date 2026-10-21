@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { requireUser } from "@/lib/auth";
 import { platformsInUse } from "@/lib/platforms";
+import { seriesInUse } from "@/lib/series";
 import { isFormKind, KIND_LABELS, type FormKind } from "@/lib/versions/types";
 
 import { VersionForm } from "../version-form";
@@ -48,7 +49,7 @@ export default async function AddPage({
           </Link>
         </p>
         <h1 className="mb-6 font-display text-3xl">Add a {KIND_LABELS[kind].toLowerCase()}</h1>
-        <VersionForm kind={kind} platforms={platformNames} />
+        <VersionForm kind={kind} platforms={platformNames} seriesNames={await seriesInUse()} />
       </main>
     );
   }

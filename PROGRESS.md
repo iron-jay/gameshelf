@@ -2746,3 +2746,33 @@ and is not listed under it.
 - Checked locally: Uncharted 4 on Played and The Lost Legacy on Backlog both
   show on `GET /shelf?dlc=fold`; Uncharted 4's page lists no DLC. tsc, lint
   and `check:actions` pass. The phone app's labels follow (shelf-mobile).
+
+## 2026-10-21 — look over a game's details before adding it
+
+Jay: when you add a game you need to be able to edit the details before it
+goes to the server.
+
+- **IGDB adds.** Search's Add (and Add DLC's list) now opens `/add/igdb/{id}`
+  instead of saving on the spot: IGDB's title, release date, summary and
+  series (the series box with suggestions), the cover with SteamGridDB art
+  on request, the platform and the shelf. Add saves it all in one
+  transaction and lands on the version page (or the art page, if "Upload or
+  choose art after adding" is ticked); Cancel and Back leave nothing behind.
+  A game already here shows only platform and shelf, and links to Edit
+  details. `GameDraft` (`lib/entries/draft.ts`) goes through
+  `addFromIgdb` → `placeIgdbGame` → `ensureWorkFromIgdb`, used only when the
+  work is created. Hand-picked art is applied without a review flag.
+  `search/add-button.tsx` and its action are gone.
+- **By hand.** The romhack and homebrew form gains "Its details" (series and
+  summary, filled from the original when one is picked and refilled if it
+  changes), and every add form asks the shelf rather than always Backlog.
+  Search's IGDB fields now carry franchises and collections for this.
+- **Unchanged on purpose:** DLC rows' one-press shelf buttons and the Not on
+  your shelf page shelve games already here, so they stay one press.
+- **API.** `GET /catalogue/igdb/{id}` (reads only) and `details` on
+  `POST /entries`; README updated. The phone uses both (shelf-mobile).
+
+Checked locally against IGDB and SteamGridDB: an edited Hollow Knight with
+SteamGridDB art on Playing; a romhack of an Ocarina result with an edited
+summary on Wishlist; homebrew with a series; the API with edited details.
+tsc, lint and `check:actions` pass.

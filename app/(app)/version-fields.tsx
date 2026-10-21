@@ -124,6 +124,7 @@ export function VersionFields({
   nameLabel,
   nameHint,
   onNameBlur,
+  onKindChange,
   autoFocus = false,
 }: {
   values?: VersionFieldValues;
@@ -134,6 +135,8 @@ export function VersionFields({
   nameLabel: string;
   nameHint?: string;
   onNameBlur?: (value: string) => void;
+  /** For a form that shows more or less depending on the kind. */
+  onKindChange?: (kind: string) => void;
   autoFocus?: boolean;
 }) {
   const [name, setName] = useState(values?.name ?? "");
@@ -161,7 +164,10 @@ export function VersionFields({
         <select
           name="kind"
           value={kind}
-          onChange={(event) => setKind(event.target.value)}
+          onChange={(event) => {
+            setKind(event.target.value);
+            onKindChange?.(event.target.value);
+          }}
           className={FIELD}
         >
           {kinds.map((value) => (
