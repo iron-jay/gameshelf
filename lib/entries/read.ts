@@ -9,6 +9,8 @@ export type EntryDetail = {
   review: string | null;
   reviewHasSpoilers: boolean;
   isPrivate: boolean;
+  /** When the entry itself last changed, so the phone can tell a change made on the web since its own. */
+  updatedAt: Date;
   tags: { id: string; slug: string; name: string }[];
 };
 
@@ -27,6 +29,7 @@ export async function entryDetail(userId: string, entryId: string): Promise<Entr
       review: entries.review,
       reviewHasSpoilers: entries.reviewHasSpoilers,
       isPrivate: entries.isPrivate,
+      updatedAt: entries.updatedAt,
     })
     .from(entries)
     .where(eq(entries.id, entryId));

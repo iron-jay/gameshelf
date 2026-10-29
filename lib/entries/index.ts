@@ -71,12 +71,15 @@ export function ratingFrom(value: unknown): number | null {
 
 /**
  * Applies whichever fields are present, creating the entry first if need be.
- * False when the version does not exist.
+ * False when the version does not exist. `on` dates the play arriving on
+ * played records (today if left out): the phone passes the day it made a
+ * change while out of reach of the server.
  */
 export async function updateEntry(
   userId: string,
   versionId: string,
   changes: EntryChanges,
+  on: string = today(),
 ): Promise<boolean> {
   const entryId = await entryIdFor(versionId, userId);
   if (!entryId) return false;
@@ -104,7 +107,7 @@ export async function updateEntry(
   if (changes.status === "played" && before?.status !== "played") {
     await db.insert(plays).values({
       entryId,
-      finishedOn: today(),
+      finishedOn: on,
       completion: changes.completion ?? null,
     });
   }
@@ -237,6 +240,7 @@ export async function shelveVersion(
   userId: string,
   versionId: string,
   status: Status,
+  on: string = today(),
 ): Promise<{ entryId: string; created: boolean } | null> {
   const [version] = await db.select({ id: versions.id }).from(versions).where(eq(versions.id, versionId));
   if (!version) return null;
@@ -249,7 +253,7 @@ export async function shelveVersion(
   if (created) {
     // As updateEntry: arriving on played is finishing it, so a DLC pressed
     // straight to Played from the phone leads Recently played too.
-    if (status === "played") await db.insert(plays).values({ entryId: created.id, finishedOn: today() });
+    if (status === "played") await db.insert(plays).values({ entryId: created.id, finishedOn: on });
     return { entryId: created.id, created: true };
   }
 

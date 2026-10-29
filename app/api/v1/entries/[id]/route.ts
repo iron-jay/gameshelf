@@ -1,4 +1,4 @@
-import { ApiError, json, readObject, uuidParam, withUser } from "@/lib/api";
+import { ApiError, json, optionalDate, readObject, uuidParam, withUser } from "@/lib/api";
 import { entryJson } from "@/lib/api/cards";
 import { refreshEntryPages } from "@/lib/api/refresh";
 import { isCompletion, removeEntry, updateEntry, type EntryChanges } from "@/lib/entries";
@@ -77,16 +77,20 @@ function changesFrom(body: Record<string, unknown>): EntryChanges {
  * Changes any of shelf, rating, review, reviewHasSpoilers, isFavourite,
  * isPrivate and completion. Fields left out are left alone. Marking something
  * finished is `{ shelf: "played", completion: "credits" }`, the same pair the
- * web's buttons set.
+ * web's buttons set. Arriving on played records a play dated `on`
+ * ("YYYY-MM-DD", today if left out): the phone sends the day it made a change
+ * it could only send later.
  */
 export const PATCH = withUser<{ id: string }>(async (request, { params, user }) => {
   const id = uuidParam((await params).id, "entry");
-  const changes = changesFrom(await readObject(request));
+  const { on: rawOn, ...body } = await readObject(request);
+  const on = optionalDate(rawOn, "on");
+  const changes = changesFrom(body);
 
   const versionId = await versionIdForEntry(user.id, id);
   if (!versionId) throw new ApiError("not_found", "No such entry.");
 
-  await updateEntry(user.id, versionId, changes);
+  await updateEntry(user.id, versionId, changes, on);
   refreshEntryPages(versionId);
   return json(entryJson(await detailOrNotFound(user.id, id)));
 });

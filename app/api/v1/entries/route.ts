@@ -1,4 +1,4 @@
-import { ApiError, json, readObject, withUser } from "@/lib/api";
+import { ApiError, json, optionalDate, readObject, withUser } from "@/lib/api";
 import { entryJson } from "@/lib/api/cards";
 import { refreshEntryPages } from "@/lib/api/refresh";
 import { entryIdFor, shelveVersion } from "@/lib/entries";
@@ -47,7 +47,7 @@ export const POST = withUser(async (request, { user }) => {
     if (typeof body.versionId !== "string" || !isUuid(body.versionId)) {
       throw new ApiError("not_found", "No such version.");
     }
-    const result = await shelveVersion(user.id, body.versionId, shelf);
+    const result = await shelveVersion(user.id, body.versionId, shelf, optionalDate(body.finishedOn, "finishedOn"));
     if (!result) throw new ApiError("not_found", "No such version.");
     versionId = body.versionId;
     created = result.created;

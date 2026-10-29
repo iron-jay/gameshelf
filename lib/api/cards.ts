@@ -77,6 +77,7 @@ export function entryJson(detail: EntryDetail) {
     review: detail.review,
     reviewHasSpoilers: detail.reviewHasSpoilers,
     isPrivate: detail.isPrivate,
+    updatedAt: detail.updatedAt.toISOString(),
     tags: detail.tags,
   };
 }

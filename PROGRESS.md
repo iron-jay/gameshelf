@@ -2863,3 +2863,21 @@ playing to dropped is not a trip to the game's page and back.
 Checked locally at desktop and phone width: Hades wishlist to playing,
 Hollow Knight playing to dropped from the band, Celeste to played rated 8
 with a play recorded. tsc, lint and `check:actions` pass.
+
+## 2026-10-29 — Dated changes, for the phone away from home
+
+Jay: the phone app should take changes while away from home and send them
+when the server is reachable again (shelf-mobile, same day). The server
+needed two things for that, with no new rules:
+
+- `PATCH /entries/{id}` takes `on` (`YYYY-MM-DD`), the day of the play that
+  arriving on played records; `POST /entries` with a `versionId` takes
+  `finishedOn` for the same, as bookshelf's add already did. Left out, both
+  are today as before. `optionalDate` is in `lib/api`, as bookshelf's.
+- An entry's JSON carries `updatedAt`, so the phone can tell a change made
+  on the web after its own. `/meta` lists `dated-changes`.
+
+Checked against a local server: Hollow Knight to played with `on:
+2026-10-24` finished that day, and Hearts of Stone put on Backlog then
+Played on the phone while the server was off arrived as one entry on
+Played. tsc and lint pass.
