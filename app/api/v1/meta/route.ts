@@ -15,6 +15,9 @@ export const GET = publicRoute(async () =>
     apiVersion: 1,
     authRequired: !authDisabled(),
     shelves: STATUS_ORDER.map((key) => ({ key, label: STATUS_LABELS[key] })),
-    features: ["completion", "platforms"],
+    // "dated-changes": PATCH /entries takes the day a change was made (`on`),
+    // a versionId add `finishedOn`, and entries carry `updatedAt`, for changes
+    // the phone queued.
+    features: ["completion", "platforms", "dated-changes"],
   }),
 );

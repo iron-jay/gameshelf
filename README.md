@@ -105,9 +105,9 @@ curl -H "authorization: Bearer $TOKEN" http://localhost:3000/api/v1/me
 | `GET /api/v1/me` | The signed-in user |
 | `GET /api/v1/shelf` | Shelf cards. `shelf`, `tag` (slug), `platform`, `sort` (`added`, `rated`, `finished`, `series`), `limit` (1–500, default 100), `offset`, `dlc=fold` (leave out DLC that sits under its game, as the web does; adds `dlcUnder`, how many). Returns `{ total, limit, offset, items }` |
 | `GET /api/v1/catalogue/igdb/{id}` | An IGDB game as adding it would save it, to edit first: `details` (`title`, `releaseDate`, `summary`, `series`; null when the game is here already, `here` says where), `coverUrl`, `platforms`, `defaultPlatformId`, `defaultShelf`, and your `entryId` if shelved. Reads only |
-| `POST /api/v1/entries` | Add to your shelf: `{ igdbId, platformId?, shelf?, details? }` from IGDB, or `{ versionId, shelf? }` for anything on the server. `details` as the catalogue route gives them, edited, for a game not here yet. 201 when added, 200 when it was already there (its shelf is kept) |
-| `GET /api/v1/entries/{id}` | One entry: its card plus review, spoilers flag, private flag and tags |
-| `PATCH /api/v1/entries/{id}` | Any of `shelf`, `rating` (1–10 or null), `review`, `reviewHasSpoilers`, `isFavourite`, `isPrivate`, `completion`. Returns the entry |
+| `POST /api/v1/entries` | Add to your shelf: `{ igdbId, platformId?, shelf?, details? }` from IGDB, or `{ versionId, shelf?, finishedOn? }` for anything on the server (`finishedOn`, `YYYY-MM-DD`, dates the play a Played add records; default today). `details` as the catalogue route gives them, edited, for a game not here yet. 201 when added, 200 when it was already there (its shelf is kept) |
+| `GET /api/v1/entries/{id}` | One entry: its card plus review, spoilers flag, private flag, tags and `updatedAt` (when the entry itself last changed) |
+| `PATCH /api/v1/entries/{id}` | Any of `shelf`, `rating` (1–10 or null), `review`, `reviewHasSpoilers`, `isFavourite`, `isPrivate`, `completion`. Arriving on played records a play dated `on?` (`YYYY-MM-DD`, default today): the phone sends the day it made a change it could only send later. Returns the entry |
 | `DELETE /api/v1/entries/{id}` | Takes it off your shelf with its rating, review, tags and recorded plays. The game stays on the server |
 | `PUT /api/v1/entries/{id}/tags/{name}` | Adds a tag, creating it if new. Returns `{ tags }` |
 | `DELETE /api/v1/entries/{id}/tags/{name}` | Removes a tag; one left on nothing is deleted, as on the web. Returns `{ tags }` |
