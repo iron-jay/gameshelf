@@ -548,7 +548,10 @@ runs end to end.
    UI was removed on 2026-09-18; the table stays, and the export still carries
    what was recorded. Arriving on `played` records a play finished today
    (2026-10-20), so Recently played knows what was finished last; choosing
-   `played` again does not.
+   `played` again does not. Rating a game moves it to `played` from
+   Wishlist, Backlog or Playing (Jay, 2026-11-05, with bookshelf), on the
+   version page or the phone, by that same rule; Dropped keeps its shelf and
+   clearing a rating moves nothing (`updateEntry`, `lib/entries/index.ts`).
 8. Tags (free-form, on top of the four shelves).
 9. ~~Stats~~ — removed on 2026-09-18 along with the plays UI it was built on.
 10. Export.

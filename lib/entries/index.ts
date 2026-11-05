@@ -99,6 +99,23 @@ export async function updateEntry(
   if (Object.keys(set).length === 0) return true;
 
   const [before] = await db.select({ status: entries.status }).from(entries).where(eq(entries.id, entryId));
+
+  // Rating a game says you played it (Jay, 2026-11-05; Goodreads does the
+  // same with a book), so a rating given on Wishlist, Backlog or Playing moves
+  // it to played, by the rule below. Dropped keeps its shelf: a game you gave
+  // up on can still be rated. Only when the rating comes without a shelf: a
+  // change that names one already says where it goes. Clearing moves nothing.
+  if (
+    changes.status === undefined &&
+    typeof changes.rating === "number" &&
+    before &&
+    before.status !== "played" &&
+    before.status !== "dropped"
+  ) {
+    changes = { ...changes, status: "played" };
+    set.status = "played";
+  }
+
   await db.update(entries).set(set).where(eq(entries.id, entryId));
 
   // Arriving on played is finishing it, so it records a play finished today:

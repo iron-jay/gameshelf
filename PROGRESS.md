@@ -2881,3 +2881,19 @@ Checked against a local server: Hollow Knight to played with `on:
 2026-10-24` finished that day, and Hearts of Stone put on Backlog then
 Played on the phone while the server was off arrived as one entry on
 Played. tsc and lint pass.
+
+## 2026-11-05 — Rating a game plays it
+
+Jay: rating something not finished should finish it. In `updateEntry`
+(`lib/entries/index.ts`), so the version page, the API and the phone's queued
+changes all get it: a rating given on Wishlist, Backlog or Playing moves it
+to played, which records the play as arriving on played always does (dated
+`on` from the phone). Dropped keeps its shelf, clearing a rating moves
+nothing, and a change that names a shelf as well goes where it says. The same
+in bookshelf. A live-service game rated while Playing now goes to played
+too; move it back if it should stay.
+
+Checked against a local database: Wishlist, Backlog and Playing rated went to
+played with a play today (or `on: 2026-11-01`), Played and Dropped stayed,
+a cleared rating and a rating with a shelf moved nothing extra, and rating a
+version with no entry yet put it on played. tsc and lint pass.
