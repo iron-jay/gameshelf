@@ -103,6 +103,17 @@ curl -H "authorization: Bearer $TOKEN" http://localhost:3000/api/v1/me
 | `POST /api/v1/auth/token` | Username and password in, `{ token, user }` out |
 | `DELETE /api/v1/auth/token` | Signs the calling device out |
 | `GET /api/v1/me` | The signed-in user |
+| `PATCH /api/v1/me` | Settings → Account: `{ username, displayName }`. A refusal is `invalid` in the page's words |
+| `POST /api/v1/me/password` | Settings → Password: `{ currentPassword, newPassword, confirmPassword }`. Signs every other device out; this one stays |
+| `GET /api/v1/devices` | Signed-in devices: `{ authDisabled, items }`, each `{ id, label, createdAt, lastUsedAt, current }` |
+| `DELETE /api/v1/devices/{id}` | Signs that device out |
+| `GET /api/v1/settings` | What Settings shows: `{ credentials, igdbTokenExpires, entries, coverFiles, orphans, fromIgdb, seriesless, offShelf }` (credentials as set or not, never their values) |
+| `POST /api/v1/settings/connections` | Check connections: `{ igdb, sgdb }`, each `{ ok, detail }` |
+| `POST /api/v1/settings/sweep-covers` | Deletes cover files nothing points at: `{ removed }` |
+| `GET`/`POST /api/v1/settings/series` | Fill series from IGDB: GET `{ igdbIds, chunk }`; POST `{ igdbIds }` a chunk at a time, or `{ clear: true }` to clear every series |
+| `GET /api/v1/art` | Art to review (`/art`): `{ items }`, each opening `/works/{workSlug}/art?version={versionId}` |
+| `GET /api/v1/off-shelf` | Games not on your shelf: `{ items }`; `versionId` set when one press can shelve it |
+| `POST /api/v1/off-shelf/{workId}` | `{ shelf }` puts its one way to play there; with more than one, `invalid` |
 | `GET /api/v1/shelf` | Shelf cards. `shelf`, `tag` (slug), `platform`, `sort` (`added`, `rated`, `finished`, `series`), `limit` (1–500, default 100), `offset`, `dlc=fold` (leave out DLC that sits under its game, as the web does; adds `dlcUnder`, how many). Returns `{ total, limit, offset, items }` |
 | `GET /api/v1/catalogue/igdb/{id}` | An IGDB game as adding it would save it, to edit first: `details` (`title`, `releaseDate`, `summary`, `series`; null when the game is here already, `here` says where), `coverUrl`, `platforms`, `defaultPlatformId`, `defaultShelf`, and your `entryId` if shelved. Reads only |
 | `POST /api/v1/entries` | Add to your shelf: `{ igdbId, platformId?, shelf?, details? }` from IGDB, or `{ versionId, shelf?, finishedOn? }` for anything on the server (`finishedOn`, `YYYY-MM-DD`, dates the play a Played add records; default today). `details` as the catalogue route gives them, edited, for a game not here yet. 201 when added, 200 when it was already there (its shelf is kept) |

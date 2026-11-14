@@ -24,7 +24,8 @@ export const GET = publicRoute(async () =>
     // `/versions/{id}/details`) and the art page (`/works/{slug}/art`).
     // "add-by-hand": the add-version form (`/versions/new`, `POST
     // /versions`) and Add DLC (`/works/{slug}/dlc`). "bulk": the wall's
-    // select mode (`POST /entries/bulk`).
-    features: ["completion", "platforms", "dated-changes", "add-platform", "series", "page-controls", "edit-details", "add-by-hand", "bulk"],
+    // select mode (`POST /entries/bulk`). "settings": Settings' own
+    // screens (`/settings`, `/me`, `/devices`, `/art`, `/off-shelf`).
+    features: ["completion", "platforms", "dated-changes", "add-platform", "series", "page-controls", "edit-details", "add-by-hand", "bulk", "settings"],
   }),
 );
