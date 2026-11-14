@@ -2979,3 +2979,21 @@ moved into `lib/` so the actions and the API share them:
 Checked against a local database: the bad date and a romhack kind change
 refused in the page's words, a grid applied, an upload, and the edit and
 art pages still render. tsc, lint and `check:actions` pass.
+
+## 2026-11-14 — Adding by hand in the API
+
+The phone's fourth batch is the add-version form (both doors, every kind,
+homebrew included) and Add DLC. Their rules moved into `lib/`:
+
+- `lib/versions/create.ts`: `createVersionFromForm` (what the form's action
+  did), `knownWork` (Door B's game as the form needs it), `artForName` and
+  `baseGameOptions` (the form's two lookups).
+- `lib/dlc-add.ts`: `dlcChoices` (IGDB's DLC for a game, which are here, and
+  the platform Add starts on) and `addDlcByHandFor`.
+- API: `GET /versions/new`, `…/new/base-games`, `…/new/art`, `POST
+  /versions`, and `GET`/`POST /works/{slug}/dlc`. /meta lists `add-by-hand`.
+
+Checked against a local database: a homebrew, a romhack, a decomp port and a
+nameless mod (refused in the form's words) through the API, Destiny 2's DLC
+listed, DLC made by hand. The add and Add DLC pages still render. tsc and
+`check:actions` pass.

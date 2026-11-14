@@ -1,13 +1,10 @@
-import { asc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { requireUser } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { versions, works } from "@/lib/db/schema";
 import { platformsInUse } from "@/lib/platforms";
 import { seriesInUse } from "@/lib/series";
-import { basedOnOf, isRomhackWork } from "@/lib/romhacks";
+import { knownWork } from "@/lib/versions/create";
 
 import { VersionForm } from "../../../version-form";
 import type { Metadata } from "next";
@@ -27,33 +24,8 @@ export default async function AddVersionPage({ params }: { params: Promise<{ slu
   await requireUser();
   const { slug } = await params;
 
-  const [work] = await db
-    .select({
-      id: works.id,
-      slug: works.slug,
-      title: works.title,
-      basedOnWorkId: works.basedOnWorkId,
-      series: works.series,
-      summary: works.summary,
-    })
-    .from(works)
-    .where(eq(works.slug, slug));
-
+  const work = await knownWork(slug);
   if (!work) notFound();
-
-  // On a romhack's own page this adds another way to play it, and what it
-  // patches is a release of the original rather than of the hack.
-  const romhack = await isRomhackWork(db, work.id);
-  const original = romhack ? await basedOnOf(work.basedOnWorkId) : null;
-  const patchable = romhack ? work.basedOnWorkId : work.id;
-
-  const versionRows = patchable
-    ? await db
-        .select({ id: versions.id, name: versions.name, kind: versions.kind })
-        .from(versions)
-        .where(eq(versions.workId, patchable))
-        .orderBy(asc(versions.createdAt))
-    : [];
 
   const platformNames = await platformsInUse();
 
@@ -64,18 +36,11 @@ export default async function AddVersionPage({ params }: { params: Promise<{ slu
           {work.title}
         </Link>
       </p>
-      <h1 className="mb-6 font-display text-3xl">{romhack ? "Add a way to play" : "Add a version"}</h1>
+      <h1 className="mb-6 font-display text-3xl">{work.romhack ? "Add a way to play" : "Add a version"}</h1>
 
       <VersionForm
         kind="romhack"
-        work={{
-          id: work.id,
-          title: work.title,
-          versions: versionRows,
-          romhack: romhack ? { original: original?.title ?? null } : null,
-          series: work.series,
-          summary: work.summary,
-        }}
+        work={work}
         platforms={platformNames}
         seriesNames={await seriesInUse()}
       />

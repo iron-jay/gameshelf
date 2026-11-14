@@ -54,6 +54,8 @@ export type WorkDetail = {
    * DLC and expansions: works of their own, never versions (CLAUDE.md §2),
    * listed under the game with your shelf state beside each.
    */
+  /** The game lists DLC under it (not a DLC, a season, or a romhack), so Add DLC is offered. */
+  listsDlc: boolean;
   children: DlcItem[];
   /** The game's DLC stands on the shelf as games of their own, rather than under it. */
   dlcOnShelf: boolean;
@@ -162,6 +164,7 @@ export async function workDetail(userId: string, slug: string): Promise<WorkDeta
     parent: parent ?? null,
     parentIgdbId: work.parentWorkId ? null : parentIgdbIdOf(work.workKind, work.igdbPayload),
     versions: versionRows.map((row) => summaryFrom(row, mine.get(row.id) ?? null)),
+    listsDlc,
     children,
     dlcOnShelf: work.dlcOnShelf,
     basedOn: await basedOnOf(work.basedOnWorkId),
