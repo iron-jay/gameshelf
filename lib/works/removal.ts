@@ -160,3 +160,45 @@ export async function orphanedCoverFiles(onDisk: string[]): Promise<string[]> {
 
   return onDisk.filter((file) => !referenced.has(file));
 }
+
+/**
+ * Deletes a game and everything under it, then its art. The files go after
+ * the rows: a failed unlink should not undo a delete that was confirmed, only
+ * leave a file for the sweep. False when there was no such game.
+ */
+export async function deleteWork(workId: string): Promise<boolean> {
+  const removal = await inspectWorkRemoval(workId);
+  if (!removal) return false;
+  await db.delete(works).where(eq(works.id, workId));
+  await removeCoverFiles(removal.coverFiles);
+  return true;
+}
+
+/**
+ * Delete from a version: the whole game unless `scope` is "version". A game's
+ * last version always takes the game with it, since a work never stands
+ * without one. Says which went, and the game's slug when only the version did.
+ */
+export async function deleteFromVersion(
+  versionId: string,
+  scope: "work" | "version",
+): Promise<{ deleted: "version"; workSlug: string } | { deleted: "work" } | null> {
+  const [version] = await db
+    .select({ workId: versions.workId, workSlug: works.slug })
+    .from(versions)
+    .innerJoin(works, eq(works.id, versions.workId))
+    .where(eq(versions.id, versionId));
+  if (!version) return null;
+
+  const [siblings] = await db.select({ total: count() }).from(versions).where(eq(versions.workId, version.workId));
+  if (scope === "version" && siblings.total > 1) {
+    const removal = await inspectVersionRemoval(versionId);
+    if (!removal) return null;
+    await db.delete(versions).where(eq(versions.id, versionId));
+    await removeCoverFiles(removal.coverFiles);
+    return { deleted: "version", workSlug: version.workSlug };
+  }
+
+  await deleteWork(version.workId);
+  return { deleted: "work" };
+}

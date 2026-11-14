@@ -18,7 +18,8 @@ export const GET = publicRoute(async () =>
     // "dated-changes": PATCH /entries takes the day a change was made (`on`),
     // a versionId add `finishedOn`, and entries carry `updatedAt`, for changes
     // the phone queued. "add-platform": POST /works/{slug}/platforms. "series":
-    // GET /series and the series routes under it.
-    features: ["completion", "platforms", "dated-changes", "add-platform", "series"],
+    // GET /series and the series routes under it. "page-controls": PATCH
+    // /works/{slug} takes `series`, and Delete with its removal summaries.
+    features: ["completion", "platforms", "dated-changes", "add-platform", "series", "page-controls"],
   }),
 );
