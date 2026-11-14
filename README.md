@@ -117,6 +117,11 @@ curl -H "authorization: Bearer $TOKEN" http://localhost:3000/api/v1/me
 | `GET /api/v1/works/{slug}` | A work, its versions (with your entry ids), its DLC (`children`, each with `versionId`, `entryId`, `status`, `rating`, `coverUrl`, `year`), `dlcOnShelf`, and for romhacks `basedOn` (`{ slug, title }` of the original) and `romhacks` (on the original: `slug`, `title`, `year`, `coverUrl`) |
 | `PATCH /api/v1/works/{slug}` | `{ dlcOnShelf?, series? }`: `dlcOnShelf: true` shows the game's DLC on the shelf as separate games, `false` keeps it under the game; `series` sets its series (a name in use is joined, `""` clears). Returns the work |
 | `GET /api/v1/works/{slug}/removal` | What deleting the game would take, as above (`{ work }`) |
+| `GET`, `PUT /api/v1/works/{slug}/details` | The game's details as its edit page has them: `title`, `releaseDate`, `summary`, strings. PUT saves by the page's rules; a refusal is `invalid` with its message |
+| `GET`, `PUT /api/v1/versions/{id}/details` | The version's edit page: `values` (`name`, `kind`, `platformName`, `author`, `versionLabel`, `releaseDate`, `url`, `notes`, `baseVersionId`), `kinds`, `platforms` in use and `siblings` to base it on. PUT `values` |
+| `GET /api/v1/works/{slug}/art` | The art page (`?version=` for a version's): `title`, `versionName`, `coverUrl`, `needsReview`, `seedTitle` |
+| `GET /api/v1/works/{slug}/art/candidates` | SteamGridDB grids for `?q=` or the seed title, `?adult=1` for nsfw and joke art: `{ items, notice }` |
+| `POST /api/v1/works/{slug}/art` | `{ do: "grid", imageUrl, sgdbGameId }`, `{ do: "reference", reference }`, or multipart with the image as `file`. Answers `{ ok, message, art }` in the page's words |
 | `DELETE /api/v1/works/{slug}` | Deletes the game, its versions and DLC, and every entry on them. 204 |
 | `GET /api/v1/works/{slug}/platforms` | For Add a platform: `platforms` (names already in use) and `kinds` (`recomp`, `decomp_port`, `other`, with labels) |
 | `POST /api/v1/works/{slug}/platforms` | `{ platform, via?, kind? }` adds a platform the game runs on ("PC via banjo-recompiled") as a version named by `via` or the platform, kind `recomp` by default, on nobody's shelf. Returns `{ versionId, work }`; 201 when added, 200 when that platform and via were already there. Each version in a work carries `via` |

@@ -20,6 +20,8 @@ export const GET = publicRoute(async () =>
     // the phone queued. "add-platform": POST /works/{slug}/platforms. "series":
     // GET /series and the series routes under it. "page-controls": PATCH
     // /works/{slug} takes `series`, and Delete with its removal summaries.
-    features: ["completion", "platforms", "dated-changes", "add-platform", "series", "page-controls"],
+    // "edit-details": the edit pages' fields (`/works/{slug}/details`,
+    // `/versions/{id}/details`) and the art page (`/works/{slug}/art`).
+    features: ["completion", "platforms", "dated-changes", "add-platform", "series", "page-controls", "edit-details"],
   }),
 );
