@@ -2897,3 +2897,27 @@ Checked against a local database: Wishlist, Backlog and Playing rated went to
 played with a play today (or `on: 2026-11-01`), Played and Dropped stayed,
 a cleared rating and a rating with a shelf moved nothing extra, and rating a
 version with no entry yet put it on played. tsc and lint pass.
+
+## 2026-11-14 — Add a platform, from the phone
+
+Jay: with all the recomps coming, older games are unofficially on PC, and
+there should be a way to add a platform, with a "via banjo-recompiled". The
+web's Add version already does it (kind Recompilation, platform PC); the
+phone had no way. So, for the phone, with no new rules or columns:
+
+- `lib/versions/add-platform.ts`: a platform, an optional "via" and how
+  (Recompilation, Decomp port, Something else) become a version of the game
+  named by the via, or by the platform when there is none, on nobody's
+  shelf. Same platform and via twice finds the first. A named one looks up
+  its own art as any community version does (§4a); Banjo found
+  "Banjo-Recompiled" on SteamGridDB. Not on a romhack's own game.
+- `GET`/`POST /api/v1/works/{slug}/platforms`; `/meta` lists `add-platform`.
+- The via is the version's name, so it needs no column: `viaOf`
+  (`lib/versions/platform-kinds.ts`) reads it back for recomps, decomp ports
+  and "other" whose name is not the platform. Each version in the API carries
+  `via`, and the game page says where it runs under the title: "Nintendo 64
+  · PC via banjo-recompiled", with "on PC" in that version's row.
+
+Checked against a local database: Majora's Mask on PC via Zelda64Recomp from
+the phone, Ocarina's Ship of Harkinian as a decomp port, a plain Steam Deck,
+a repeat (200), a bad kind (422). tsc, lint and `check:actions` pass.

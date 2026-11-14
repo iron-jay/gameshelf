@@ -11,6 +11,7 @@ import { canHaveDlc, dlcOf, isStandalone, parentIgdbIdOf } from "@/lib/dlc";
 import { fillDlcOnce } from "@/lib/dlc-fill";
 import { basedOnOf, isRomhackWork, romhacksOf } from "@/lib/romhacks";
 import { seriesHref, seriesInUse } from "@/lib/series";
+import { viaOf } from "@/lib/versions/platform-kinds";
 
 import { BackToShelf } from "../../back-to-shelf";
 import { DlcOf, DlcSection } from "../../dlc-section";
@@ -69,6 +70,16 @@ export default async function WorkPage({ params }: { params: Promise<{ slug: str
 
   const allSeries = await seriesInUse();
 
+  // Where the game runs, each platform once, with what it runs through when
+  // a recomp or a port put it there: "Nintendo 64 · PC via banjo-recompiled".
+  const runsOn: string[] = [];
+  for (const version of versionRows) {
+    if (!version.platformName) continue;
+    const via = viaOf({ kind: version.kind, name: version.name, platform: version.platformName });
+    const label = via ? `${version.platformName} via ${via}` : version.platformName;
+    if (!runsOn.includes(label)) runsOn.push(label);
+  }
+
   return (
     <main className="flex-1 pb-14">
       <section className="bg-band px-4 pt-2 sm:px-10">
@@ -114,6 +125,7 @@ export default async function WorkPage({ params }: { params: Promise<{ slug: str
                 </>
               ) : null}
             </p>
+            {runsOn.length > 0 ? <p className="mt-1 font-narrow text-ink-dim">{runsOn.join(" · ")}</p> : null}
           </div>
         </div>
       </section>
@@ -173,7 +185,9 @@ export default async function WorkPage({ params }: { params: Promise<{ slug: str
                   <p className="font-narrow text-ink-dim">
                     {[
                       version.kind.replace(/_/g, " "),
-                      version.platformName,
+                      viaOf({ kind: version.kind, name: version.name, platform: version.platformName })
+                        ? `on ${version.platformName}`
+                        : version.platformName,
                       version.author,
                       version.releaseDate?.slice(0, 4),
                     ]
