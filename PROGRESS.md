@@ -2957,3 +2957,25 @@ Checked against a local database: the series box, the removal summary, and
 deleting just a version (Ocarina's Ship of Harkinian) from the phone, which
 landed back on the game. The version, game and delete pages still render.
 tsc, lint and `check:actions` pass.
+
+## 2026-11-14 — Edit details and art in the API
+
+The phone's third batch is the edit pages and the art page. Their rules
+moved into `lib/` so the actions and the API share them:
+
+- `lib/versions/details.ts`: `saveWorkDetails` (title, release date,
+  summary) and `saveVersionDetails` (the version form, romhack rule and base
+  check included), plus `versionEditForm` for the phone. A release date is
+  now checked as a real day: 1998-13-01 passed the shape check and Postgres
+  refused it with a 500, on the web too.
+- `lib/art-changes.ts`: resolve the target (a version must belong to the
+  game), apply a grid, a pasted SteamGridDB link or id, or an upload;
+  `artState` with the seed title (a community release's own name, §4a).
+- API: `GET`/`PUT /works/{slug}/details`, `GET`/`PUT /versions/{id}/details`,
+  `GET`/`POST /works/{slug}/art` (`?version=`; JSON `do`, or multipart
+  `file`) and `GET …/art/candidates` (`?q=`, `?adult=1`). /meta lists
+  `edit-details`.
+
+Checked against a local database: the bad date and a romhack kind change
+refused in the page's words, a grid applied, an upload, and the edit and
+art pages still render. tsc, lint and `check:actions` pass.

@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { downloadCover } from "@/lib/covers";
 import { db } from "@/lib/db";
-import { entries, versionKind, versions, works } from "@/lib/db/schema";
+import { entries, versions, works } from "@/lib/db/schema";
 import { getGameById } from "@/lib/igdb/games";
 import { seriesFor, slugify, sortTitleFor } from "@/lib/igdb/mapping";
 import { searchGames } from "@/lib/igdb/search";
@@ -17,11 +17,9 @@ import type {
   CreateVersionState,
 } from "@/lib/versions/types";
 import { resolvePlatform } from "@/lib/platforms";
+import { saveVersionDetails } from "@/lib/versions/details";
 import { isCommunityKind, isFormKind, OTHER_PLATFORM } from "@/lib/versions/types";
 
-function isVersionKind(value: string): value is (typeof versionKind.enumValues)[number] {
-  return (versionKind.enumValues as readonly string[]).includes(value);
-}
 import { artForPlaced, placeIgdbGame, type Placed } from "@/lib/entries/add";
 import { createRomhackWork, isRomhackWork } from "@/lib/romhacks";
 import { canonicalSeries, seriesInUse } from "@/lib/series";
@@ -314,76 +312,12 @@ export async function updateVersion(
   formData: FormData,
 ): Promise<CreateVersionState> {
   await requireUser();
-
-  const versionId = optional(formData, "versionId");
-  const name = optional(formData, "name");
-  const kind = formData.get("kind");
-
-  if (!versionId) return { ok: false, message: "Bad request." };
-  if (!name) return { ok: false, message: "Name is required." };
-  if (typeof kind !== "string" || !isVersionKind(kind)) {
-    return { ok: false, message: "Pick what kind of release this is." };
-  }
-
-  const [existing] = await db
-    .select({ id: versions.id, workId: versions.workId, kind: versions.kind, basedOnWorkId: works.basedOnWorkId })
-    .from(versions)
-    .innerJoin(works, eq(works.id, versions.workId))
-    .where(eq(versions.id, versionId));
-
-  if (!existing) return { ok: false, message: "That version no longer exists." };
-
-  // A romhack is a game of its own, so being one is not an edit: turning a
-  // translation into one, or one into a port, would be a different game.
-  if ((existing.kind === "romhack") !== (kind === "romhack")) {
-    return { ok: false, message: "A romhack is a game of its own, so it cannot become another kind or be made from one." };
-  }
-
-  const requestedBase = optional(formData, "baseVersionId");
-  let baseVersionId: string | null = null;
-
-  // A romhack patches a release of its original; anything else, a sibling.
-  const baseWorkId = existing.kind === "romhack" ? existing.basedOnWorkId : existing.workId;
-  if (requestedBase && requestedBase !== versionId && baseWorkId && isUuid(requestedBase)) {
-    // Never itself — the schema forbids it — and never another game's.
-    const [sibling] = await db
-      .select({ id: versions.id })
-      .from(versions)
-      .where(and(eq(versions.id, requestedBase), eq(versions.workId, baseWorkId)));
-    baseVersionId = sibling?.id ?? null;
-  }
-
-  const platformName = platformFrom(formData);
-
-  const workSlug = await db.transaction(async (tx) => {
-    const platformId = await resolvePlatform(tx, platformName);
-
-    await tx
-      .update(versions)
-      .set({
-        name,
-        kind,
-        platformId,
-        baseVersionId,
-        author: optional(formData, "author"),
-        versionLabel: optional(formData, "versionLabel"),
-        releaseDate: optional(formData, "releaseDate"),
-        url: optional(formData, "url"),
-        notes: optional(formData, "notes"),
-      })
-      .where(eq(versions.id, versionId));
-
-    const [work] = await tx
-      .select({ slug: works.slug })
-      .from(works)
-      .where(eq(works.id, existing.workId));
-
-    return work.slug;
-  });
+  // The rules live in lib/versions/details.ts, shared with the phone's API.
+  const result = await saveVersionDetails(formData);
+  if (!result.ok || !result.workSlug) return result;
 
   revalidatePath("/");
-  revalidatePath(`/version/${versionId}`);
-  revalidatePath(`/work/${workSlug}`);
-
-  return { ok: true, message: "Saved", workSlug };
+  revalidatePath(`/version/${String(formData.get("versionId"))}`);
+  revalidatePath(`/work/${result.workSlug}`);
+  return result;
 }
