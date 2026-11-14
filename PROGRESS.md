@@ -3007,3 +3007,21 @@ actions call it, and so does the new `POST /entries/bulk` (`do`: `shelf`,
 message said the raw keys ("moved to backlog"); they now say the shelves'
 names. Checked through the API on two ports of Ocarina: platform, shelf,
 series (typed "zelda", joined "Zelda"), and an unknown `do` refused.
+
+## 2026-11-14 — Settings in the API
+
+The phone's sixth batch: Settings and the pages it links to. Their rules moved
+into `lib/` so the pages and the API share them:
+
+- `lib/auth/account.ts`: renaming the account and changing the password (the
+  API keeps the bearer token's own session; `sessionIdOf` in `session.ts`).
+- `lib/connections.ts` (Check connections), `lib/series-fill.ts` (Fill series
+  from IGDB, Clear every series), `lib/art-review.ts` (`/art`),
+  `lib/settings-summary.ts` (the counts on Settings).
+- API: `PATCH /me`, `POST /me/password`, `GET`/`DELETE /devices`, `GET
+  /settings`, `/settings/connections`, `/settings/sweep-covers`,
+  `/settings/series`, `GET /art`, `GET /off-shelf`, `POST
+  /off-shelf/{workId}`. /meta lists `settings`.
+
+Export and import stay on the web for now; the phone links to them. Settings,
+`/art` and `/off-shelf` still render; tsc and `check:actions` pass.

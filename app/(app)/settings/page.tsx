@@ -1,14 +1,8 @@
-import { and, count, isNotNull, isNull } from "drizzle-orm";
 import Link from "next/link";
 
 import { authDisabled, requireUser } from "@/lib/auth";
 import { listDeviceSessions } from "@/lib/auth/session";
-import { listCoverFiles } from "@/lib/covers";
-import { db } from "@/lib/db";
-import { entries, igdbTokens, works } from "@/lib/db/schema";
-
-import { offShelfGames } from "@/lib/off-shelf";
-import { orphanedCoverFiles } from "@/lib/works/removal";
+import { settingsSummary } from "@/lib/settings-summary";
 
 import { revokeDevice } from "./actions";
 import { AccountForm } from "./account-form";
@@ -23,7 +17,7 @@ import type { Metadata } from "next";
 export const dynamic = "force-dynamic";
 
 /** Whether a secret is present, never any part of its value. */
-function configured(value: string | undefined): string {
+function configured(value: boolean): string {
   return value ? "set" : "not set";
 }
 
@@ -33,24 +27,8 @@ export default async function SettingsPage() {
   const user = await requireUser();
   const devices = await listDeviceSessions(user.id);
 
-  const [token] = await db.select().from(igdbTokens).limit(1);
-  const [entryTotal] = await db.select({ total: count() }).from(entries);
-
-  const coverFiles = await listCoverFiles();
-  const orphans = await orphanedCoverFiles(coverFiles);
-
-  const [fromIgdbRow] = await db
-    .select({ total: count() })
-    .from(works)
-    .where(isNotNull(works.igdbId));
-  const [seriesLessRow] = await db
-    .select({ total: count() })
-    .from(works)
-    .where(and(isNotNull(works.igdbId), isNull(works.series)));
-  const fromIgdb = fromIgdbRow.total;
-  const seriesless = seriesLessRow.total;
-  const offShelf = (await offShelfGames(user.id)).length;
-
+  const summary = await settingsSummary(user.id);
+  const { fromIgdb, seriesless, offShelf } = summary;
 
   return (
     <main className="flex-1 px-4 py-6 sm:px-10">
@@ -112,14 +90,12 @@ export default async function SettingsPage() {
         <section>
           <h2 className="mb-2 font-display text-xl">Credentials</h2>
           <ul className="mb-3 flex flex-col gap-1 font-narrow text-ink-dim">
-            <li>IGDB client id — {configured(process.env.IGDB_CLIENT_ID)}</li>
-            <li>IGDB client secret — {configured(process.env.IGDB_CLIENT_SECRET)}</li>
-            <li>SteamGridDB API key — {configured(process.env.SGDB_API_KEY)}</li>
+            <li>IGDB client id — {configured(summary.credentials.igdbClientId)}</li>
+            <li>IGDB client secret — {configured(summary.credentials.igdbClientSecret)}</li>
+            <li>SteamGridDB API key — {configured(summary.credentials.sgdbApiKey)}</li>
             <li>
               Cached IGDB token —{" "}
-              {token
-                ? `expires ${token.expiresAt.toISOString().slice(0, 10)}`
-                : "none yet, fetched on first use"}
+              {summary.igdbTokenExpires ? `expires ${summary.igdbTokenExpires}` : "none yet, fetched on first use"}
             </li>
           </ul>
           <ConnectionCheck />
@@ -142,12 +118,12 @@ export default async function SettingsPage() {
         <section>
           <h2 className="mb-2 font-display text-xl">Cover art</h2>
           <p className="mb-3 font-narrow text-ink-dim">
-            {coverFiles.length} {coverFiles.length === 1 ? "file" : "files"} stored.{" "}
-            {orphans.length === 0
+            {summary.coverFiles} {summary.coverFiles === 1 ? "file" : "files"} stored.{" "}
+            {summary.orphans === 0
               ? "Nothing unreferenced."
-              : `${orphans.length} ${orphans.length === 1 ? "file is" : "files are"} no longer referenced by anything.`}
+              : `${summary.orphans} ${summary.orphans === 1 ? "file is" : "files are"} no longer referenced by anything.`}
           </p>
-          {orphans.length > 0 ? <CoverSweep /> : null}
+          {summary.orphans > 0 ? <CoverSweep /> : null}
 
           <p className="mt-3 font-narrow">
             <Link href="/art" className="text-ink-dim underline hover:text-ink">
@@ -179,7 +155,7 @@ export default async function SettingsPage() {
         <section>
           <h2 className="mb-1 font-display text-xl">Export and restore</h2>
           <p className="mb-3 font-narrow text-ink-dim">
-            {entryTotal.total} {entryTotal.total === 1 ? "entry" : "entries"}. No ceremony beyond
+            {summary.entries} {summary.entries === 1 ? "entry" : "entries"}. No ceremony beyond
             being logged in — both are plain GETs you can curl. Cached IGDB payloads are left out
             on purpose: they are upstream data that can be fetched again, not yours.
           </p>

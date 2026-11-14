@@ -1,10 +1,8 @@
-import { and, eq } from "drizzle-orm";
 import Image from "next/image";
 import Link from "next/link";
 
 import { requireUser } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { entryCards } from "@/lib/db/schema";
+import { flaggedArt } from "@/lib/art-review";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -22,10 +20,7 @@ export const metadata: Metadata = { title: "Cover art to review" };
 export default async function ArtReviewPage() {
   const user = await requireUser();
 
-  const rows = await db
-    .select()
-    .from(entryCards)
-    .where(and(eq(entryCards.userId, user.id), eq(entryCards.coverNeedsReview, true)));
+  const rows = await flaggedArt(user.id);
 
   return (
     <main className="flex-1 px-4 py-6 sm:px-10">
@@ -61,9 +56,9 @@ export default async function ArtReviewPage() {
               </div>
 
               <div className="min-w-0">
-                <p className="truncate">{row.workTitle}</p>
+                <p className="truncate">{row.title}</p>
                 <p className="truncate font-narrow text-ink-dim">
-                  {[row.versionName, row.versionAuthor].filter(Boolean).join(" · ")}
+                  {row.subtitle}
                 </p>
               </div>
 
