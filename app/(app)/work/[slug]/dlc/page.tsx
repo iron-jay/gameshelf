@@ -1,16 +1,9 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { requireUser } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { entries, platforms, versions, works } from "@/lib/db/schema";
-import { shortDlcTitle } from "@/lib/dlc";
-import { workKindFor } from "@/lib/igdb/mapping";
-import { dlcOfGame } from "@/lib/igdb/search";
-import { IgdbError, IgdbNotConfiguredError, type IgdbGame } from "@/lib/igdb/types";
-import { igdbResultFor } from "@/lib/search";
+import { dlcChoices } from "@/lib/dlc-add";
 import { STATUS_LABELS, STATUS_ORDER } from "@/lib/status";
 
 import { addHref } from "../../../add/igdb/[id]/href";
@@ -33,66 +26,9 @@ export default async function AddDlcPage({ params }: { params: Promise<{ slug: s
   const user = await requireUser();
   const { slug } = await params;
 
-  const [game] = await db
-    .select({ id: works.id, slug: works.slug, title: works.title, igdbId: works.igdbId })
-    .from(works)
-    .where(eq(works.slug, slug));
-  if (!game) notFound();
-
-  // DLC is played where the game is, so the picker starts on the game's
-  // platform when the DLC came out there too, not on IGDB's earliest release.
-  const [gamePlatform] = await db
-    .select({ igdbId: platforms.igdbId })
-    .from(versions)
-    .innerJoin(platforms, eq(platforms.id, versions.platformId))
-    .where(eq(versions.workId, game.id))
-    .orderBy(asc(versions.createdAt))
-    .limit(1);
-
-  let listed: IgdbGame[] = [];
-  let notice: string | null = null;
-  if (game.igdbId) {
-    try {
-      listed = await dlcOfGame(game.igdbId);
-    } catch (err) {
-      notice =
-        err instanceof IgdbNotConfiguredError
-          ? "IGDB credentials are not set, so its DLC cannot be listed. You can still add it by hand."
-          : err instanceof IgdbError
-            ? `IGDB could not be reached (${err.status ?? "no response"}). You can still add DLC by hand.`
-            : "IGDB could not be reached. You can still add DLC by hand.";
-    }
-  }
-
-  // Which of those are here already, and which of those you have shelved, so
-  // each opens rather than offering to add it twice.
-  const here = listed.length
-    ? await db
-        .select({ igdbId: works.igdbId, versionId: versions.id, status: entries.status })
-        .from(works)
-        .innerJoin(versions, eq(versions.workId, works.id))
-        .leftJoin(entries, and(eq(entries.versionId, versions.id), eq(entries.userId, user.id)))
-        .where(
-          inArray(
-            works.igdbId,
-            listed.map((item) => item.id),
-          ),
-        )
-    : [];
-  const hereById = new Map<number, { versionId: string; status: string | null }>();
-  for (const row of here) {
-    if (row.igdbId === null) continue;
-    const known = hereById.get(row.igdbId);
-    if (!known || (!known.status && row.status)) hereById.set(row.igdbId, { versionId: row.versionId, status: row.status });
-  }
-
-  // Destiny 2 has more seasons than expansions. They are DLC too, but a list
-  // that leads with twenty of them buries the four you came for.
-  const isSeason = (item: IgdbGame) => ["season", "episode"].includes(workKindFor(item));
-  const groups = [
-    { title: "Expansions and DLC", items: listed.filter((item) => !isSeason(item)) },
-    { title: "Seasons and episodes", items: listed.filter(isSeason) },
-  ].filter((group) => group.items.length > 0);
+  const choices = await dlcChoices(user.id, slug);
+  if (!choices) notFound();
+  const { game, notice, groups } = choices;
 
   return (
     <main className="flex-1 px-4 py-6 sm:px-10">
@@ -109,7 +45,7 @@ export default async function AddDlcPage({ params }: { params: Promise<{ slug: s
         </p>
       ) : null}
 
-      {game.igdbId && !notice && listed.length === 0 ? (
+      {choices.noneListed ? (
         <p className="mb-6 font-narrow text-ink-dim">IGDB lists no DLC for {game.title}.</p>
       ) : null}
 
@@ -117,12 +53,10 @@ export default async function AddDlcPage({ params }: { params: Promise<{ slug: s
         <section key={group.title} className="mb-8">
           <h2 className="mb-1 font-display text-xl">{group.title}</h2>
           <ul className="flex flex-col">
-            {group.items.map((item) => {
-              const result = igdbResultFor(item);
-              const known = hereById.get(item.id);
+            {group.items.map(({ result, name, kindLabel, platformId, known }) => {
               return (
                 <li
-                  key={item.id}
+                  key={result.id}
                   className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line py-3"
                 >
                   <div className="h-16 w-12 shrink-0 bg-panel">
@@ -138,9 +72,9 @@ export default async function AddDlcPage({ params }: { params: Promise<{ slug: s
                     ) : null}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold">{shortDlcTitle(item.name, game.title)}</p>
+                    <p className="truncate font-semibold">{name}</p>
                     <p className="font-narrow text-ink-dim">
-                      {[workKindFor(item).replace(/_/g, " "), result.year].filter(Boolean).join(" · ")}
+                      {[kindLabel, result.year].filter(Boolean).join(" · ")}
                     </p>
                   </div>
                   {known ? (
@@ -149,16 +83,14 @@ export default async function AddDlcPage({ params }: { params: Promise<{ slug: s
                       className="font-narrow text-ink-dim underline underline-offset-4 hover:text-ink"
                     >
                       {known.status
-                        ? `On your shelf: ${STATUS_LABELS[known.status as keyof typeof STATUS_LABELS]}`
+                        ? `On your shelf: ${STATUS_LABELS[known.status]}`
                         : "Here, not on your shelf"}
                     </Link>
                   ) : (
                     <Link
                       href={addHref(result.id, {
                         back: `/work/${game.slug}/dlc`,
-                        platformId: result.platformOptions.some((option) => option.id === gamePlatform?.igdbId)
-                          ? (gamePlatform?.igdbId ?? null)
-                          : null,
+                        platformId,
                       })}
                       className="btn btn-primary"
                     >
@@ -173,7 +105,7 @@ export default async function AddDlcPage({ params }: { params: Promise<{ slug: s
       ))}
 
       <section className="max-w-xl">
-        <h2 className="mb-1 font-display text-xl">{listed.length ? "Not listed?" : "Add it by hand"}</h2>
+        <h2 className="mb-1 font-display text-xl">{groups.length ? "Not listed?" : "Add it by hand"}</h2>
         <p className="mb-3 font-narrow text-ink-dim">
           It goes under {game.title}, with its own shelf, rating and review.
         </p>

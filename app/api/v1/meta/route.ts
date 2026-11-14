@@ -22,6 +22,8 @@ export const GET = publicRoute(async () =>
     // /works/{slug} takes `series`, and Delete with its removal summaries.
     // "edit-details": the edit pages' fields (`/works/{slug}/details`,
     // `/versions/{id}/details`) and the art page (`/works/{slug}/art`).
-    features: ["completion", "platforms", "dated-changes", "add-platform", "series", "page-controls", "edit-details"],
+    // "add-by-hand": the add-version form (`/versions/new`, `POST
+    // /versions`) and Add DLC (`/works/{slug}/dlc`).
+    features: ["completion", "platforms", "dated-changes", "add-platform", "series", "page-controls", "edit-details", "add-by-hand"],
   }),
 );
