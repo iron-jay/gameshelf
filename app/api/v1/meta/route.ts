@@ -17,7 +17,7 @@ export const GET = publicRoute(async () =>
     shelves: STATUS_ORDER.map((key) => ({ key, label: STATUS_LABELS[key] })),
     // "dated-changes": PATCH /entries takes the day a change was made (`on`),
     // a versionId add `finishedOn`, and entries carry `updatedAt`, for changes
-    // the phone queued.
-    features: ["completion", "platforms", "dated-changes"],
+    // the phone queued. "add-platform": POST /works/{slug}/platforms.
+    features: ["completion", "platforms", "dated-changes", "add-platform"],
   }),
 );

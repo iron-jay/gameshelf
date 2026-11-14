@@ -10,6 +10,7 @@ import {
   versions,
   works,
 } from "@/lib/db/schema";
+import { viaOf } from "@/lib/versions/platform-kinds";
 import { basedOnOf, isRomhackWork, romhacksOf, type RomhackItem, type WorkLink } from "@/lib/romhacks";
 
 export const isCommunityKind = isCommunityVersionKind;
@@ -20,6 +21,11 @@ export type VersionSummary = {
   kind: string;
   community: boolean;
   platform: string | null;
+  /**
+   * What put the game on this platform, for "PC via banjo-recompiled": a
+   * recomp's or port's own name, null when it has none or is another kind.
+   */
+  via: string | null;
   author: string | null;
   versionLabel: string | null;
   releaseDate: string | null;
@@ -102,6 +108,7 @@ function summaryFrom(row: VersionRow, entryId: string | null): VersionSummary {
     kind: row.kind,
     community,
     platform: row.platform,
+    via: viaOf(row),
     author: row.author,
     versionLabel: row.versionLabel,
     releaseDate: row.releaseDate,
