@@ -119,6 +119,11 @@ curl -H "authorization: Bearer $TOKEN" http://localhost:3000/api/v1/me
 | `GET /api/v1/search?q=` | `{ local, igdb, igdbError }`; local results come back even when IGDB cannot be reached |
 | `GET /api/v1/tags` | Your tags with how many entries carry each |
 | `GET /api/v1/platforms` | Platforms on your shelf |
+| `GET /api/v1/series` | `items`: the series your shelf touches (`name`, `games`, `played`, `coverUrl`), for the Series strip; `names`: every series in use |
+| `GET /api/v1/series/{name}` | A series in release order: `name`, `played`, and `works`, every game in it shelved or not, each with your `entries` (`entryId`, `versionId`, `platformName`, `status`, `rating`) |
+| `PATCH /api/v1/series/{name}` | `{ name }` renames it; a name already in use joins the two. Returns the series under its new name |
+| `DELETE /api/v1/series/{name}` | Removes the series: every game in it loses the name, nothing else changes. 204 |
+| `DELETE /api/v1/series/{name}/works/{slug}` | Takes one game out. Returns `{ series }`, null once the last is out |
 
 Errors are `{ "error": { "code", "message" } }` with a matching status; a
 missing or expired token is a 401. Device tokens last 180 days from last use

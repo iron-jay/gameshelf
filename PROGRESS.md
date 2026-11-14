@@ -2921,3 +2921,22 @@ phone had no way. So, for the phone, with no new rules or columns:
 Checked against a local database: Majora's Mask on PC via Zelda64Recomp from
 the phone, Ocarina's Ship of Harkinian as a decomp port, a plain Steam Deck,
 a repeat (200), a bad kind (422). tsc, lint and `check:actions` pass.
+
+## 2026-11-14 — Series in the API; Favourite and Private gone
+
+Jay wants the phone app to match the web's phone pages one to one, starting
+with series: the Series strip and the series page.
+
+- `GET /series` (the strip's tiles from the folded shelf, as the overview, and
+  every name in use), `GET`, `PATCH` (`name`) and `DELETE /series/{name}`,
+  and `DELETE /series/{name}/works/{slug}`. The page's rename, remove and take
+  out moved into `lib/series.ts` (`seriesDetail`, `renameSeries`,
+  `removeSeries`, `takeOutOfSeries`) so the actions and the API share them.
+  /meta lists `series`.
+- **Favourite and Private** are off the version page (Jay: bookshelf never had
+  them; "drop that from gameshelf too"). The columns stay, and the export,
+  restore and API still carry them, so nothing recorded is lost.
+
+Checked against a local database: the strip, a rename, take out, removing an
+unknown series (404), the series page and the version page. tsc, lint and
+`check:actions` pass.

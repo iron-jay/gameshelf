@@ -28,7 +28,6 @@ import {
   setStatus,
   shelveVersion,
   tagWithShelf,
-  toggleFlag,
   untagShelf,
 } from "./actions";
 import { BackToShelf } from "../../back-to-shelf";
@@ -321,26 +320,6 @@ export default async function VersionPage({ params }: { params: Promise<{ id: st
                 {level.label}
               </button>
             ))}
-          </form>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <form action={toggleFlag}>
-            {hidden}
-            <input type="hidden" name="flag" value="favourite" />
-            <input type="hidden" name="next" value={entry?.isFavourite ? "false" : "true"} />
-            <button type="submit" aria-pressed={Boolean(entry?.isFavourite)} className={CHIP}>
-              {entry?.isFavourite ? "Favourite" : "Mark favourite"}
-            </button>
-          </form>
-
-          <form action={toggleFlag}>
-            {hidden}
-            <input type="hidden" name="flag" value="private" />
-            <input type="hidden" name="next" value={entry?.isPrivate ? "false" : "true"} />
-            <button type="submit" aria-pressed={Boolean(entry?.isPrivate)} className={CHIP}>
-              {entry?.isPrivate ? "Private" : "Mark private"}
-            </button>
           </form>
         </div>
 

@@ -1,13 +1,15 @@
 "use server";
 
-import { and, count, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { requireUser } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { works } from "@/lib/db/schema";
-import { canonicalSeries, seriesHref, seriesInUse } from "@/lib/series";
+import {
+  removeSeries as removeNamed,
+  renameSeries as renameTo,
+  seriesHref,
+  takeOutOfSeries as takeOut,
+} from "@/lib/series";
 
 function revalidateSeries() {
   revalidatePath("/series/[name]", "page");
@@ -16,36 +18,22 @@ function revalidateSeries() {
   revalidatePath("/");
 }
 
-/**
- * Renames a series on every game in it. Renaming to a series that already
- * exists joins the two, the same case-insensitive match the series box makes;
- * the series' own name is left out of that match so "zelda" can become "Zelda".
- */
+/** Renames, or joins the series of that name (lib/series.ts). */
 export async function renameSeries(formData: FormData): Promise<void> {
   await requireUser();
 
   const from = String(formData.get("from") ?? "");
-  const typed = String(formData.get("to") ?? "").slice(0, 120);
-  const others = (await seriesInUse()).filter((name) => name !== from);
-  const to = canonicalSeries(typed, others);
-  if (!from || !to) redirect(seriesHref(from));
-
-  await db.update(works).set({ series: to }).where(eq(works.series, from));
+  const to = await renameTo(from, String(formData.get("to") ?? ""));
+  if (!to) redirect(seriesHref(from));
 
   revalidateSeries();
   redirect(seriesHref(to));
 }
 
-/**
- * Takes every game out of a series. The games and your entries stay where they
- * are: a series is only a name on them, so removing it removes the name.
- */
+/** Takes every game out of a series; the games and your entries stay. */
 export async function removeSeries(formData: FormData): Promise<void> {
   await requireUser();
-
-  const name = String(formData.get("name") ?? "");
-  if (name) await db.update(works).set({ series: null }).where(eq(works.series, name));
-
+  await removeNamed(String(formData.get("name") ?? ""));
   revalidateSeries();
   redirect("/");
 }
@@ -58,13 +46,7 @@ export async function takeOutOfSeries(formData: FormData): Promise<void> {
   const workId = String(formData.get("workId") ?? "");
   if (!name || !workId) return;
 
-  await db
-    .update(works)
-    .set({ series: null })
-    .where(and(eq(works.id, workId), eq(works.series, name)));
-
+  const left = await takeOut(name, workId);
   revalidateSeries();
-
-  const [left] = await db.select({ n: count() }).from(works).where(eq(works.series, name));
-  if (!left || left.n === 0) redirect("/");
+  if (left === 0) redirect("/");
 }

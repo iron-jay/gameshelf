@@ -1,12 +1,9 @@
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { requireUser } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { entries, platforms, versions, works } from "@/lib/db/schema";
-import { seriesHref } from "@/lib/series";
+import { seriesDetail, seriesHref } from "@/lib/series";
 import { STATUS_LABELS } from "@/lib/status";
 
 import { BackToShelf } from "../../back-to-shelf";
@@ -32,44 +29,9 @@ export default async function SeriesPage({ params }: { params: Promise<{ name: s
 
   // Games you have not shelved are listed too: a series page that only showed
   // what you own would say nothing the shelf does not.
-  const members = await db
-    .select({
-      id: works.id,
-      slug: works.slug,
-      title: works.title,
-      workKind: works.workKind,
-      firstReleaseDate: works.firstReleaseDate,
-      coverUrl: works.coverUrl,
-    })
-    .from(works)
-    .where(eq(works.series, name))
-    .orderBy(sql`${works.firstReleaseDate} asc nulls last`, asc(works.title));
-
-  if (members.length === 0) notFound();
-
-  const mine = await db
-    .select({
-      workId: versions.workId,
-      versionId: versions.id,
-      versionName: versions.name,
-      platformName: platforms.name,
-      status: entries.status,
-      rating: entries.rating,
-    })
-    .from(entries)
-    .innerJoin(versions, eq(versions.id, entries.versionId))
-    .leftJoin(platforms, eq(platforms.id, versions.platformId))
-    .where(
-      and(
-        eq(entries.userId, user.id),
-        inArray(
-          versions.workId,
-          members.map((work) => work.id),
-        ),
-      ),
-    );
-
-  const played = new Set(mine.filter((entry) => entry.status === "played").map((entry) => entry.workId)).size;
+  const detail = await seriesDetail(user.id, name);
+  if (!detail) notFound();
+  const { works: members, played } = detail;
 
   return (
     <main className="flex-1 pb-14">
@@ -110,7 +72,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ name: s
 
       <ol className="flex max-w-3xl flex-col px-4 pt-4 sm:px-10">
         {members.map((work) => {
-          const here = mine.filter((entry) => entry.workId === work.id);
+          const here = work.entries;
           return (
             <li key={work.id} className="flex items-center gap-4 border-b border-line py-3">
               <Link href={`/work/${work.slug}`} className="relative aspect-[3/4] w-14 shrink-0 bg-panel">
