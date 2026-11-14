@@ -75,18 +75,6 @@ export async function saveReview(formData: FormData): Promise<void> {
   if (saved) refresh(versionId);
 }
 
-export async function toggleFlag(formData: FormData): Promise<void> {
-  const user = await requireUser();
-  const versionId = versionIdFrom(formData);
-  const flag = formData.get("flag");
-  const next = formData.get("next") === "true";
-
-  const changes =
-    flag === "favourite" ? { isFavourite: next } : flag === "private" ? { isPrivate: next } : null;
-  if (!changes) return;
-
-  if (await updateEntry(user.id, versionId, changes)) refresh(versionId);
-}
 
 export async function tagWithShelf(formData: FormData): Promise<void> {
   const user = await requireUser();
