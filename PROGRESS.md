@@ -2997,3 +2997,13 @@ Checked against a local database: a homebrew, a romhack, a decomp port and a
 nameless mod (refused in the form's words) through the API, Destiny 2's DLC
 listed, DLC made by hand. The add and Add DLC pages still render. tsc and
 `check:actions` pass.
+
+## 2026-11-14 — The wall's select mode in the API
+
+The phone's fifth batch. The select mode's rules (change platform, change
+shelf, put in series) moved from `bulk-actions.ts` into `lib/bulk.ts`; the
+actions call it, and so does the new `POST /entries/bulk` (`do`: `shelf`,
+`platform`, `series`). /meta lists `bulk`. The page's shelf picker and its
+message said the raw keys ("moved to backlog"); they now say the shelves'
+names. Checked through the API on two ports of Ocarina: platform, shelf,
+series (typed "zelda", joined "Zelda"), and an unknown `do` refused.

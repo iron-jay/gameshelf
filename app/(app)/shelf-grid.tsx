@@ -12,6 +12,7 @@ import {
 import { SeriesInput } from "./series-input";
 import { ShelfTile, type ShelfCard } from "./shelf-tile";
 import { PlatformField } from "./version-fields";
+import { STATUS_LABELS, type Status } from "@/lib/status";
 
 export type ShelfSection = { label: string; href?: string; cards: ShelfCard[] };
 
@@ -227,7 +228,7 @@ export function ShelfGrid({
               >
                 {statuses.map((status) => (
                   <option key={status} value={status}>
-                    {status}
+                    {STATUS_LABELS[status as Status] ?? status}
                   </option>
                 ))}
               </select>
