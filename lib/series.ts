@@ -177,3 +177,16 @@ export async function takeOutOfSeries(name: string, workId: string): Promise<num
   const [left] = await db.select({ n: count() }).from(works).where(eq(works.series, name));
   return left?.n ?? 0;
 }
+
+/**
+ * Sets or clears a work's series ("" clears). The name is matched against the
+ * series in use, so "zelda" joins Zelda. Returns what was stored, or null.
+ */
+export async function setWorkSeries(slug: string, typed: string): Promise<string | null> {
+  const name = canonicalSeries(typed.slice(0, 120), await seriesInUse());
+  await db
+    .update(works)
+    .set({ series: name === "" ? null : name })
+    .where(eq(works.slug, slug));
+  return name === "" ? null : name;
+}

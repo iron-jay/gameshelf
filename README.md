@@ -112,8 +112,12 @@ curl -H "authorization: Bearer $TOKEN" http://localhost:3000/api/v1/me
 | `PUT /api/v1/entries/{id}/tags/{name}` | Adds a tag, creating it if new. Returns `{ tags }` |
 | `DELETE /api/v1/entries/{id}/tags/{name}` | Removes a tag; one left on nothing is deleted, as on the web. Returns `{ tags }` |
 | `GET /api/v1/versions/{id}` | A version, its work, its base version and your entry id if shelved |
+| `GET /api/v1/versions/{id}/removal` | What Delete would take: `work` (the whole game) and `version` (just this one; null when it is the only version). Each has `works`, `versionCount`, `entryCount`, `playCount`, `shelfLinkCount`, `dependentVersions`, `coverFiles` |
+| `DELETE /api/v1/versions/{id}` | `scope=work` (default) deletes the game, `scope=version` only this version (a last version takes the game). Returns `{ deleted: "work" }` or `{ deleted: "version", workSlug }` |
 | `GET /api/v1/works/{slug}` | A work, its versions (with your entry ids), its DLC (`children`, each with `versionId`, `entryId`, `status`, `rating`, `coverUrl`, `year`), `dlcOnShelf`, and for romhacks `basedOn` (`{ slug, title }` of the original) and `romhacks` (on the original: `slug`, `title`, `year`, `coverUrl`) |
-| `PATCH /api/v1/works/{slug}` | `{ "dlcOnShelf": true }` shows the game's DLC on the shelf as separate games; `false` keeps it under the game. Returns the work |
+| `PATCH /api/v1/works/{slug}` | `{ dlcOnShelf?, series? }`: `dlcOnShelf: true` shows the game's DLC on the shelf as separate games, `false` keeps it under the game; `series` sets its series (a name in use is joined, `""` clears). Returns the work |
+| `GET /api/v1/works/{slug}/removal` | What deleting the game would take, as above (`{ work }`) |
+| `DELETE /api/v1/works/{slug}` | Deletes the game, its versions and DLC, and every entry on them. 204 |
 | `GET /api/v1/works/{slug}/platforms` | For Add a platform: `platforms` (names already in use) and `kinds` (`recomp`, `decomp_port`, `other`, with labels) |
 | `POST /api/v1/works/{slug}/platforms` | `{ platform, via?, kind? }` adds a platform the game runs on ("PC via banjo-recompiled") as a version named by `via` or the platform, kind `recomp` by default, on nobody's shelf. Returns `{ versionId, work }`; 201 when added, 200 when that platform and via were already there. Each version in a work carries `via` |
 | `GET /api/v1/search?q=` | `{ local, igdb, igdbError }`; local results come back even when IGDB cannot be reached |

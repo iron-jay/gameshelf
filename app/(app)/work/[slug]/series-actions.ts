@@ -1,12 +1,9 @@
 "use server";
 
-import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { requireUser } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { works } from "@/lib/db/schema";
-import { canonicalSeries, seriesInUse } from "@/lib/series";
+import { setWorkSeries } from "@/lib/series";
 
 /** What was stored, so the form can say "Saved" for exactly that. */
 export type SeriesSaved = { saved: string | null } | null;
@@ -25,13 +22,7 @@ export async function setSeries(_prev: SeriesSaved, formData: FormData): Promise
   const slug = String(formData.get("slug") ?? "");
   if (!slug) return null;
 
-  const typed = String(formData.get("series") ?? "").slice(0, 120);
-  const name = canonicalSeries(typed, await seriesInUse());
-
-  await db
-    .update(works)
-    .set({ series: name === "" ? null : name })
-    .where(eq(works.slug, slug));
+  const name = await setWorkSeries(slug, String(formData.get("series") ?? ""));
 
   revalidatePath(`/work/${slug}`);
   // Set from a version's page as well, and shown on the series pages.
@@ -40,5 +31,5 @@ export async function setSeries(_prev: SeriesSaved, formData: FormData): Promise
   // The shelf can sort by it, so the sorted view is stale now too.
   revalidatePath("/");
 
-  return { saved: name === "" ? null : name };
+  return { saved: name };
 }

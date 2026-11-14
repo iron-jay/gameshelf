@@ -2940,3 +2940,20 @@ with series: the Series strip and the series page.
 Checked against a local database: the strip, a rename, take out, removing an
 unknown series (404), the series page and the version page. tsc, lint and
 `check:actions` pass.
+
+## 2026-11-14 — The game and version pages' controls in the API
+
+The phone's second batch is the game and version pages, one to one:
+
+- `PATCH /works/{slug}` takes `series` beside `dlcOnShelf`;
+  `setWorkSeries` in `lib/series.ts` is shared with the page's action.
+- `GET /works/{slug}/removal`, `GET /versions/{id}/removal`, and `DELETE`
+  on both (`scope=version|work` on a version). `deleteWork` and
+  `deleteFromVersion` in `lib/works/removal.ts` now hold what the delete
+  pages' actions did, so both use them.
+- /meta lists `page-controls`.
+
+Checked against a local database: the series box, the removal summary, and
+deleting just a version (Ocarina's Ship of Harkinian) from the phone, which
+landed back on the game. The version, game and delete pages still render.
+tsc, lint and `check:actions` pass.
